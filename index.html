@@ -153,7 +153,7 @@ header.top {
 .withunit { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 6px; align-items: center; }
 .withunit .tag { padding: 8px 10px; font-size: 13px; }
 .goals { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px 16px; margin-top: 6px; }
-.goal { display: grid; grid-template-columns: minmax(0,1fr) 76px 64px; gap: 8px; align-items: center; font-size: 14px; }
+.goal { display: grid; grid-template-columns: minmax(0,1fr) 76px 72px; gap: 8px; align-items: center; font-size: 14px; }
 .goal .inp { padding: 7px 10px; }
 .goal small { color: var(--muted); font-size: 12px; text-align: right; }
 .goalline { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 14px; color: var(--muted); margin-bottom: 6px; }
@@ -409,12 +409,21 @@ const CARDIO = {
 };
 const C_IDS = Object.keys(CARDIO);
 
-/* Daily goals. Bigger muscles default to 2 sets a day (14 a week), smaller ones less. */
+/* Weekly goals. Bigger muscles default to 14 sets a week, smaller ones 6–10 (the common 10–20 range, scaled
+   for small muscles that also get indirect work). Cardio defaults to 150 minutes, the usual weekly guideline. */
 const DEFAULT_GOALS = {
-  sets: { chest: 2, shoulders: 2, biceps: 1.5, triceps: 1.5, forearms: 1, traps: 1, lats: 2, lowerback: 1, abs: 1.5, obliques: 1, glutes: 1.5, quads: 2, hamstrings: 1.5, adductors: 1, calves: 1.5 },
-  cardio: 30
+  per: "week",
+  sets: { chest: 14, shoulders: 14, biceps: 10, triceps: 10, forearms: 6, traps: 8, lats: 14, lowerback: 6, abs: 10, obliques: 6, glutes: 10, quads: 14, hamstrings: 10, adductors: 6, calves: 10 },
+  cardio: 150
 };
-const normGoals = g => ({ sets: { ...DEFAULT_GOALS.sets, ...((g && g.sets) || {}) }, cardio: g && g.cardio != null ? Number(g.cardio) : DEFAULT_GOALS.cardio });
+/* Goals saved before weekly goals existed were per day; scale those by 7. */
+const normGoals = g => {
+  const f = g && g.per !== "week" ? 7 : 1;
+  const sets = { ...DEFAULT_GOALS.sets };
+  if (g && g.sets) for (const [m, v] of Object.entries(g.sets)) sets[m] = Math.round((Number(v) || 0) * f * 10) / 10;
+  return { per: "week", sets, cardio: g && g.cardio != null ? (Number(g.cardio) || 0) * f : DEFAULT_GOALS.cardio };
+};
+const perDay = w => (Number(w) || 0) / 7;
 
 /* ---------- Storage: shared db per signed-in person, else this browser ---------- */
 const LS_KEY = "musclemap.workouts.v1";
@@ -546,8 +555,9 @@ function render() {
   const r = rangeFor(S.period, S.anchor, list);
   const c = compute(list, r);
   const days = daysIn(r), g = S.goals;
-  const liftTarget = m => (Number(g.sets[m]) || 0) * days;
-  const cardioTarget = (Number(g.cardio) || 0) * days;
+  // Weekly goal ÷ 7 × days in the range, so a week is exactly the goal and a 31-day month is 31/7 of it.
+  const liftTarget = m => Math.round(perDay(g.sets[m]) * days * 10) / 10;
+  const cardioTarget = Math.round(perDay(g.cardio) * days);
   const liftLv = {}, cardLv = {};
   for (const m of M_IDS) { liftLv[m] = level(c.lift[m].v, liftTarget(m)); cardLv[m] = level(c.card[m].v, cardioTarget); }
 
@@ -588,7 +598,7 @@ function render() {
       `<span class="track"><span class="fill" style="width:${t ? Math.min(100, (v / t) * 100) : 0}%;background:var(--h${lv || 1})"></span></span>` +
       `<span class="val">${fmt(v)}<small>/${t ? fmt(t) : "–"}</small></span></button></li>`;
   }).join("");
-  $("barsNote").textContent = `Targets are your daily sets goal × ${days} day${days === 1 ? "" : "s"}. Primary muscles count a full set; secondary muscles count half.`;
+  $("barsNote").textContent = `${days === 7 ? "Targets are your weekly sets goals." : `Targets are your weekly sets goal ÷ 7 × ${days} day${days === 1 ? "" : "s"}.`} Primary muscles count a full set; secondary muscles count half.`;
 
   // Cardio goal
   const cp = cardioTarget ? Math.min(100, (c.minutes / cardioTarget) * 100) : 0;
@@ -596,7 +606,7 @@ function render() {
   $("cardioGoal").innerHTML = `<div class="goalline"><span class="num"><b>${hm(c.minutes)}</b> of ${hm(cardioTarget)}</span><span class="num">${pctOf(c.minutes, cardioTarget)}%</span></div>
     <div class="track big"><span class="fill" style="width:${cp}%;background:var(--h${level(c.minutes, cardioTarget) || 1})"></span></div>
     ${acts.length ? `<ul class="acts">${acts.map(([k, v]) => `<li><span>${esc(k)}</span><span class="num">${hm(v)}</span></li>`).join("")}</ul>` : `<p class="note">No cardio in this range.</p>`}
-    <p class="note">Target is ${fmt(g.cardio)} min a day × ${days} day${days === 1 ? "" : "s"}. On the map, a muscle's main cardio counts full minutes and supporting cardio counts half.</p>`;
+    <p class="note">Target is ${hm(g.cardio)} a week${days === 7 ? "" : ` ÷ 7 × ${days} day${days === 1 ? "" : "s"}`}. On the map, a muscle's main cardio counts full minutes and supporting cardio counts half.</p>`;
 
   // History
   $("history").innerHTML = c.ws.length ? c.ws.slice(0, 60).map(w => {
@@ -720,15 +730,15 @@ function cardioSheet(d) {
 
 function goalsSheet(d) {
   return sheetFrame("Daily goals", `
-    <p class="note" style="margin:0 0 12px">Set a goal for one day. Week, month, year and all-time targets are the daily goal times the number of days in the range, so 2 sets a day is 14 a week.</p>
-    <div class="lbl">Lifting · sets per day</div>
+    <p class="note" style="margin:0 0 12px">Set a goal for one week. Other ranges scale by their number of days: a day is a seventh of the weekly goal, and a 31-day month is 31/7 of it.</p>
+    <div class="lbl">Lifting · sets per week</div>
     <div class="goals">${M_IDS.map(m => `<label class="goal" for="g-${m}"><span>${esc(MUSCLES[m])}</span>
-      <input class="inp num" id="g-${m}" type="number" inputmode="decimal" min="0" step="0.5" value="${esc(d.sets[m])}" data-goal="${m}">
-      <small class="num" id="gw-${m}">${fmt((Number(d.sets[m]) || 0) * 7)}/wk</small></label>`).join("")}</div>
-    <div class="lbl" style="margin-top:16px">Cardio · minutes per day</div>
-    <div class="goals"><label class="goal" for="g-cardio"><span>All cardio</span>
-      <input class="inp num" id="g-cardio" type="number" inputmode="numeric" min="0" step="5" value="${esc(d.cardio)}" data-goal="cardio">
-      <small class="num" id="gw-cardio">${hm((Number(d.cardio) || 0) * 7)}/wk</small></label></div>
+      <input class="inp num" id="g-${m}" type="number" inputmode="decimal" min="0" step="1" value="${esc(d.sets[m])}" data-goal="${m}">
+      <small class="num" id="gw-${m}">${fmt(perDay(d.sets[m]))}/day</small></label>`).join("")}</div>
+    <div class="lbl" style="margin-top:16px">Cardio · minutes per week</div>
+    <div class="goals"><label class="goal" for="g-cardio"><span>All cardio (min)</span>
+      <input class="inp num" id="g-cardio" type="number" inputmode="numeric" min="0" step="10" value="${esc(d.cardio)}" data-goal="cardio">
+      <small class="num" id="gw-cardio">${hm(perDay(d.cardio))}/day</small></label></div>
     <p class="note">Set a goal to 0 to leave that muscle off the map.</p>`,
     `<button class="btn ghost" type="button" data-act="goals-reset">Reset to defaults</button>
      <div class="right"><button class="btn ghost" type="button" data-act="close">Cancel</button><button class="btn primary" type="button" data-act="save">Save goals</button></div>`);
@@ -739,8 +749,8 @@ $("sheetRoot").addEventListener("input", e => {
   if (t.dataset.f) d[t.dataset.f] = t.value;
   if (t.dataset.goal) {
     const k = t.dataset.goal;
-    if (k === "cardio") { d.cardio = t.value; $("gw-cardio").textContent = `${hm((Number(t.value) || 0) * 7)}/wk`; }
-    else { d.sets[k] = t.value; $(`gw-${k}`).textContent = `${fmt((Number(t.value) || 0) * 7)}/wk`; }
+    if (k === "cardio") { d.cardio = t.value; $("gw-cardio").textContent = `${hm(perDay(t.value))}/day`; }
+    else { d.sets[k] = t.value; $(`gw-${k}`).textContent = `${fmt(perDay(t.value))}/day`; }
   }
   if (t.dataset.set) { const [i, j, k] = t.dataset.set.split(":"); d.exercises[i].sets[j][k] = t.value; }
   if (t.dataset.ex !== undefined) {
@@ -760,7 +770,7 @@ async function saveDraft() {
   const d = S.draft;
   let w;
   if (S.sheet === "goals") {
-    const g = { sets: Object.fromEntries(M_IDS.map(m => [m, Math.max(0, Number(d.sets[m]) || 0)])), cardio: Math.max(0, Number(d.cardio) || 0) };
+    const g = { per: "week", sets: Object.fromEntries(M_IDS.map(m => [m, Math.max(0, Number(d.sets[m]) || 0)])), cardio: Math.max(0, Number(d.cardio) || 0) };
     try { await Store.saveGoals(g); S.goals = normGoals(g); closeSheet(); render(); }
     catch (ex) { S.error = ex && ex.message ? ex.message : "Couldn't save your goals. Try again."; renderSheet(); }
     return;

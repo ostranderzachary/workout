@@ -12,7 +12,9 @@ A mobile-friendly workout tracker. Log lifts and cardio, set daily goals, and se
 
 ## Goals
 
-Tap **Goals** to set a daily target: sets per day for each muscle group, and minutes per day for cardio. Targets for longer ranges are the daily goal times the days in the range. For example, 2 sets a day is 14 for a week and 62 for a 31-day month. The all-time range counts from your first workout to today.
+Tap **Goals** to set a weekly target: sets per week for each muscle group, and minutes per week for cardio. The defaults are 14 sets a week for big muscles, 6–10 for smaller ones, and 150 minutes of cardio.
+
+Other ranges scale by their number of days. A day's target is a seventh of the weekly goal, and a 31-day month is 31/7 of it. A year uses 365 or 366 days, and all time counts from your first workout to today.
 
 Each muscle is coloured by how close it is to its target: four shades for each quarter of the way, and the darkest once the goal is met. Set a goal to 0 to leave that muscle off the map.
 
