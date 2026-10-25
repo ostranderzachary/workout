@@ -1,34 +1,176 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#111418"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
 <title>Musclemap</title>
-<meta name="description" content="Log workouts, record runs with GPS, and see the muscles you trained on a body heat map.">
-<meta name="theme-color" content="#eef0f2" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#111418" media="(prefers-color-scheme: dark)">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Musclemap">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Figtree:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
-<link rel="stylesheet" href="styles.css">
-</head>
-<body>
+<style>
+/* Layout: one column on phones (map, then breakdown, then history); two columns from 900px with the map pinned left. */
+:root {
+  --bg: #eef0f2;
+  --surface: #ffffff;
+  --fg: #171c21;
+  --muted: #5d6772;
+  --line: #dde1e6;
+  --body: #d6dbe0;
+  --idle: #c3cad2;
+  --ink-btn: #171c21;
+  --ink-btn-fg: #ffffff;
+  --h1: #fbe2a0;
+  --h2: #f8b55b;
+  --h3: #ee7d39;
+  --h4: #d8462a;
+  --h5: #a3182d;
+  --ring: #2b6cd8;
+  --danger: #b4232f;
+  --font-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111418; --surface: #191d22; --fg: #e7eaed; --muted: #8b95a0; --line: #2a3037;
+    --body: #262c33; --idle: #343b44; --ink-btn: #e7eaed; --ink-btn-fg: #111418;
+    --h1: #5e3d22; --h2: #8f4f22; --h3: #c8652a; --h4: #ee6b3a; --h5: #ff9d70;
+    --ring: #6ea0ff; --danger: #ff6b74; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111418; --surface: #191d22; --fg: #e7eaed; --muted: #8b95a0; --line: #2a3037;
+  --body: #262c33; --idle: #343b44; --ink-btn: #e7eaed; --ink-btn-fg: #111418;
+  --h1: #5e3d22; --h2: #8f4f22; --h3: #c8652a; --h4: #ee6b3a; --h5: #ff9d70;
+  --ring: #6ea0ff; --danger: #ff6b74; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 96px;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; }
+
+.wrap { max-width: 1120px; margin: 0 auto; }
+header.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 14px 10px;
+}
+.brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.brand h1 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 28px; letter-spacing: .02em; text-transform: uppercase; line-height: 1; }
+.brand .sync { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 9px 16px; font-weight: 600; }
+.btn.primary { background: var(--ink-btn); color: var(--ink-btn-fg); border-color: var(--ink-btn); }
+.btn.ghost { background: transparent; }
+.btn.small { padding: 6px 12px; font-size: 13px; }
+.btn.danger { color: var(--danger); }
+
+.banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; background: var(--surface); border: 1px dashed var(--muted); border-radius: var(--r); padding: 10px 14px; font-size: 14px; margin-bottom: 12px; }
+.banner strong { font-weight: 700; }
+
+.periods { display: grid; grid-template-columns: repeat(5, 1fr); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px; gap: 2px; }
+.periods button { border: 0; background: transparent; border-radius: 999px; padding: 7px 0; font-weight: 600; font-size: 14px; color: var(--muted); }
+.periods button[aria-pressed="true"] { background: var(--ink-btn); color: var(--ink-btn-fg); }
+.nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }
+.nav .label { font-family: var(--font-display); font-weight: 600; font-size: 22px; letter-spacing: .01em; text-align: center; flex: 1; min-width: 0; }
+.nav .label small { display: block; font-family: var(--font-body); font-size: 12px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+.iconbtn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; flex: none; }
+.iconbtn:disabled { opacity: .35; cursor: default; }
+.iconbtn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+.grid { display: grid; gap: 16px; margin-top: 14px; }
+@media (min-width: 900px) {
+  .grid { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: start; }
+  .mapcol { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 64px); }
+}
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; min-width: 0; }
+.panel h2 { margin: 0 0 10px; font-family: var(--font-display); font-weight: 600; font-size: 15px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+.stat b { display: block; font-family: var(--font-display); font-weight: 700; font-size: 26px; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+
+.bodies { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.fig { text-align: center; min-width: 0; }
+.fig svg { width: 100%; max-width: 230px; height: auto; display: block; margin: 0 auto; }
+.fig .cap { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-top: 4px; }
+.sil { fill: var(--body); }
+.m { fill: var(--idle); stroke: var(--surface); stroke-width: 1.2; cursor: pointer; transition: fill .25s ease, opacity .2s ease; }
+.m.l1 { fill: var(--h1); } .m.l2 { fill: var(--h2); } .m.l3 { fill: var(--h3); } .m.l4 { fill: var(--h4); } .m.l5 { fill: var(--h5); }
+.bodies.has-sel .m:not(.sel) { opacity: .4; }
+.m.sel { stroke: var(--fg); stroke-width: 1.6; }
+.absline { stroke: var(--surface); stroke-width: 1.2; fill: none; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .m { transition: none; } }
+
+.legend { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--muted); }
+.legend .ramp { display: flex; gap: 2px; }
+.legend .ramp i { width: 22px; height: 10px; border-radius: 2px; display: block; }
+.selinfo { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px; font-size: 14px; }
+.selinfo .head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.selinfo .head b { font-family: var(--font-display); font-size: 20px; font-weight: 700; }
+.selinfo ul { margin: 6px 0 0; padding: 0; list-style: none; color: var(--muted); }
+.selinfo li { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
+
+.bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.bars li button { width: 100%; display: grid; grid-template-columns: 120px minmax(0,1fr) 44px; align-items: center; gap: 10px; border: 0; background: transparent; padding: 6px 4px; border-radius: 8px; text-align: left; }
+.bars li button:hover, .bars li button[aria-pressed="true"] { background: var(--bg); }
+.bars .name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bars .track { position: relative; height: 10px; background: var(--bg); border-radius: 5px; overflow: hidden; }
+.bars .fill { position: absolute; inset: 0 auto 0 0; border-radius: 5px; }
+.bars .band { position: absolute; top: 0; bottom: 0; border-left: 1px dashed var(--muted); border-right: 1px dashed var(--muted); pointer-events: none; }
+.bars .val { font-family: var(--font-display); font-weight: 600; font-size: 17px; text-align: right; font-variant-numeric: tabular-nums; }
+.bars .zero .name, .bars .zero .val { color: var(--muted); }
+.note { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
+
+.history { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.history button { width: 100%; text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 10px 12px; display: grid; grid-template-columns: 52px minmax(0,1fr); gap: 12px; align-items: center; }
+.history button:hover { border-color: var(--muted); }
+.date-chip { text-align: center; line-height: 1; }
+.date-chip b { display: block; font-family: var(--font-display); font-size: 26px; font-weight: 700; }
+.date-chip span { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.history .t { font-weight: 600; }
+.history .s { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.empty { color: var(--muted); font-size: 14px; padding: 8px 0; }
+
+.fab { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 6; box-shadow: 0 6px 20px rgba(0,0,0,.25); padding: 14px 22px; font-size: 16px; }
+
+/* Sheet */
+.overlay { position: fixed; inset: 0; z-index: 20; background: rgba(10,12,15,.5); display: flex; align-items: flex-end; justify-content: center; }
+.sheet { background: var(--surface); width: 100%; max-width: 640px; max-height: 92vh; max-height: 92dvh; overflow-y: auto; border-radius: 20px 20px 0 0; padding: 18px max(16px, env(safe-area-inset-right, 0px)) calc(18px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); overscroll-behavior: contain; }
+@media (min-width: 700px) { .overlay { align-items: center; } .sheet { border-radius: 20px; padding: 22px; } }
+.sheet-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; }
+.sheet-head h3 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 24px; text-transform: uppercase; letter-spacing: .02em; }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field label, .lbl { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.inp { width: 100%; min-width: 0; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 10px 12px; font-size: 16px; }
+.row2 { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.4fr); gap: 10px; }
+.ex { border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-top: 12px; display: grid; gap: 10px; }
+.ex-top { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: end; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; }
+.tag { border-radius: 999px; padding: 3px 9px; border: 1px solid var(--line); background: var(--bg); }
+.tag.p { background: var(--h3); border-color: var(--h3); color: #1a0f08; font-weight: 600; }
+.tag.s { background: var(--h1); border-color: var(--h1); color: #2a1d08; }
+:root[data-theme="dark"] .tag.s, :root[data-theme="dark"] .tag.p { color: var(--fg); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tag.s, :root:not([data-theme="light"]) .tag.p { color: var(--fg); } }
+button.tag { cursor: pointer; }
+.sets { display: grid; gap: 6px; }
+.set { display: grid; grid-template-columns: 28px minmax(0,1fr) minmax(0,1fr) 36px; gap: 8px; align-items: center; }
+.set .n { font-family: var(--font-display); font-weight: 600; color: var(--muted); text-align: center; }
+.set .inp { padding: 8px 10px; }
+.x { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: transparent; display: grid; place-items: center; color: var(--muted); }
+.x svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.4; fill: none; stroke-linecap: round; }
+.sheet-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; margin-top: 16px; }
+.sheet-actions .right { display: flex; gap: 8px; margin-left: auto; }
+.err { color: var(--danger); font-size: 14px; margin-top: 10px; }
+.confirm { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+</style>
+
 <div class="wrap">
   <header class="top">
     <div class="brand"><h1>Musclemap</h1><span class="sync" id="sync">Loading…</span></div>
-    <div class="top-actions">
-      <button class="btn desk-only" type="button" data-open="log">Log lifts</button>
-      <button class="btn primary desk-only" type="button" data-open="record"><span class="rec-dot" aria-hidden="true"></span>Record</button>
-      <button class="iconbtn" id="settingsBtn" type="button" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
-    </div>
+    <button class="btn primary" id="logTop" type="button">Log workout</button>
   </header>
 
   <div id="banner"></div>
@@ -53,7 +195,7 @@
       <div class="legend" id="legend"></div>
       <div id="selinfo"></div>
     </section>
-    <div class="side">
+    <div style="display:grid;gap:16px;min-width:0">
       <section class="panel">
         <h2 id="barsTitle">Sets per muscle</h2>
         <ul class="bars" id="bars"></ul>
@@ -66,19 +208,453 @@
     </div>
   </div>
 </div>
-
-<nav class="dock" aria-label="Add a workout">
-  <button class="btn" type="button" data-open="log">Log lifts</button>
-  <button class="btn primary" type="button" data-open="record"><span class="rec-dot" aria-hidden="true"></span>Record</button>
-</nav>
-
+<button class="btn primary fab" id="fab" type="button" hidden>+ Log workout</button>
 <div id="sheetRoot"></div>
-<div id="screenRoot" hidden></div>
-<div id="cardioSheet"></div>
-<div id="settingsRoot"></div>
-<div class="toast" id="toast" role="status" hidden></div>
 
-<script src="vendor/leaflet/leaflet.js"></script>
-<script type="module" src="js/app.js"></script>
-</body>
-</html>
+<script>
+(() => {
+/* ---------- Muscles & exercise library ---------- */
+const MUSCLES = {
+  chest: "Chest", shoulders: "Shoulders", biceps: "Biceps", triceps: "Triceps", forearms: "Forearms",
+  traps: "Traps", lats: "Lats", lowerback: "Lower back", abs: "Abs", obliques: "Obliques",
+  glutes: "Glutes", quads: "Quads", hamstrings: "Hamstrings", adductors: "Adductors", calves: "Calves"
+};
+const M_IDS = Object.keys(MUSCLES);
+
+const LIB = {
+  "Bench Press": [["chest"], ["triceps", "shoulders"]],
+  "Incline Bench Press": [["chest", "shoulders"], ["triceps"]],
+  "Dumbbell Bench Press": [["chest"], ["triceps", "shoulders"]],
+  "Push-up": [["chest"], ["triceps", "shoulders", "abs"]],
+  "Chest Fly": [["chest"], ["shoulders"]],
+  "Dip": [["triceps", "chest"], ["shoulders"]],
+  "Overhead Press": [["shoulders"], ["triceps", "traps"]],
+  "Dumbbell Shoulder Press": [["shoulders"], ["triceps", "traps"]],
+  "Lateral Raise": [["shoulders"], ["traps"]],
+  "Rear Delt Fly": [["shoulders"], ["traps"]],
+  "Face Pull": [["shoulders", "traps"], []],
+  "Barbell Curl": [["biceps"], ["forearms"]],
+  "Dumbbell Curl": [["biceps"], ["forearms"]],
+  "Hammer Curl": [["biceps", "forearms"], []],
+  "Tricep Pushdown": [["triceps"], []],
+  "Skull Crusher": [["triceps"], []],
+  "Overhead Tricep Extension": [["triceps"], []],
+  "Pull-up": [["lats"], ["biceps", "traps", "forearms"]],
+  "Chin-up": [["lats", "biceps"], ["forearms"]],
+  "Lat Pulldown": [["lats"], ["biceps"]],
+  "Barbell Row": [["lats", "traps"], ["biceps", "lowerback"]],
+  "Dumbbell Row": [["lats"], ["traps", "biceps"]],
+  "Seated Cable Row": [["lats", "traps"], ["biceps"]],
+  "Shrug": [["traps"], ["forearms"]],
+  "Deadlift": [["hamstrings", "glutes", "lowerback"], ["traps", "forearms", "quads"]],
+  "Romanian Deadlift": [["hamstrings", "glutes"], ["lowerback"]],
+  "Back Squat": [["quads", "glutes"], ["adductors", "lowerback"]],
+  "Front Squat": [["quads"], ["glutes", "abs"]],
+  "Goblet Squat": [["quads", "glutes"], ["abs"]],
+  "Leg Press": [["quads"], ["glutes"]],
+  "Lunge": [["quads", "glutes"], ["hamstrings", "adductors"]],
+  "Bulgarian Split Squat": [["quads", "glutes"], ["hamstrings", "adductors"]],
+  "Leg Extension": [["quads"], []],
+  "Leg Curl": [["hamstrings"], []],
+  "Hip Thrust": [["glutes"], ["hamstrings"]],
+  "Adductor Machine": [["adductors"], []],
+  "Calf Raise": [["calves"], []],
+  "Plank": [["abs"], ["obliques"]],
+  "Crunch": [["abs"], []],
+  "Hanging Leg Raise": [["abs"], ["obliques"]],
+  "Russian Twist": [["obliques"], ["abs"]],
+  "Back Extension": [["lowerback"], ["glutes", "hamstrings"]],
+  "Farmer's Carry": [["forearms", "traps"], ["abs"]],
+  "Wrist Curl": [["forearms"], []],
+  "Kettlebell Swing": [["glutes", "hamstrings"], ["lowerback", "shoulders"]],
+  "Running": [["quads", "calves"], ["hamstrings", "glutes"]],
+  "Cycling": [["quads"], ["calves", "hamstrings"]],
+  "Rowing Machine": [["lats"], ["quads", "hamstrings", "biceps"]]
+};
+
+/* ---------- Body drawing (left half; mirrored for right) ---------- */
+const SIL_TORSO = "M100 74 L90 74 Q88 84 72 86 Q60 88 58 96 L70 110 Q70 160 73 210 Q66 228 65 246 Q60 282 64 320 Q66 336 68 346 Q60 372 64 400 Q66 414 70 424 Q64 434 74 436 L88 436 Q92 426 88 414 Q94 386 92 362 Q94 350 94 340 Q99 300 99 266 L100 264 Z";
+const SIL_ARM = "M66 86 Q52 86 48 102 Q45 130 46 170 Q40 194 40 216 Q41 236 46 242 Q44 256 48 264 Q54 268 58 258 L58 240 Q64 214 66 196 L68 172 Q70 140 68 112 Z";
+const FOREARM = "M48 174 Q42 194 42 214 Q44 232 48 238 L57 238 Q62 214 64 196 Q65 182 62 174 Z";
+const FRONT = {
+  traps: ["M91 74 Q88 82 77 87 L93 89 Q97 82 97 76 Z"],
+  shoulders: ["M72 86 Q55 86 50 102 Q48 116 52 126 Q60 112 72 104 Q76 94 72 86 Z"],
+  chest: ["M99 92 L76 90 Q68 98 68 112 Q70 130 84 134 Q97 134 99 126 Z"],
+  biceps: ["M54 128 Q49 144 50 160 Q53 170 60 170 Q66 160 67 140 Q66 122 60 116 Z"],
+  forearms: [FOREARM],
+  obliques: ["M71 136 Q82 140 85 150 Q83 182 85 214 Q77 216 74 208 Q70 180 70 152 Z"],
+  abs: ["M88 138 Q99 135 100 138 L100 224 Q90 225 87 216 Q85 180 87 150 Z"],
+  quads: ["M68 250 Q63 276 66 304 Q68 326 76 338 L90 338 Q95 316 95 290 Q95 268 92 256 Q82 248 68 250 Z"],
+  adductors: ["M94 258 Q99 262 98 274 L97 302 Q95 292 94 272 Z"],
+  calves: ["M68 352 Q63 374 67 396 Q71 410 76 412 L82 412 Q89 392 89 370 Q88 354 82 348 Z"]
+};
+const BACK = {
+  lats: ["M72 108 Q70 130 72 160 Q76 182 80 194 Q88 188 96 174 Q93 140 90 120 Q82 108 72 108 Z"],
+  traps: ["M100 66 L91 72 Q86 84 74 90 Q88 98 93 116 Q97 140 100 158 Z"],
+  shoulders: ["M72 88 Q55 88 50 104 Q49 116 53 125 Q62 110 76 100 Z"],
+  triceps: ["M54 127 Q49 144 50 160 Q53 170 60 170 Q66 158 67 140 Q66 122 60 116 Z"],
+  forearms: [FOREARM],
+  lowerback: ["M100 176 L100 222 L79 222 Q76 208 78 198 Q90 192 100 176 Z"],
+  glutes: ["M100 226 L80 225 Q67 233 66 254 Q67 274 82 279 Q97 278 100 268 Z"],
+  hamstrings: ["M66 284 Q63 304 67 324 Q71 338 78 342 L90 342 Q95 322 96 302 Q97 290 95 282 Q80 288 66 284 Z"],
+  calves: ["M69 350 Q61 372 65 390 Q71 404 79 404 Q90 396 90 374 Q90 356 84 346 Z"]
+};
+const MIRROR = 'transform="matrix(-1 0 0 1 200 0)"';
+
+function figure(view, shapes, levels, sel) {
+  let s = `<svg viewBox="0 0 200 444" role="img" aria-label="${view} view of the body">`;
+  s += `<ellipse class="sil" cx="100" cy="36" rx="20" ry="25"/><rect class="sil" x="91" y="56" width="18" height="22" rx="4"/>`;
+  for (const d of [SIL_TORSO, SIL_ARM]) s += `<path class="sil" d="${d}"/><path class="sil" d="${d}" ${MIRROR}/>`;
+  for (const [id, paths] of Object.entries(shapes)) {
+    const cls = `m l${levels[id] || 0}${sel === id ? " sel" : ""}`;
+    for (const d of paths) {
+      for (const t of ["", MIRROR]) s += `<path class="${cls}" data-m="${id}" d="${d}" ${t}><title>${MUSCLES[id]}</title></path>`;
+    }
+  }
+  if (view === "Front") s += `<path class="absline" d="M100 140 V222 M88 160 H112 M87 182 H113 M87 202 H113"/>`;
+  s += `</svg>`;
+  return s;
+}
+
+/* ---------- Dates ---------- */
+const pad = n => String(n).padStart(2, "0");
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parse = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const today = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const weekStart = d => addDays(d, -((d.getDay() + 6) % 7));
+
+function rangeFor(period, anchor, all) {
+  const a = new Date(anchor);
+  if (period === "day") return { start: a, end: a, label: `${DOW[a.getDay()]}, ${MON[a.getMonth()]} ${a.getDate()}`, sub: String(a.getFullYear()) };
+  if (period === "week") {
+    const s = weekStart(a), e = addDays(s, 6);
+    const lab = s.getMonth() === e.getMonth() ? `${MON[s.getMonth()]} ${s.getDate()}–${e.getDate()}` : `${MON[s.getMonth()]} ${s.getDate()} – ${MON[e.getMonth()]} ${e.getDate()}`;
+    return { start: s, end: e, label: lab, sub: String(e.getFullYear()) };
+  }
+  if (period === "month") return { start: new Date(a.getFullYear(), a.getMonth(), 1), end: new Date(a.getFullYear(), a.getMonth() + 1, 0), label: MONTHS[a.getMonth()], sub: String(a.getFullYear()) };
+  if (period === "year") return { start: new Date(a.getFullYear(), 0, 1), end: new Date(a.getFullYear(), 11, 31), label: String(a.getFullYear()), sub: "Full year" };
+  const dates = all.map(w => w.date).sort();
+  return { start: dates.length ? parse(dates[0]) : today(), end: today(), label: "All time", sub: dates.length ? `Since ${MON[parse(dates[0]).getMonth()]} ${parse(dates[0]).getFullYear()}` : "No workouts yet" };
+}
+function shift(period, anchor, dir) {
+  const a = new Date(anchor);
+  if (period === "day") return addDays(a, dir);
+  if (period === "week") return addDays(a, 7 * dir);
+  if (period === "month") return new Date(a.getFullYear(), a.getMonth() + dir, 1);
+  if (period === "year") return new Date(a.getFullYear() + dir, 0, 1);
+  return a;
+}
+
+/* ---------- Storage: shared db per signed-in person, else this browser ---------- */
+const LS_KEY = "musclemap.workouts.v1";
+const Store = {
+  mode: "local", col: null,
+  readLocal() { try { return JSON.parse(localStorage.getItem(LS_KEY) || "[]"); } catch { return []; } },
+  writeLocal(list) { try { localStorage.setItem(LS_KEY, JSON.stringify(list)); return true; } catch { return false; } },
+  async init(onData, onStatus) {
+    const useLocal = () => { this.mode = "local"; onStatus("Saved in this browser"); onData(this.readLocal()); };
+    if (!window.claude || typeof window.claude.use !== "function") return useLocal();
+    onStatus("Connecting…");
+    let db = null, user = null;
+    try { [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]); } catch {}
+    const uid = user ? await user.id().catch(() => null) : null;
+    if (!db || !uid) return useLocal();
+    this.mode = "db";
+    this.col = db.collection("data/users/" + uid);
+    this.col.onSnapshot(snap => {
+      onStatus("Synced to your account");
+      onData(snap.docs.map(d => ({ ...d.data(), id: d.id })));
+    }, () => onStatus("Can't reach your saved workouts. Reload to try again."));
+  },
+  async save(w, all) {
+    const body = JSON.parse(JSON.stringify(w)); delete body.id;
+    if (this.mode === "db") return this.col.doc(w.id).set(body);
+    const list = all.filter(x => x.id !== w.id).concat([w]);
+    if (!this.writeLocal(list)) throw new Error("This browser blocked saving. Check that site data is allowed.");
+    return list;
+  },
+  async remove(id, all) {
+    if (this.mode === "db") return this.col.doc(id).delete();
+    const list = all.filter(x => x.id !== id); this.writeLocal(list); return list;
+  }
+};
+
+/* ---------- Example data shown until the first real workout ---------- */
+function sampleWorkouts() {
+  const plans = [
+    ["Push", [["Bench Press", 4, 8, 185], ["Overhead Press", 3, 8, 105], ["Lateral Raise", 3, 15, 20], ["Tricep Pushdown", 3, 12, 50]]],
+    ["Pull", [["Pull-up", 4, 8, 0], ["Barbell Row", 3, 8, 155], ["Face Pull", 3, 15, 40], ["Barbell Curl", 3, 10, 65]]],
+    ["Legs", [["Back Squat", 4, 6, 245], ["Romanian Deadlift", 3, 8, 185], ["Leg Curl", 3, 12, 90], ["Calf Raise", 4, 12, 135]]],
+    ["Upper + core", [["Incline Bench Press", 3, 10, 135], ["Lat Pulldown", 3, 10, 130], ["Hanging Leg Raise", 3, 12, 0], ["Russian Twist", 3, 20, 25]]]
+  ];
+  const out = [], t = today(), offs = [1, 2, 4, 5];
+  for (let wk = 0; wk < 16; wk++) {
+    const mon = addDays(weekStart(t), -7 * wk);
+    plans.forEach((p, i) => {
+      const d = addDays(mon, offs[i] - 1);
+      if (d > t || (wk % 5 === 3 && i === 3)) return;
+      out.push({
+        id: `sample-${wk}-${i}`, date: ymd(d), name: p[0], unit: "lb", sample: true,
+        exercises: p[1].map(([n, sets, reps, wt]) => ({ name: n, p: LIB[n][0], s: LIB[n][1], sets: Array.from({ length: sets }, () => ({ reps, weight: wt })) }))
+      });
+    });
+  }
+  return out;
+}
+
+/* ---------- State ---------- */
+let prefs = {};
+try { prefs = JSON.parse(localStorage.getItem("musclemap.prefs") || "{}"); } catch {}
+const savePrefs = () => { try { localStorage.setItem("musclemap.prefs", JSON.stringify(prefs)); } catch {} };
+const S = { workouts: [], loaded: false, period: prefs.period || "week", anchor: today(), sel: null, draft: null, error: "", confirmDel: false };
+const SAMPLE = sampleWorkouts();
+const data = () => (S.workouts.length ? S.workouts : SAMPLE);
+const usingSample = () => S.workouts.length === 0;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = n => (Math.round(n * 10) / 10).toLocaleString();
+
+function compute(list, r) {
+  const s = ymd(r.start), e = ymd(r.end);
+  const ws = list.filter(w => w.date >= s && w.date <= e).sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0));
+  const per = Object.fromEntries(M_IDS.map(m => [m, { sets: 0, ex: {} }]));
+  let sets = 0, volume = 0;
+  const days = new Set();
+  for (const w of ws) {
+    days.add(w.date);
+    for (const x of w.exercises || []) {
+      const n = (x.sets || []).length;
+      sets += n;
+      for (const st of x.sets || []) volume += (Number(st.reps) || 0) * (Number(st.weight) || 0);
+      for (const [arr, f] of [[x.p || [], 1], [x.s || [], 0.5]]) for (const m of arr) {
+        if (!per[m]) continue;
+        per[m].sets += n * f; per[m].ex[x.name] = (per[m].ex[x.name] || 0) + n * f;
+      }
+    }
+  }
+  return { ws, per, sets, volume, days: days.size };
+}
+
+/* ---------- Render ---------- */
+function render() {
+  const list = data();
+  const r = rangeFor(S.period, S.anchor, list);
+  const c = compute(list, r);
+  const max = Math.max(0, ...M_IDS.map(m => c.per[m].sets));
+  const levels = {};
+  for (const m of M_IDS) { const v = c.per[m].sets; levels[m] = v > 0 ? Math.min(5, Math.max(1, Math.ceil((v / max) * 5))) : 0; }
+
+  document.querySelectorAll("#periods button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.p === S.period)));
+  $("rangeLabel").innerHTML = `${esc(r.label)}<small>${esc(r.sub)}</small>`;
+  const isAll = S.period === "all";
+  $("prev").disabled = isAll; $("next").disabled = isAll || r.end >= today();
+
+  $("banner").innerHTML = usingSample()
+    ? `<div class="banner"><span><strong>Example workouts.</strong> This map shows sample data so you can see how it works. Log your first workout and it switches to yours.</span><button class="btn small primary" type="button" data-act="log">Log your first workout</button></div>` : "";
+
+  const unit = (list.find(w => w.unit) || {}).unit || prefs.unit || "lb";
+  const vol = c.volume >= 10000 ? `${fmt(c.volume / 1000)}k` : fmt(c.volume);
+  $("stats").innerHTML = [["Workouts", c.ws.length], ["Days", c.days], ["Sets", c.sets], [`Volume ${unit}`, vol]]
+    .map(([k, v]) => `<div class="stat"><b>${v}</b><span>${esc(k)}</span></div>`).join("");
+
+  $("bodies").className = "bodies" + (S.sel ? " has-sel" : "");
+  $("bodies").innerHTML = `<div class="fig">${figure("Front", FRONT, levels, S.sel)}<div class="cap">Front</div></div><div class="fig">${figure("Back", BACK, levels, S.sel)}<div class="cap">Back</div></div>`;
+
+  const steps = [1, 2, 3, 4, 5].map(i => `<i style="background:var(--h${i})"></i>`).join("");
+  $("legend").innerHTML = max > 0
+    ? `<span>Less</span><span class="ramp">${steps}</span><span>More · max <span class="num">${fmt(max)}</span> sets</span>`
+    : `<span>No sets in this range yet</span>`;
+
+  if (S.sel) {
+    const p = c.per[S.sel];
+    const ex = Object.entries(p.ex).sort((a, b) => b[1] - a[1]);
+    $("selinfo").innerHTML = `<div class="selinfo"><div class="head"><b>${esc(MUSCLES[S.sel])}</b><span class="num">${fmt(p.sets)} sets</span></div>` +
+      (ex.length ? `<ul>${ex.map(([n, v]) => `<li><span>${esc(n)}</span><span class="num">${fmt(v)}</span></li>`).join("")}</ul>` : `<p class="note">Not trained in this range.</p>`) +
+      `</div>`;
+  } else $("selinfo").innerHTML = `<p class="note" style="text-align:center">Tap a muscle to see which exercises hit it.</p>`;
+
+  const sorted = M_IDS.slice().sort((a, b) => c.per[b].sets - c.per[a].sets);
+  const week = S.period === "week";
+  const scale = Math.max(week ? 22 : 0, max) || 1;
+  $("barsTitle").textContent = week ? "Weekly sets per muscle" : "Sets per muscle";
+  $("bars").innerHTML = sorted.map(m => {
+    const v = c.per[m].sets, lv = levels[m];
+    const band = week ? `<span class="band" style="left:${(10 / scale) * 100}%;width:${(10 / scale) * 100}%"></span>` : "";
+    return `<li><button type="button" data-m="${m}" aria-pressed="${S.sel === m}" class="${v ? "" : "zero"}"><span class="name">${esc(MUSCLES[m])}</span>` +
+      `<span class="track"><span class="fill" style="width:${(v / scale) * 100}%;background:var(--h${lv || 1})"></span>${band}</span><span class="val">${fmt(v)}</span></button></li>`;
+  }).join("");
+  $("barsNote").textContent = week
+    ? "Dashed lines mark 10–20 sets a week, a common hypertrophy target. Primary muscles count a full set; secondary muscles count half."
+    : "Primary muscles count a full set; secondary muscles count half.";
+
+  $("history").innerHTML = c.ws.length ? c.ws.slice(0, 60).map(w => {
+    const d = parse(w.date), n = (w.exercises || []).reduce((a, x) => a + (x.sets || []).length, 0);
+    return `<li><button type="button" data-w="${esc(w.id)}"><span class="date-chip"><b>${d.getDate()}</b><span>${MON[d.getMonth()]} · ${DOW[d.getDay()]}</span></span>` +
+      `<span style="min-width:0"><div class="t">${esc(w.name || "Workout")} <span class="num" style="color:var(--muted);font-weight:500">· ${n} sets</span></div>` +
+      `<div class="s">${esc((w.exercises || []).map(x => x.name).join(", "))}</div></span></button></li>`;
+  }).join("") + (c.ws.length > 60 ? `<li class="empty">Showing the 60 most recent of ${c.ws.length}.</li>` : "")
+    : `<li class="empty">No workouts in this range.</li>`;
+
+  renderSheet();
+}
+
+/* ---------- Log / edit sheet ---------- */
+const newSet = prev => ({ reps: prev ? prev.reps : "", weight: prev ? prev.weight : "" });
+const newEx = () => ({ name: "", p: [], s: [], sets: [newSet()] });
+function openSheet(w) {
+  S.error = ""; S.confirmDel = false;
+  S.draft = w && !w.sample ? JSON.parse(JSON.stringify(w))
+    : { id: null, date: ymd(S.period === "day" ? S.anchor : today()), name: "", unit: prefs.unit || "lb", exercises: [newEx()] };
+  renderSheet();
+  setTimeout(() => { const f = document.querySelector("#sheetRoot .ex input"); if (f && !S.draft.id) f.focus(); }, 30);
+}
+function closeSheet() { S.draft = null; renderSheet(); }
+
+function renderSheet() {
+  const root = $("sheetRoot"), d = S.draft;
+  if (!d) { root.innerHTML = ""; document.body.style.overflow = ""; return; }
+  document.body.style.overflow = "hidden";
+  const custom = new Set();
+  S.workouts.forEach(w => (w.exercises || []).forEach(x => { if (!LIB[x.name]) custom.add(x.name); }));
+  const names = Object.keys(LIB).concat([...custom]).sort();
+  const xsvg = `<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
+  root.innerHTML = `<div class="overlay" data-act="close-bg"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet-head"><h3 id="sheetTitle">${d.id ? "Edit workout" : "Log workout"}</h3><button class="x" type="button" data-act="close" aria-label="Close">${xsvg}</button></div>
+    <div class="row2">
+      <div class="field"><label for="f-date">Date</label><input class="inp" id="f-date" type="date" value="${esc(d.date)}" max="${ymd(today())}" data-f="date"></div>
+      <div class="field"><label for="f-name">Name</label><input class="inp" id="f-name" type="text" placeholder="e.g. Push day" value="${esc(d.name)}" data-f="name"></div>
+    </div>
+    <div class="field" style="margin-top:10px"><span class="lbl">Weight unit</span>
+      <div class="tags">${["lb", "kg"].map(u => `<button type="button" class="tag ${d.unit === u ? "p" : ""}" data-unit="${u}">${u}</button>`).join("")}</div></div>
+    <datalist id="exnames">${names.map(n => `<option value="${esc(n)}"></option>`).join("")}</datalist>
+    ${d.exercises.map((x, i) => {
+      return `<div class="ex">
+        <div class="ex-top"><div class="field"><label for="ex-${i}">Exercise ${i + 1}</label><input class="inp" id="ex-${i}" list="exnames" placeholder="Search or type a new one" value="${esc(x.name)}" data-ex="${i}" autocomplete="off"></div>
+        <button class="x" type="button" data-rmex="${i}" aria-label="Remove exercise">${xsvg}</button></div>
+        <div id="mus-${i}">${musclesHTML(x, i)}</div>
+        <div class="sets"><div class="set lbl"><span></span><span>Reps</span><span>Weight (${esc(d.unit)})</span><span></span></div>
+        ${x.sets.map((st, j) => `<div class="set"><span class="n">${j + 1}</span>
+          <input class="inp num" id="r-${i}-${j}" type="number" inputmode="numeric" min="0" placeholder="0" value="${esc(st.reps)}" data-set="${i}:${j}:reps" aria-label="Set ${j + 1} reps">
+          <input class="inp num" id="w-${i}-${j}" type="number" inputmode="decimal" min="0" step="any" placeholder="0" value="${esc(st.weight)}" data-set="${i}:${j}:weight" aria-label="Set ${j + 1} weight">
+          <button class="x" type="button" data-rmset="${i}:${j}" aria-label="Remove set ${j + 1}">${xsvg}</button></div>`).join("")}
+        </div>
+        <div><button class="btn small" type="button" data-addset="${i}">+ Add set</button></div>
+      </div>`;
+    }).join("")}
+    <div style="margin-top:12px"><button class="btn" type="button" data-act="addex">+ Add exercise</button></div>
+    ${S.error ? `<div class="err" role="alert">${esc(S.error)}</div>` : ""}
+    <div class="sheet-actions">
+      ${d.id ? (S.confirmDel
+        ? `<span class="confirm">Delete this workout? <button class="btn small danger" type="button" data-act="del-yes">Delete</button><button class="btn small ghost" type="button" data-act="del-no">Keep</button></span>`
+        : `<button class="btn ghost danger" type="button" data-act="del">Delete</button>`) : ""}
+      <div class="right"><button class="btn ghost" type="button" data-act="close">Cancel</button><button class="btn primary" type="button" data-act="save">${d.id ? "Save changes" : "Save workout"}</button></div>
+    </div>
+  </div></div>`;
+}
+
+function musclesHTML(x, i) {
+  if (LIB[x.name] || !x.name.trim()) return x.p.length || x.s.length
+    ? `<div class="tags">${x.p.map(m => `<span class="tag p">${esc(MUSCLES[m])}</span>`).join("")}${x.s.map(m => `<span class="tag s">${esc(MUSCLES[m])}</span>`).join("")}</div>` : "";
+  return `<div class="field"><span class="lbl">New exercise · tap the muscles it works (tap again for secondary)</span><div class="tags">${M_IDS.map(m => {
+    const st = x.p.includes(m) ? "p" : x.s.includes(m) ? "s" : "";
+    return `<button type="button" class="tag ${st}" data-tog="${i}:${m}" aria-pressed="${!!st}">${esc(MUSCLES[m])}</button>`; }).join("")}</div></div>`;
+}
+
+function refocus(id) { const el = $(id); if (el) { el.focus(); if (el.select) try { el.select(); } catch {} } }
+
+$("sheetRoot").addEventListener("input", e => {
+  const d = S.draft, t = e.target; if (!d) return;
+  if (t.dataset.f) d[t.dataset.f] = t.value;
+  if (t.dataset.set) { const [i, j, k] = t.dataset.set.split(":"); d.exercises[i].sets[j][k] = t.value; }
+  if (t.dataset.ex !== undefined) {
+    const x = d.exercises[t.dataset.ex], wasKnown = !!LIB[x.name];
+    x.name = t.value;
+    const prior = S.workouts.flatMap(w => w.exercises || []).find(y => y.name.toLowerCase() === t.value.trim().toLowerCase());
+    if (LIB[x.name]) { x.p = LIB[x.name][0].slice(); x.s = LIB[x.name][1].slice(); }
+    else if (prior) { x.p = (prior.p || []).slice(); x.s = (prior.s || []).slice(); }
+    else if (wasKnown) { x.p = []; x.s = []; }
+    const box = $(`mus-${t.dataset.ex}`); if (box) box.innerHTML = musclesHTML(x, +t.dataset.ex);
+  }
+});
+$("sheetRoot").addEventListener("click", async e => {
+  const d = S.draft; if (!d) return;
+  const b = e.target.closest("button, .overlay");
+  if (!b) return;
+  if (b.classList.contains("overlay")) { if (e.target === b) closeSheet(); return; }
+  const a = b.dataset;
+  if (a.act === "close") return closeSheet();
+  if (a.unit) { d.unit = a.unit; prefs.unit = a.unit; savePrefs(); return renderSheet(); }
+  if (a.act === "addex") { d.exercises.push(newEx()); renderSheet(); return refocus(`ex-${d.exercises.length - 1}`); }
+  if (a.rmex !== undefined) { d.exercises.splice(+a.rmex, 1); if (!d.exercises.length) d.exercises.push(newEx()); return renderSheet(); }
+  if (a.addset !== undefined) { const x = d.exercises[a.addset]; x.sets.push(newSet(x.sets[x.sets.length - 1])); renderSheet(); return refocus(`r-${a.addset}-${x.sets.length - 1}`); }
+  if (a.rmset) { const [i, j] = a.rmset.split(":").map(Number); d.exercises[i].sets.splice(j, 1); return renderSheet(); }
+  if (a.tog) {
+    const [i, m] = a.tog.split(":"), x = d.exercises[i];
+    if (x.p.includes(m)) { x.p = x.p.filter(y => y !== m); x.s.push(m); }
+    else if (x.s.includes(m)) x.s = x.s.filter(y => y !== m);
+    else x.p.push(m);
+    return renderSheet();
+  }
+  if (a.act === "del") { S.confirmDel = true; return renderSheet(); }
+  if (a.act === "del-no") { S.confirmDel = false; return renderSheet(); }
+  if (a.act === "del-yes") {
+    try { const r = await Store.remove(d.id, S.workouts); if (Array.isArray(r)) S.workouts = r; closeSheet(); render(); }
+    catch { S.error = "Couldn't delete the workout. Check your connection and try again."; renderSheet(); }
+    return;
+  }
+  if (a.act === "save") {
+    const exercises = d.exercises.map(x => ({
+      name: x.name.trim(), p: x.p, s: x.s,
+      sets: x.sets.filter(st => String(st.reps).trim() !== "").map(st => ({ reps: Number(st.reps) || 0, weight: Number(st.weight) || 0 }))
+    })).filter(x => x.name);
+    let err = "";
+    if (!d.date) err = "Pick a date for this workout.";
+    else if (!exercises.length) err = "Add at least one exercise.";
+    else if (exercises.some(x => !x.p.length && !x.s.length)) err = `Choose the muscles that “${exercises.find(x => !x.p.length && !x.s.length).name}” works.`;
+    else if (exercises.some(x => !x.sets.length)) err = `Enter reps for at least one set of “${exercises.find(x => !x.sets.length).name}”.`;
+    if (err) { S.error = err; return renderSheet(); }
+    const w = { id: d.id || `w${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, date: d.date, name: d.name.trim(), unit: d.unit, exercises, createdAt: d.createdAt || Date.now() };
+    try {
+      const r = await Store.save(w, S.workouts);
+      if (Array.isArray(r)) S.workouts = r;
+      else S.workouts = S.workouts.filter(x => x.id !== w.id).concat([w]);
+      S.anchor = parse(w.date); closeSheet(); render();
+    } catch (ex) { S.error = ex && ex.message && Store.mode === "local" ? ex.message : "Couldn't save the workout. Check your connection and try again."; renderSheet(); }
+  }
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape" && S.draft) closeSheet(); });
+
+/* ---------- Main interactions ---------- */
+$("periods").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  S.period = b.dataset.p; prefs.period = S.period; savePrefs(); render();
+});
+$("prev").addEventListener("click", () => { S.anchor = shift(S.period, S.anchor, -1); render(); });
+$("next").addEventListener("click", () => { const n = shift(S.period, S.anchor, 1); S.anchor = n > today() ? today() : n; render(); });
+$("bodies").addEventListener("click", e => { const p = e.target.closest("[data-m]"); S.sel = p && S.sel !== p.dataset.m ? p.dataset.m : null; render(); });
+$("bars").addEventListener("click", e => { const b = e.target.closest("[data-m]"); if (!b) return; S.sel = S.sel === b.dataset.m ? null : b.dataset.m; render(); });
+$("history").addEventListener("click", e => {
+  const b = e.target.closest("[data-w]"); if (!b) return;
+  const w = data().find(x => x.id === b.dataset.w);
+  if (w && w.sample) { openSheet(null); S.draft.name = w.name; S.draft.exercises = JSON.parse(JSON.stringify(w.exercises)); renderSheet(); }
+  else openSheet(w);
+});
+$("banner").addEventListener("click", e => { if (e.target.closest("[data-act=log]")) openSheet(null); });
+$("logTop").addEventListener("click", () => openSheet(null));
+$("fab").addEventListener("click", () => openSheet(null));
+const mq = window.matchMedia("(max-width: 599px)");
+const fabSync = () => { $("fab").hidden = !mq.matches; $("logTop").hidden = mq.matches; };
+mq.addEventListener ? mq.addEventListener("change", fabSync) : mq.addListener(fabSync);
+fabSync();
+
+render();
+Store.init(list => { S.workouts = list; S.loaded = true; render(); }, msg => { $("sync").textContent = msg; });
+})();
+</script>
+
+</body></html>
