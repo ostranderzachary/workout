@@ -17,11 +17,12 @@
   --idle: #343b44;
   --ink-btn: #e7eaed;
   --ink-btn-fg: #111418;
-  --h1: #5e3d22;
-  --h2: #8f4f22;
-  --h3: #c8652a;
-  --h4: #ee6b3a;
-  --h5: #ff9d70;
+  /* Heat scale: dark green to bright lime as a muscle approaches its goal. */
+  --h1: #1f3d2b;
+  --h2: #2e6b3f;
+  --h3: #3f9a4f;
+  --h4: #6cc95a;
+  --h5: #b6f26a;
   --ring: #6ea0ff;
   --danger: #ff6b74;
   --font-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
@@ -134,7 +135,7 @@ header.top {
 .col { display: grid; gap: 16px; min-width: 0; }
 .banner-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .badge { display: inline-block; font-family: var(--font-display); font-weight: 700; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; border-radius: 4px; padding: 1px 6px; margin-right: 8px; vertical-align: 1px; background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
-.badge.cardio { background: var(--h3); border-color: var(--h3); color: #1a0f08; }
+.badge.cardio { background: var(--h3); border-color: var(--h3); color: #0b1a0f; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 13px; font-weight: 600; font-size: 14px; }
 .chip[aria-pressed="true"] { background: var(--ink-btn); color: var(--ink-btn-fg); border-color: var(--ink-btn); }
@@ -165,7 +166,7 @@ header.top {
 .ex-top { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: end; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; }
 .tag { border-radius: 999px; padding: 3px 9px; border: 1px solid var(--line); background: var(--bg); }
-.tag.p { background: var(--h3); border-color: var(--h3); color: var(--fg); font-weight: 600; }
+.tag.p { background: var(--h3); border-color: var(--h3); color: #0b1a0f; font-weight: 600; }
 .tag.s { background: var(--h1); border-color: var(--h1); color: var(--fg); }
 button.tag { cursor: pointer; }
 .sets { display: grid; gap: 6px; }
