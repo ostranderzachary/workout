@@ -669,19 +669,19 @@ function levelInfo(total) {
   while (total >= xpAtLevel(L + 1)) L++;
   return { level: L, total, into: total - xpAtLevel(L), need: xpToNext(L) };
 }
-/* Titles: famous warriors and elite units from history, from the least disciplined to the most formidable. */
+/* Titles: fighters of Westeros and Essos (Game of Thrones), from pressed-in smallfolk to dragonriders. */
 const TITLES = [
-  [1, "Peasant Levy", "Farmers called up with whatever tools were to hand. Everyone starts somewhere."],
-  [10, "Viking Berserkers", "Norse warriors who charged in a battle frenzy. Plenty of fury, not much discipline."],
-  [20, "Gladiators", "Rome's arena fighters, trained in schools to perform and survive."],
-  [30, "Aztec Jaguar Warriors", "Elite Aztec fighters who earned the jaguar skin by taking captives in battle."],
-  [40, "Ninja", "Japan's shinobi: spies and infiltrators trained in stealth and endurance."],
-  [50, "Knights Templar", "Crusader monks sworn to strict rules and famed for never retreating."],
-  [60, "Winged Hussars", "Poland's heavy cavalry, whose thundering charges broke armies for two centuries."],
-  [70, "Persian Immortals", "The Achaemenid kings' 10,000 elite guards, always kept at full strength."],
-  [80, "Samurai", "Japan's warrior class, bound by a lifetime of discipline and practice."],
-  [90, "Mongol Horde", "Horse archers who forged the largest land empire in history."],
-  [100, "Spartans", "Trained for war from the age of seven. The most formidable of all."]
+  [1, "Smallfolk", "Common folk handed a spear and sent to war. Everyone starts somewhere."],
+  [10, "Gold Cloak", "The City Watch of King's Landing. Many men, little discipline."],
+  [20, "Brother of the Night's Watch", "Sworn to the Wall. You've taken the oath; now hold it."],
+  [30, "Ironborn Reaver", "Raiders of the Iron Islands who pay the iron price."],
+  [40, "Wildling Raider", "The Free Folk beyond the Wall, hardened by endless winter."],
+  [50, "Second Sons", "A sellsword company that fights for gold and keeps its word."],
+  [60, "Dothraki Screamer", "Horselords of the grass sea who have never been beaten in the saddle."],
+  [70, "Unsullied", "Trained from childhood to feel no pain and never break formation."],
+  [80, "Kingsguard", "The seven greatest knights of the realm, sworn to guard the king."],
+  [90, "Faceless Man", "Assassins of Braavos, masters of patience and total discipline."],
+  [100, "Dragonrider", "Fire and blood. Nothing in the known world is more formidable."]
 ];
 const blurbFor = t => (TITLES.find(x => x[1] === t) || [])[2] || "";
 const titleFor = L => TITLES.filter(([l]) => L >= l).pop()[1];
