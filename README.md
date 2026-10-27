@@ -18,6 +18,13 @@ Other ranges scale by their number of days. A day's target is a seventh of the w
 
 Each muscle is coloured by how close it is to its target: four shades for each quarter of the way, and the darkest once the goal is met. Set a goal to 0 to leave that muscle off the map.
 
+## Understanding your progress
+
+- **Get started checklist:** walks new users through setting goals, logging lifts and logging cardio. Each step ticks off when done. You can hide it.
+- **Your progress:** shows how many muscle goals are met, how much of the cardio goal is done, the days left in the range, and the muscles furthest behind. Tap one to see it on the map.
+- **Pace:** in the current week, month or year, each goal is marked *On pace*, *Behind pace* or *Goal met*. The comparison is with how far through the range you are; for example, 2 of 7 days in, you'd be on pace with 2/7 of the goal. The thin line on each bar marks that point. Past ranges show *Goal met* or *Missed*.
+- **Legend:** each map labels its colour steps (none yet, under 25%, 25–49%, 50–74%, 75–99%, goal met). "How to read this map" explains how sets and minutes are counted.
+
 ## Cardio
 
 Tap **Log cardio** to add a session: activity type, minutes, optional distance (mi or km), date and name. Each activity maps to the muscles it works. For example, a cycle works quads fully and calves, hamstrings and glutes partly. Those minutes fill the separate cardio heat map. A muscle's main activities count full minutes and supporting ones count half.

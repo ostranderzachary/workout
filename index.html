@@ -92,9 +92,48 @@ header.top {
 .absline { stroke: var(--surface); stroke-width: 1.2; fill: none; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .m { transition: none; } }
 
-.legend { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--muted); }
-.legend .ramp { display: flex; gap: 2px; }
-.legend .ramp i { width: 22px; height: 10px; border-radius: 2px; display: block; }
+.legend { margin-top: 12px; font-size: 12px; color: var(--muted); text-align: center; }
+.legend-title { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
+.legend .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; }
+.legend .steps li { display: grid; gap: 4px; justify-items: center; line-height: 1.2; font-size: 11px; }
+.legend .steps i { width: 100%; height: 10px; border-radius: 3px; display: block; }
+.howto { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; font-size: 14px; }
+.howto summary { cursor: pointer; font-weight: 600; color: var(--fg); }
+.howto p { margin: 8px 0 0; color: var(--muted); max-width: 65ch; }
+.tap-hint { text-align: center; }
+.sel-line { margin: 4px 0 6px; font-size: 14px; }
+.pill { display: inline-block; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 600; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.pill.met { background: var(--h5); border-color: var(--h5); color: #0b1a0f; }
+.pill.on { border-color: var(--h3); color: var(--h4); }
+.pill.behind { border-color: var(--danger); color: var(--danger); }
+.pill.missed { color: var(--muted); }
+.st { grid-column: 1 / -1; font-size: 12px; color: var(--muted); margin-top: -2px; }
+.st-met { color: var(--h5); } .st-on { color: var(--h4); } .st-behind { color: var(--danger); }
+.track .pace { position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; background: var(--fg); opacity: .7; border-radius: 1px; }
+.summary { margin-top: 14px; }
+.sum-head, .ob-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.sum-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px 24px; margin-top: 4px; }
+.sum-item { display: grid; gap: 4px; min-width: 0; }
+.sum-big { font-size: 15px; color: var(--muted); }
+.sum-big b { font-family: var(--font-display); font-size: 34px; font-weight: 700; color: var(--fg); line-height: 1; margin-right: 2px; }
+.sum-sub { font-size: 13px; color: var(--muted); }
+.sum-gaps { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 12px 0 0; }
+.sum-gaps .lbl { margin-right: 4px; }
+.gap { border: 1px solid var(--danger); background: transparent; border-radius: 999px; padding: 4px 10px; font-size: 13px; font-weight: 600; }
+.gap span { color: var(--muted); font-weight: 500; }
+.linkbtn { border: 0; background: none; padding: 0; color: var(--fg); text-decoration: underline; text-underline-offset: 3px; font-size: inherit; }
+.onboard { margin-bottom: 12px; border-color: var(--h3); }
+.ob-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.ob-steps li { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.ob-n { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: 16px; border: 1px solid var(--line); }
+.ob-steps li.done .ob-n { background: var(--h5); border-color: var(--h5); color: #0b1a0f; }
+.ob-steps li.done b { text-decoration: line-through; color: var(--muted); }
+.ob-body { display: grid; gap: 2px; font-size: 13px; color: var(--muted); }
+.ob-body b { font-size: 15px; color: var(--fg); }
+@media (max-width: 480px) { .ob-steps li { grid-template-columns: 30px minmax(0, 1fr); } .ob-steps li .btn { grid-column: 2; justify-self: start; } }
+.explain { background: var(--bg); border-radius: 12px; padding: 10px 14px; margin-bottom: 14px; font-size: 14px; color: var(--muted); }
+.explain p { margin: 4px 0; } .explain b { color: var(--fg); }
+.chip small { font-weight: 500; opacity: .75; margin-left: 4px; }
 .selinfo { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px; font-size: 14px; }
 .selinfo .head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .selinfo .head b { font-family: var(--font-display); font-size: 20px; font-weight: 700; }
@@ -105,7 +144,7 @@ header.top {
 .bars li button { width: 100%; display: grid; grid-template-columns: 104px minmax(0,1fr) 74px; align-items: center; gap: 10px; border: 0; background: transparent; padding: 6px 4px; border-radius: 8px; text-align: left; }
 .bars li button:hover, .bars li button[aria-pressed="true"] { background: var(--bg); }
 .bars .name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bars .track { position: relative; height: 10px; background: var(--bg); border-radius: 5px; overflow: hidden; }
+.bars .track { position: relative; height: 10px; background: var(--bg); border-radius: 5px; }
 .bars .fill { position: absolute; inset: 0 auto 0 0; border-radius: 5px; }
 .bars .band { position: absolute; top: 0; bottom: 0; border-left: 1px dashed var(--muted); border-right: 1px dashed var(--muted); pointer-events: none; }
 .bars .val { font-family: var(--font-display); font-weight: 600; font-size: 17px; text-align: right; font-variant-numeric: tabular-nums; }
@@ -147,7 +186,7 @@ header.top {
 .goal small { color: var(--muted); font-size: 12px; text-align: right; }
 .goalline { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 14px; color: var(--muted); margin-bottom: 6px; }
 .goalline b { font-family: var(--font-display); font-size: 26px; color: var(--fg); font-weight: 700; }
-.track.big { position: relative; height: 14px; background: var(--bg); border-radius: 7px; overflow: hidden; }
+.track.big { position: relative; height: 14px; background: var(--bg); border-radius: 7px; }
 .track.big .fill { position: absolute; inset: 0 auto 0 0; border-radius: 7px; }
 .acts { list-style: none; margin: 10px 0 0; padding: 0; font-size: 14px; }
 .acts li { display: flex; justify-content: space-between; padding: 4px 0; border-top: 1px solid var(--line); }
@@ -192,6 +231,7 @@ button.tag { cursor: pointer; }
   </header>
 
   <div id="banner"></div>
+  <div id="onboard"></div>
 
   <div class="periods" role="group" aria-label="Time range" id="periods">
     <button type="button" data-p="day">Day</button>
@@ -206,6 +246,8 @@ button.tag { cursor: pointer; }
     <button class="iconbtn" id="next" type="button" aria-label="Next"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
   </div>
 
+  <section class="panel summary" id="summary" aria-labelledby="sumH"></section>
+
   <div class="grid">
     <div class="col">
       <section class="panel" aria-labelledby="liftH">
@@ -213,6 +255,10 @@ button.tag { cursor: pointer; }
         <div class="stats" id="liftStats"></div>
         <div class="bodies" id="liftBodies"></div>
         <div class="legend" id="liftLegend"></div>
+        <details class="howto"><summary>How to read this map</summary>
+          <p>Each muscle is coloured by how much of its lifting goal you've done in the range above. The brighter the green, the closer you are; bright lime means the goal is met. Grey means nothing logged for that muscle yet.</p>
+          <p>An exercise counts a full set for the muscles it mainly works and half a set for the muscles that help. A bench press set is 1 set for chest and ½ for triceps and shoulders.</p>
+          <p>Tap a muscle to see its numbers and which exercises counted.</p></details>
         <div id="liftSel"></div>
       </section>
       <section class="panel" aria-labelledby="cardioH">
@@ -220,6 +266,10 @@ button.tag { cursor: pointer; }
         <div class="stats" id="cardioStats"></div>
         <div class="bodies" id="cardioBodies"></div>
         <div class="legend" id="cardioLegend"></div>
+        <details class="howto"><summary>How to read this map</summary>
+          <p>Each muscle is coloured by how many cardio minutes worked it, compared with your cardio goal for the range above. Bright lime means that muscle got your full goal's worth of minutes.</p>
+          <p>Each activity counts full minutes for the muscles it mainly works and half for supporting ones. A 30-minute run is 30 minutes for quads and calves and 15 for hamstrings and glutes.</p>
+          <p>Tap a muscle to see which activities counted.</p></details>
         <div id="cardioSel"></div>
       </section>
     </div>
@@ -333,14 +383,14 @@ const BACK = {
 };
 const MIRROR = 'transform="matrix(-1 0 0 1 200 0)"';
 
-function figure(view, shapes, levels, sel) {
+function figure(view, shapes, levels, sel, tips = {}) {
   let s = `<svg viewBox="0 0 200 444" role="img" aria-label="${view} view of the body">`;
   s += `<ellipse class="sil" cx="100" cy="36" rx="20" ry="25"/><rect class="sil" x="91" y="56" width="18" height="22" rx="4"/>`;
   for (const d of [SIL_TORSO, SIL_ARM]) s += `<path class="sil" d="${d}"/><path class="sil" d="${d}" ${MIRROR}/>`;
   for (const [id, paths] of Object.entries(shapes)) {
     const cls = `m l${levels[id] || 0}${sel === id ? " sel" : ""}`;
     for (const d of paths) {
-      for (const t of ["", MIRROR]) s += `<path class="${cls}" data-m="${id}" d="${d}" ${t}><title>${MUSCLES[id]}</title></path>`;
+      for (const t of ["", MIRROR]) s += `<path class="${cls}" data-m="${id}" d="${d}" ${t}><title>${esc(tips[id] || MUSCLES[id])}</title></path>`;
     }
   }
   if (view === "Front") s += `<path class="absline" d="M100 140 V222 M88 160 H112 M87 182 H113 M87 202 H113"/>`;
@@ -487,7 +537,7 @@ function sampleWorkouts() {
 let prefs = {};
 try { prefs = JSON.parse(localStorage.getItem("musclemap.prefs") || "{}"); } catch {}
 const savePrefs = () => { try { localStorage.setItem("musclemap.prefs", JSON.stringify(prefs)); } catch {} };
-const S = { workouts: [], goals: normGoals(null), loaded: false, period: prefs.period || "week", anchor: today(), selLift: null, selCardio: null, sheet: null, draft: null, error: "", confirmDel: false };
+const S = { workouts: [], goals: normGoals(null), goalsSaved: false, loaded: false, period: prefs.period || "week", anchor: today(), selLift: null, selCardio: null, sheet: null, draft: null, error: "", confirmDel: false };
 const SAMPLE = sampleWorkouts();
 const data = () => (S.workouts.length ? S.workouts : SAMPLE);
 const usingSample = () => S.workouts.length === 0;
@@ -534,8 +584,20 @@ function compute(list, r) {
 }
 
 /* ---------- Render ---------- */
-const RAMP = [1, 2, 3, 4, 5].map(i => `<i style="background:var(--h${i})"></i>`).join("");
-const legendHTML = `<span>Under 25%</span><span class="ramp">${RAMP}</span><span>Goal met</span>`;
+const LEGEND_STEPS = [["var(--idle)", "None yet"], ["var(--h1)", "Under 25%"], ["var(--h2)", "25–49%"], ["var(--h3)", "50–74%"], ["var(--h4)", "75–99%"], ["var(--h5)", "Goal met"]];
+const legendHTML = `<span class="legend-title">Share of goal done</span><ol class="steps">${LEGEND_STEPS.map(([c, t]) => `<li><i style="background:${c}"></i>${t}</li>`).join("")}</ol>`;
+const plural = (n, w) => `${fmt(n)} ${w}${Math.abs(n - 1) < 1e-9 ? "" : "s"}`;
+/* Where you stand on one target. `pace` is { current, elapsed, days } for the range on screen. */
+function status(v, t, pace, unitWord) {
+  if (!t) return { k: "none", txt: "No goal set" };
+  if (v >= t) return { k: "met", txt: "Goal met" };
+  const left = t - v, togo = unitWord === "min" ? `${hm(left)} to go` : `${plural(Math.round(left * 10) / 10, "set")} to go`;
+  if (!pace.current) return { k: "missed", txt: `Missed · ${togo.replace(" to go", " short")}` };
+  if (pace.days > 1 && v >= (t * pace.elapsed) / pace.days) return { k: "on", txt: `On pace · ${togo}` };
+  if (pace.days > 1) return { k: "behind", txt: `Behind pace · ${togo}` };
+  return { k: "todo", txt: togo };
+}
+const pill = st => `<span class="pill ${st.k}">${esc(st.txt)}</span>`;
 
 function render() {
   const list = data();
@@ -543,17 +605,27 @@ function render() {
   const c = compute(list, r);
   const days = daysIn(r), g = S.goals;
   // Weekly goal ÷ 7 × days in the range, so a week is exactly the goal and a 31-day month is 31/7 of it.
-  const liftTarget = m => Math.round(perDay(g.sets[m]) * days * 10) / 10;
+  // Rounded to whole sets (at least 1 when there is a goal) so targets read naturally.
+  const liftTarget = m => { const x = perDay(g.sets[m]) * days; return x > 0 ? Math.max(1, Math.round(x)) : 0; };
   const cardioTarget = Math.round(perDay(g.cardio) * days);
   const liftLv = {}, cardLv = {};
   for (const m of M_IDS) { liftLv[m] = level(c.lift[m].v, liftTarget(m)); cardLv[m] = level(c.card[m].v, cardioTarget); }
+  // Pace: in a range that includes today, compare progress with how much of the range has passed.
+  const t0 = today(), isCurrent = S.period === "all" || (r.start <= t0 && r.end >= t0);
+  const elapsed = isCurrent ? daysIn({ start: r.start, end: r.end < t0 ? r.end : t0 }) : days;
+  const pace = { current: isCurrent, elapsed, days: S.period === "all" ? 1 : days };
+  const liftSt = Object.fromEntries(M_IDS.map(m => [m, status(c.lift[m].v, liftTarget(m), pace, "set")]));
+  const cardioSt = status(c.minutes, cardioTarget, pace, "min");
 
   document.querySelectorAll("#periods button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.p === S.period)));
   $("rangeLabel").innerHTML = `${esc(r.label)}<small>${esc(r.sub)} · ${days} day${days === 1 ? "" : "s"}</small>`;
   const isAll = S.period === "all";
   $("prev").disabled = isAll; $("next").disabled = isAll || r.end >= today();
 
-  $("banner").innerHTML = usingSample()
+  renderOnboard();
+  renderSummary({ r, c, days, elapsed, isCurrent, liftTarget, cardioTarget, liftSt, cardioSt, g });
+
+  $("banner").innerHTML = usingSample() && prefs.onboardHidden
     ? `<div class="banner"><span><strong>Example workouts.</strong> These maps show sample lifts and cardio so you can see how it works. Log your first workout and they switch to yours.</span><span class="banner-actions"><button class="btn small primary" type="button" data-act="log">Log lifts</button><button class="btn small" type="button" data-act="cardio">Log cardio</button><button class="btn small" type="button" data-act="goals">Set goals</button></span></div>` : "";
 
   // Lifting map
@@ -563,35 +635,41 @@ function render() {
   $("liftStats").innerHTML = [["Workouts", c.liftCount], ["Sets", c.sets], [`Volume ${unit}`, vol], ["Goals met", `${met}/${withGoal.length}`]]
     .map(([k, v]) => `<div class="stat"><b>${v}</b><span>${esc(k)}</span></div>`).join("");
   $("liftBodies").className = "bodies" + (S.selLift ? " has-sel" : "");
-  $("liftBodies").innerHTML = bodiesHTML(liftLv, S.selLift);
+  const liftTips = Object.fromEntries(M_IDS.map(m => [m, `${MUSCLES[m]}: ${fmt(c.lift[m].v)} of ${liftTarget(m) ? fmt(liftTarget(m)) : "–"} sets (${liftSt[m].txt})`]));
+  $("liftBodies").innerHTML = bodiesHTML(liftLv, S.selLift, liftTips);
   $("liftLegend").innerHTML = legendHTML;
-  $("liftSel").innerHTML = selHTML(S.selLift, c.lift, liftTarget, "sets", "Tap a muscle to see which exercises hit it.");
+  $("liftSel").innerHTML = selHTML(S.selLift, c.lift, liftTarget, "sets", "Tap a muscle to see its progress and which exercises counted.", liftSt[S.selLift], r.label);
 
   // Cardio map
   const dist = c.distance;
   $("cardioStats").innerHTML = [["Sessions", c.cardioCount], ["Time", hm(c.minutes)], [`Distance ${distUnit()}`, fmt(dist)], ["Of goal", `${pctOf(c.minutes, cardioTarget)}%`]]
     .map(([k, v]) => `<div class="stat"><b>${v}</b><span>${esc(k)}</span></div>`).join("");
   $("cardioBodies").className = "bodies" + (S.selCardio ? " has-sel" : "");
-  $("cardioBodies").innerHTML = bodiesHTML(cardLv, S.selCardio);
+  const cardTips = Object.fromEntries(M_IDS.map(m => [m, `${MUSCLES[m]}: ${hm(c.card[m].v)} of ${hm(cardioTarget)} cardio`]));
+  $("cardioBodies").innerHTML = bodiesHTML(cardLv, S.selCardio, cardTips);
   $("cardioLegend").innerHTML = legendHTML;
-  $("cardioSel").innerHTML = selHTML(S.selCardio, c.card, () => cardioTarget, "min", "Tap a muscle to see which cardio worked it.");
+  $("cardioSel").innerHTML = selHTML(S.selCardio, c.card, () => cardioTarget, "min", "Tap a muscle to see which cardio worked it.", S.selCardio && status(c.card[S.selCardio].v, cardioTarget, pace, "min"), r.label);
 
   // Lifting goal bars
   const sorted = M_IDS.slice().sort((a, b) => Math.min(1, c.lift[b].v / (liftTarget(b) || Infinity)) - Math.min(1, c.lift[a].v / (liftTarget(a) || Infinity)) || c.lift[b].v - c.lift[a].v);
   $("barsTitle").textContent = `Lifting goals · ${r.label}`;
   $("bars").innerHTML = sorted.map(m => {
     const v = c.lift[m].v, t = liftTarget(m), lv = liftLv[m];
+    const mark = t && isCurrent && pace.days > 1 && elapsed < days ? `<span class="pace" style="left:${(elapsed / days) * 100}%" title="Where you'd be today at an even pace"></span>` : "";
     return `<li><button type="button" data-m="${m}" data-map="lift" aria-pressed="${S.selLift === m}" class="${v ? "" : "zero"}${t && v >= t ? " met" : ""}"><span class="name">${esc(MUSCLES[m])}</span>` +
-      `<span class="track"><span class="fill" style="width:${t ? Math.min(100, (v / t) * 100) : 0}%;background:var(--h${lv || 1})"></span></span>` +
-      `<span class="val">${fmt(v)}<small>/${t ? fmt(t) : "–"}</small></span></button></li>`;
+      `<span class="track"><span class="fill" style="width:${t ? Math.min(100, (v / t) * 100) : 0}%;background:var(--h${lv || 1})"></span>${mark}</span>` +
+      `<span class="val">${fmt(v)}<small>/${t ? fmt(t) : "–"}</small></span><span class="st st-${liftSt[m].k}">${esc(liftSt[m].txt)}</span></button></li>`;
   }).join("");
-  $("barsNote").textContent = `${days === 7 ? "Targets are your weekly sets goals." : `Targets are your weekly sets goal ÷ 7 × ${days} day${days === 1 ? "" : "s"}.`} Primary muscles count a full set; secondary muscles count half.`;
+  $("barsNote").innerHTML = `Sets done / target for ${esc(r.label)}. ${days === 7 ? "Targets are your weekly goals." : `Targets are your weekly goal scaled to ${days} day${days === 1 ? "" : "s"} (weekly goal ÷ 7 × ${days}).`}` +
+    (isCurrent && pace.days > 1 && elapsed < days ? ` The thin line on each bar is where you'd be today at an even pace, ${elapsed} of ${days} days in.` : "") + ` Tap a muscle to see it on the map.`;
 
   // Cardio goal
   const cp = cardioTarget ? Math.min(100, (c.minutes / cardioTarget) * 100) : 0;
   const acts = Object.entries(c.byActivity).sort((a, b) => b[1] - a[1]);
+  const cmark = cardioTarget && isCurrent && pace.days > 1 && elapsed < days ? `<span class="pace" style="left:${(elapsed / days) * 100}%"></span>` : "";
   $("cardioGoal").innerHTML = `<div class="goalline"><span class="num"><b>${hm(c.minutes)}</b> of ${hm(cardioTarget)}</span><span class="num">${pctOf(c.minutes, cardioTarget)}%</span></div>
-    <div class="track big"><span class="fill" style="width:${cp}%;background:var(--h${level(c.minutes, cardioTarget) || 1})"></span></div>
+    <div class="track big"><span class="fill" style="width:${cp}%;background:var(--h${level(c.minutes, cardioTarget) || 1})"></span>${cmark}</div>
+    <div style="margin-top:8px">${pill(cardioSt)}</div>
     ${acts.length ? `<ul class="acts">${acts.map(([k, v]) => `<li><span>${esc(k)}</span><span class="num">${hm(v)}</span></li>`).join("")}</ul>` : `<p class="note">No cardio in this range.</p>`}
     <p class="note">Target is ${hm(g.cardio)} a week${days === 7 ? "" : ` ÷ 7 × ${days} day${days === 1 ? "" : "s"}`}. On the map, a muscle's main cardio counts full minutes and supporting cardio counts half.</p>`;
 
@@ -611,15 +689,60 @@ function render() {
     : `<li class="empty">No workouts in this range.</li>`;
 }
 
-function bodiesHTML(levels, sel) {
-  return `<div class="fig">${figure("Front", FRONT, levels, sel)}<div class="cap">Front</div></div><div class="fig">${figure("Back", BACK, levels, sel)}<div class="cap">Back</div></div>`;
+function bodiesHTML(levels, sel, tips) {
+  return `<div class="fig">${figure("Front", FRONT, levels, sel, tips)}<div class="cap">Front</div></div><div class="fig">${figure("Back", BACK, levels, sel, tips)}<div class="cap">Back</div></div>`;
 }
-function selHTML(sel, per, targetFor, unitWord, hint) {
-  if (!sel) return `<p class="note" style="text-align:center">${esc(hint)}</p>`;
-  const p = per[sel], t = targetFor(sel);
+function selHTML(sel, per, targetFor, unitWord, hint, st, rangeLabel) {
+  if (!sel) return `<p class="note tap-hint">${esc(hint)}</p>`;
+  const p = per[sel], t = targetFor(sel), isMin = unitWord === "min";
+  const show = v => (isMin ? hm(v) : fmt(v));
   const ex = Object.entries(p.ex).sort((a, b) => b[1] - a[1]);
-  return `<div class="selinfo"><div class="head"><b>${esc(MUSCLES[sel])}</b><span class="num">${fmt(p.v)} of ${t ? fmt(t) : "–"} ${unitWord}${t ? ` · ${pctOf(p.v, t)}%` : " · no goal"}</span></div>` +
-    (ex.length ? `<ul>${ex.map(([n, v]) => `<li><span>${esc(n)}</span><span class="num">${fmt(v)}</span></li>`).join("")}</ul>` : `<p class="note">Not trained in this range.</p>`) + `</div>`;
+  return `<div class="selinfo"><div class="head"><b>${esc(MUSCLES[sel])}</b>${st ? pill(st) : ""}</div>
+    <p class="sel-line num">${show(p.v)} of ${t ? show(t) : "–"}${isMin ? "" : " sets"} for ${esc(rangeLabel)}${t ? ` · ${pctOf(p.v, t)}% of goal` : ""}</p>
+    <div class="track big"><span class="fill" style="width:${t ? Math.min(100, (p.v / t) * 100) : 0}%;background:var(--h${level(p.v, t) || 1})"></span></div>` +
+    (ex.length ? `<div class="lbl" style="margin-top:10px">What counted</div><ul>${ex.map(([n, v]) => `<li><span>${esc(n)}</span><span class="num">${show(v)}</span></li>`).join("")}</ul>` : `<p class="note">Nothing logged for this muscle in this range.</p>`) +
+    `<button class="btn small ghost" type="button" data-clear="1" style="margin-top:8px">Clear selection</button></div>`;
+}
+
+/* Getting started: three steps, each ticked off as it's done. Hidden for good once dismissed. */
+function renderOnboard() {
+  const real = S.workouts.filter(w => !w.sample);
+  const steps = [
+    ["goals", "Set your weekly goals", "Choose how many sets each muscle should get per week, and your weekly cardio minutes. Defaults are filled in to start from.", S.goalsSaved, "Set goals"],
+    ["log", "Log a lifting workout", "Add exercises with their sets and reps. Each set counts toward the muscles that exercise works.", real.some(w => !isCardio(w)), "Log lifts"],
+    ["cardio", "Log some cardio", "Add a run, ride, swim or other session with its minutes. It fills the cardio map.", real.some(isCardio), "Log cardio"]
+  ];
+  const done = steps.filter(x => x[3]).length;
+  if (prefs.onboardHidden || (done === steps.length)) { $("onboard").innerHTML = ""; return; }
+  $("onboard").innerHTML = `<section class="panel onboard" aria-labelledby="obH">
+    <div class="ob-head"><h2 id="obH">Get started · ${done} of ${steps.length} done</h2><button class="btn small ghost" type="button" data-act="ob-hide">Hide</button></div>
+    ${usingSample() ? `<p class="note" style="margin:0 0 10px">The maps below show <strong>example workouts</strong> until you log your own.</p>` : ""}
+    <ol class="ob-steps">${steps.map(([k, t, d, ok, btn], i) => `<li class="${ok ? "done" : ""}"><span class="ob-n">${ok ? "✓" : i + 1}</span>
+      <span class="ob-body"><b>${t}</b><span>${d}</span></span>${ok ? "" : `<button class="btn small ${steps.findIndex(x => !x[3]) === i ? "primary" : ""}" type="button" data-act="${k}">${btn}</button>`}</li>`).join("")}</ol>
+  </section>`;
+}
+
+/* The top summary: how many goals are met, pace, and the biggest gaps. */
+function renderSummary({ r, c, days, elapsed, isCurrent, liftTarget, cardioTarget, liftSt, cardioSt, g }) {
+  const withGoal = M_IDS.filter(m => liftTarget(m) > 0);
+  const count = k => withGoal.filter(m => liftSt[m].k === k).length;
+  const met = count("met"), on = count("on"), behind = count("behind"), missed = count("missed"), todo = count("todo");
+  const gaps = withGoal.filter(m => liftSt[m].k !== "met").sort((a, b) => (c.lift[a].v / liftTarget(a)) - (c.lift[b].v / liftTarget(b))).slice(0, 3);
+  const left = isCurrent && S.period !== "all" ? days - elapsed : 0;
+  const when = S.period === "all" ? "since your first workout" : isCurrent
+    ? (left ? `${left} day${left === 1 ? "" : "s"} left in this ${S.period}` : `last day of this ${S.period}`) : "this range is over";
+  const breakdown = [on && `${on} on pace`, behind && `${behind} behind`, todo && `${todo} to do`, missed && `${missed} missed`].filter(Boolean).join(" · ");
+  $("summary").innerHTML = `<div class="sum-head"><h2 id="sumH">Your progress · ${esc(r.label)}</h2><span class="note" style="margin:0">${esc(when)}</span></div>
+    <div class="sum-grid">
+      <div class="sum-item"><div class="sum-big"><b class="num">${met}</b> of ${withGoal.length}</div><div class="sum-sub">muscle goals met${breakdown ? ` · ${breakdown}` : ""}</div>
+        <div class="track big"><span class="fill" style="width:${withGoal.length ? (met / withGoal.length) * 100 : 0}%;background:var(--h5)"></span></div></div>
+      <div class="sum-item"><div class="sum-big"><b class="num">${pctOf(c.minutes, cardioTarget)}%</b> of cardio goal</div><div class="sum-sub num">${hm(c.minutes)} of ${hm(cardioTarget)}</div>
+        <div class="track big"><span class="fill" style="width:${cardioTarget ? Math.min(100, (c.minutes / cardioTarget) * 100) : 0}%;background:var(--h${level(c.minutes, cardioTarget) || 1})"></span></div>
+        <div style="margin-top:6px">${pill(cardioSt)}</div></div>
+    </div>
+    ${gaps.length ? `<p class="sum-gaps"><span class="lbl">Most behind</span> ${gaps.map(m => `<button type="button" class="gap" data-m="${m}">${esc(MUSCLES[m])} <span class="num">${fmt(c.lift[m].v)}/${fmt(liftTarget(m))}</span></button>`).join("")}</p>` :
+      withGoal.length ? `<p class="sum-gaps"><span class="pill met">Every muscle goal met</span></p>` : ""}
+    <p class="note" style="margin-top:6px">Goals: ${fmt(withGoal.reduce((a, m) => a + (Number(g.sets[m]) || 0), 0))} sets and ${hm(g.cardio)} of cardio a week. <button class="linkbtn" type="button" data-act="goals">Change goals</button></p>`;
 }
 
 /* ---------- Sheets: lifts, cardio, goals ---------- */
@@ -715,18 +838,38 @@ function cardioSheet(d) {
     delActions(d.id ? "Save changes" : "Save cardio"));
 }
 
+const GOAL_GROUPS = [
+  ["Upper body · push", ["chest", "shoulders", "triceps"]],
+  ["Upper body · pull", ["lats", "traps", "biceps", "forearms"]],
+  ["Core", ["abs", "obliques", "lowerback"]],
+  ["Legs", ["quads", "hamstrings", "glutes", "adductors", "calves"]]
+];
+/* Presets scale the default split: big muscles get the most sets. */
+const BIG = ["chest", "shoulders", "lats", "quads"];
+const PRESETS = { light: ["Light", 8, 4, 90], standard: ["Standard", 14, 8, 150], high: ["High volume", 20, 12, 300] };
+function presetGoals(k) {
+  const [, big, small, cardio] = PRESETS[k];
+  const mid = Math.round((big + small) / 2);
+  return { per: "week", cardio, sets: Object.fromEntries(M_IDS.map(m => [m, BIG.includes(m) ? big : DEFAULT_GOALS.sets[m] >= 10 ? mid : small])) };
+}
 function goalsSheet(d) {
-  return sheetFrame("Daily goals", `
-    <p class="note" style="margin:0 0 12px">Set a goal for one week. Other ranges scale by their number of days: a day is a seventh of the weekly goal, and a 31-day month is 31/7 of it.</p>
-    <div class="lbl">Lifting · sets per week</div>
-    <div class="goals">${M_IDS.map(m => `<label class="goal" for="g-${m}"><span>${esc(MUSCLES[m])}</span>
-      <input class="inp num" id="g-${m}" type="number" inputmode="decimal" min="0" step="1" value="${esc(d.sets[m])}" data-goal="${m}">
-      <small class="num" id="gw-${m}">${fmt(perDay(d.sets[m]))}/day</small></label>`).join("")}</div>
+  const row = m => `<label class="goal" for="g-${m}"><span>${esc(MUSCLES[m])}</span>
+      <input class="inp num" id="g-${m}" type="number" inputmode="numeric" min="0" step="1" value="${esc(d.sets[m])}" data-goal="${m}">
+      <small class="num" id="gw-${m}">${fmt(perDay(d.sets[m]))}/day</small></label>`;
+  return sheetFrame("Weekly goals", `
+    <div class="explain">
+      <p><b>How many sets should each muscle get per week?</b> A set is one round of an exercise, such as 8 reps of bench press. Exercises also give half a set to the muscles that help, so the total adds up across your workouts.</p>
+      <p>Most people aim for <b>10–20 sets a week</b> for big muscles. Start with a preset and adjust any muscle. Day, month and year targets are worked out from these weekly numbers.</p>
+    </div>
+    <div class="lbl">Start from a preset</div>
+    <div class="chips" style="margin:6px 0 14px">${Object.entries(PRESETS).map(([k, [n, big, small, cm]]) =>
+      `<button type="button" class="chip" data-preset="${k}">${n} <small>${small}–${big} sets · ${cm} min</small></button>`).join("")}</div>
+    ${GOAL_GROUPS.map(([title, ms]) => `<div class="lbl" style="margin-top:12px">${title} · sets per week</div><div class="goals">${ms.map(row).join("")}</div>`).join("")}
     <div class="lbl" style="margin-top:16px">Cardio · minutes per week</div>
-    <div class="goals"><label class="goal" for="g-cardio"><span>All cardio (min)</span>
+    <div class="goals"><label class="goal" for="g-cardio"><span>All cardio</span>
       <input class="inp num" id="g-cardio" type="number" inputmode="numeric" min="0" step="10" value="${esc(d.cardio)}" data-goal="cardio">
       <small class="num" id="gw-cardio">${hm(perDay(d.cardio))}/day</small></label></div>
-    <p class="note">Set a goal to 0 to leave that muscle off the map.</p>`,
+    <p class="note">150 minutes a week is the usual health guideline. Set any goal to 0 to leave it off the maps.</p>`,
     `<button class="btn ghost" type="button" data-act="goals-reset">Reset to defaults</button>
      <div class="right"><button class="btn ghost" type="button" data-act="close">Cancel</button><button class="btn primary" type="button" data-act="save">Save goals</button></div>`);
 }
@@ -758,7 +901,7 @@ async function saveDraft() {
   let w;
   if (S.sheet === "goals") {
     const g = { per: "week", sets: Object.fromEntries(M_IDS.map(m => [m, Math.max(0, Number(d.sets[m]) || 0)])), cardio: Math.max(0, Number(d.cardio) || 0) };
-    try { await Store.saveGoals(g); S.goals = normGoals(g); closeSheet(); render(); }
+    try { await Store.saveGoals(g); S.goals = normGoals(g); S.goalsSaved = true; closeSheet(); render(); }
     catch (ex) { S.error = ex && ex.message ? ex.message : "Couldn't save your goals. Try again."; renderSheet(); }
     return;
   }
@@ -798,6 +941,7 @@ $("sheetRoot").addEventListener("click", async e => {
   if (a.act === "close") return closeSheet();
   if (a.act === "save") return saveDraft();
   if (a.act === "goals-reset") { S.draft = JSON.parse(JSON.stringify(DEFAULT_GOALS)); return renderSheet(); }
+  if (a.preset) { S.draft = presetGoals(a.preset); return renderSheet(); }
   if (a.unit) { d.unit = a.unit; prefs.unit = a.unit; savePrefs(); return renderSheet(); }
   if (a.dunit) { d.distUnit = a.dunit; prefs.dist = a.dunit; savePrefs(); return renderSheet(); }
   if (a.activity) { d.activity = a.activity; return renderSheet(); }
@@ -843,17 +987,22 @@ $("history").addEventListener("click", e => {
   else openSheet("lift", w);
 });
 document.addEventListener("click", e => {
-  const b = e.target.closest("[data-open], #banner [data-act]"); if (!b) return;
+  const gap = e.target.closest("#summary .gap");
+  if (gap) { S.selLift = gap.dataset.m; render(); $("liftH").scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+  const clr = e.target.closest("[data-clear]");
+  if (clr) { if (clr.closest("#liftSel")) S.selLift = null; else S.selCardio = null; return render(); }
+  const b = e.target.closest("[data-open], #banner [data-act], #onboard [data-act], #summary [data-act]"); if (!b) return;
   const k = b.dataset.open || b.dataset.act;
   if (k === "log") openSheet("lift", null);
   if (k === "cardio") openSheet("cardio", null);
   if (k === "goals") openSheet("goals", null);
+  if (k === "ob-hide") { prefs.onboardHidden = true; savePrefs(); render(); }
 });
 
 render();
 Store.init(
   list => { S.workouts = list; S.loaded = true; render(); },
-  g => { S.goals = normGoals(g); render(); },
+  g => { S.goals = normGoals(g); S.goalsSaved = !!g; render(); },
   msg => { $("sync").textContent = msg; }
 );
 })();
