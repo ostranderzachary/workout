@@ -20,6 +20,21 @@ Each muscle is coloured by how close it is to its target: four shades for each q
 
 **Cardio breakdown:** for the selected range, each activity shows sessions, time, distance, and average pace (min/mi or min/km) for runs, walks and hikes, or speed for rides. Highlight cards show your longest session and best pace or fastest speed for each activity. Each session in the workout list also shows its pace or speed. Pace and speed use only sessions logged with a distance.
 
+## XP, levels and titles
+
+Every workout earns XP:
+
+- **Lifting:** 25 XP per workout plus 10 XP per set, counting up to 40 sets.
+- **Cardio:** 25 XP per session plus 2 XP per minute, counting up to 180 minutes.
+
+Each level needs 100 XP more than the one before. Level 1 to 2 takes 100 XP, 9 to 10 takes 900 XP, and level 10 is 4,500 XP in total.
+
+Every 10 levels unlocks a new title: Rookie, Gym Regular (10), Grinder (20), Iron Disciple (30), Powerhouse (40), Veteran (50), Beast (60), Titan (70), Legend (80), Mythic (90) and Olympian (100).
+
+Saving a workout shows the XP earned. Reaching a new level or title brings up a celebration. Tap the level card to see the title ladder and recent XP.
+
+XP is worked out from your logged workouts, so editing or deleting a workout updates it. Example workouts don't earn XP.
+
 ## Understanding your progress
 
 - **Get started checklist:** walks new users through setting goals, logging lifts and logging cardio. Each step ticks off when done. You can hide it.

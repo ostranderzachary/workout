@@ -131,6 +131,40 @@ header.top {
 .ob-body { display: grid; gap: 2px; font-size: 13px; color: var(--muted); }
 .ob-body b { font-size: 15px; color: var(--fg); }
 @media (max-width: 480px) { .ob-steps li { grid-template-columns: 30px minmax(0, 1fr); } .ob-steps li .btn { grid-column: 2; justify-self: start; } }
+.lvl-chip { display: grid; justify-items: start; line-height: 1.1; border: 1px solid var(--h3); background: var(--surface); border-radius: 12px; padding: 5px 10px; text-align: left; }
+.lvl-chip b { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--h5); }
+.lvl-chip span { font-size: 11px; color: var(--muted); max-width: 11ch; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 420px) { .lvl-chip span { display: none; } .brand .sync { display: none; } }
+.player { margin-bottom: 12px; padding: 12px 14px; }
+.player-btn { width: 100%; display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 14px; align-items: center; border: 0; background: transparent; padding: 0; text-align: left; }
+.lvl-badge { width: 64px; height: 64px; border-radius: 16px; display: grid; place-items: center; align-content: center; background: linear-gradient(160deg, var(--h4), var(--h2)); color: #0b1a0f; }
+.lvl-badge small { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.lvl-badge b { font-family: var(--font-display); font-size: 32px; font-weight: 700; line-height: .9; }
+.player-body { display: grid; gap: 6px; min-width: 0; }
+.player-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; line-height: 1; }
+.player-sub { font-size: 12px; color: var(--muted); } .player-sub b { color: var(--fg); }
+.player-more { font-size: 26px; color: var(--muted); }
+.xpbar { display: block; position: relative; height: 10px; border-radius: 5px; background: var(--bg); overflow: hidden; }
+.xpbar.big { height: 14px; border-radius: 7px; }
+.xpbar > span { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: linear-gradient(90deg, var(--h3), var(--h5)); }
+.xp-tag { display: inline-block; font-size: 11px; font-weight: 700; color: var(--h5); }
+.titles { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; }
+.titles li { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px 10px; border-radius: 10px; color: var(--muted); font-size: 14px; }
+.titles li b { color: var(--muted); font-weight: 600; }
+.titles li.got b { color: var(--fg); }
+.titles li.now { background: var(--bg); outline: 1px solid var(--h3); }
+.titles li.now b { color: var(--h5); }
+.titles small { font-size: 12px; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 40; background: var(--h5); color: #0b1a0f; font-weight: 700; border-radius: 12px; padding: 10px 16px; font-size: 14px; max-width: min(92vw, 480px); box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+.overlay.celebrate { z-index: 45; align-items: center; }
+.cel-card { background: var(--surface); border: 1px solid var(--h3); border-radius: 22px; padding: 28px 24px; width: min(92vw, 360px); text-align: center; display: grid; gap: 10px; justify-items: center; animation: pop .45s cubic-bezier(.2, 1.4, .4, 1); }
+.cel-card h3 { margin: 0; font-family: var(--font-display); font-size: 54px; font-weight: 700; line-height: 1; color: var(--h5); text-transform: uppercase; }
+.cel-xp { margin: 0; font-weight: 700; color: var(--h4); }
+.cel-title { margin: 0; display: grid; gap: 2px; color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .08em; }
+.cel-title b { font-family: var(--font-display); font-size: 30px; color: var(--fg); letter-spacing: .02em; }
+.cel-sub { margin: 0; color: var(--muted); font-size: 14px; } .cel-sub b { color: var(--fg); }
+@keyframes pop { from { transform: scale(.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .cel-card { animation: none; } }
 .explain { background: var(--bg); border-radius: 12px; padding: 10px 14px; margin-bottom: 14px; font-size: 14px; color: var(--muted); }
 .explain p { margin: 4px 0; } .explain b { color: var(--fg); }
 .chip small { font-weight: 500; opacity: .75; margin-left: 4px; }
@@ -236,6 +270,7 @@ button.tag { cursor: pointer; }
   <header class="top">
     <div class="brand"><h1>Musclemap</h1><span class="sync" id="sync">Loading…</span></div>
     <div class="top-actions">
+      <button class="lvl-chip" type="button" data-open="level" id="lvlChip" aria-label="Your level"></button>
       <button class="btn" type="button" data-open="goals">Goals</button>
       <button class="btn desk-only" type="button" data-open="cardio">Log cardio</button>
       <button class="btn primary desk-only" type="button" data-open="log">Log lifts</button>
@@ -243,6 +278,7 @@ button.tag { cursor: pointer; }
   </header>
 
   <div id="banner"></div>
+  <section class="panel player" id="player" aria-label="Your level"></section>
   <div id="onboard"></div>
 
   <div class="periods" role="group" aria-label="Time range" id="periods">
@@ -311,6 +347,8 @@ button.tag { cursor: pointer; }
   <button class="btn primary" type="button" data-open="log">Log lifts</button>
 </nav>
 <div id="sheetRoot"></div>
+<div id="celebrate"></div>
+<div class="toast" id="toast" role="status" hidden></div>
 
 <script>
 (() => {
@@ -559,6 +597,27 @@ const data = () => (S.workouts.length ? S.workouts : SAMPLE);
 const usingSample = () => S.workouts.length === 0;
 const isCardio = w => w.kind === "cardio";
 
+/* ---------- XP, levels and titles ---------- */
+// Lifting: 25 XP per workout + 10 per set (up to 40 sets). Cardio: 25 XP per session + 2 per minute (up to 180 min).
+const XP = { workout: 25, perSet: 10, maxSets: 40, session: 25, perMin: 2, maxMin: 180 };
+const setsIn = w => (w.exercises || []).reduce((a, x) => a + (x.sets || []).length, 0);
+const xpFor = w => isCardio(w)
+  ? XP.session + Math.round(Math.min(XP.maxMin, Number(w.minutes) || 0) * XP.perMin)
+  : XP.workout + Math.min(XP.maxSets, setsIn(w)) * XP.perSet;
+const totalXP = list => list.filter(w => !w.sample).reduce((a, w) => a + xpFor(w), 0);
+/* Each level takes 100 XP more than the last: level 1→2 is 100 XP, 9→10 is 900 XP. */
+const xpToNext = L => 100 * L;
+const xpAtLevel = L => (100 * L * (L - 1)) / 2;
+function levelInfo(total) {
+  let L = 1;
+  while (total >= xpAtLevel(L + 1)) L++;
+  return { level: L, total, into: total - xpAtLevel(L), need: xpToNext(L) };
+}
+const TITLES = [[1, "Rookie"], [10, "Gym Regular"], [20, "Grinder"], [30, "Iron Disciple"], [40, "Powerhouse"], [50, "Veteran"],
+  [60, "Beast"], [70, "Titan"], [80, "Legend"], [90, "Mythic"], [100, "Olympian"]];
+const titleFor = L => TITLES.filter(([l]) => L >= l).pop()[1];
+const nextTitle = L => TITLES.find(([l]) => l > L);
+
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const fmt = n => (Math.round(n * 10) / 10).toLocaleString();
@@ -654,6 +713,7 @@ function render() {
   const isAll = S.period === "all";
   $("prev").disabled = isAll; $("next").disabled = isAll || r.end >= today();
 
+  renderPlayer();
   renderOnboard();
   renderSummary({ r, c, days, elapsed, isCurrent, liftTarget, cardioTarget, liftSt, cardioSt, g });
 
@@ -715,11 +775,11 @@ function render() {
       const a = CARDIO[w.activity] || CARDIO.run;
       const wd = toUnit(Number(w.distance) || 0, w.distUnit || "mi");
       const bits = [`${fmt(Number(w.minutes) || 0)} min`, wd ? `${fmt(wd)} ${distUnit()}` : null, rateText(w.activity, Number(w.minutes) || 0, wd)].filter(Boolean);
-      return `<li><button type="button" data-w="${esc(w.id)}">${chip}<span style="min-width:0"><div class="t"><span class="badge cardio">${esc(a[0])}</span>${esc(w.name || a[0])}</div><div class="s num">${esc(bits.join(" · "))}</div></span></button></li>`;
+      return `<li><button type="button" data-w="${esc(w.id)}">${chip}<span style="min-width:0"><div class="t"><span class="badge cardio">${esc(a[0])}</span>${esc(w.name || a[0])}</div><div class="s num">${esc(bits.join(" · "))}${w.sample ? "" : ` <span class="xp-tag">+${xpFor(w)} XP</span>`}</div></span></button></li>`;
     }
     const n = (w.exercises || []).reduce((a, x) => a + (x.sets || []).length, 0);
     return `<li><button type="button" data-w="${esc(w.id)}">${chip}<span style="min-width:0"><div class="t"><span class="badge">Lift</span>${esc(w.name || "Workout")} <span class="num" style="color:var(--muted);font-weight:500">· ${n} sets</span></div>` +
-      `<div class="s">${esc((w.exercises || []).map(x => x.name).join(", "))}</div></span></button></li>`;
+      `<div class="s">${w.sample ? "" : `<span class="xp-tag">+${xpFor(w)} XP</span> `}${esc((w.exercises || []).map(x => x.name).join(", "))}</div></span></button></li>`;
   }).join("") + (c.ws.length > 60 ? `<li class="empty">Showing the 60 most recent of ${c.ws.length}.</li>` : "")
     : `<li class="empty">No workouts in this range.</li>`;
 }
@@ -758,6 +818,56 @@ function selHTML(sel, per, targetFor, unitWord, hint, st, rangeLabel) {
     (ex.length ? `<div class="lbl" style="margin-top:10px">What counted</div><ul>${ex.map(([n, v]) => `<li><span>${esc(n)}</span><span class="num">${show(v)}</span></li>`).join("")}</ul>` : `<p class="note">Nothing logged for this muscle in this range.</p>`) +
     `<button class="btn small ghost" type="button" data-clear="1" style="margin-top:8px">Clear selection</button></div>`;
 }
+
+function renderPlayer() {
+  const info = levelInfo(totalXP(S.workouts)), nt = nextTitle(info.level), pct = (info.into / info.need) * 100;
+  $("lvlChip").innerHTML = `<b class="num">Lv ${info.level}</b><span>${esc(titleFor(info.level))}</span>`;
+  $("player").innerHTML = `<button type="button" class="player-btn" data-open="level">
+      <span class="lvl-badge"><small>Level</small><b class="num">${info.level}</b></span>
+      <span class="player-body">
+        <span class="player-title">${esc(titleFor(info.level))}</span>
+        <span class="xpbar" role="progressbar" aria-valuemin="0" aria-valuemax="${info.need}" aria-valuenow="${info.into}" aria-label="XP toward the next level"><span style="width:${pct}%"></span></span>
+        <span class="player-sub num">${info.into.toLocaleString()} / ${info.need.toLocaleString()} XP to level ${info.level + 1}${nt ? ` · <b>${esc(nt[1])}</b> at level ${nt[0]}` : ""}</span>
+      </span>
+      <span class="player-more" aria-hidden="true">›</span>
+    </button>
+    ${info.total === 0 ? `<p class="note" style="margin:8px 0 0">Log a workout to earn your first XP. Each set and each minute of cardio counts.</p>` : ""}`;
+}
+
+function levelSheet() {
+  const info = levelInfo(totalXP(S.workouts));
+  const recent = S.workouts.filter(w => !w.sample).sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 5);
+  return sheetFrame(`Level ${info.level} · ${esc(titleFor(info.level))}`, `
+    <div class="xpbar big"><span style="width:${(info.into / info.need) * 100}%"></span></div>
+    <p class="num" style="margin:6px 0 14px">${info.into.toLocaleString()} of ${info.need.toLocaleString()} XP to level ${info.level + 1} · ${info.total.toLocaleString()} XP in total</p>
+    <div class="explain"><p><b>How to earn XP</b></p>
+      <p>Lifting workout: <b>${XP.workout} XP</b> + <b>${XP.perSet} XP per set</b> (up to ${XP.maxSets} sets).<br>Cardio session: <b>${XP.session} XP</b> + <b>${XP.perMin} XP per minute</b> (up to ${XP.maxMin} minutes).</p>
+      <p>Each level needs 100 XP more than the one before. You earn a new title every 10 levels.</p></div>
+    <div class="lbl">Titles</div>
+    <ol class="titles">${TITLES.map(([l, t]) => `<li class="${info.level >= l ? "got" : ""}${titleFor(info.level) === t ? " now" : ""}"><span class="num">Lv ${l}</span><b>${esc(t)}</b><small>${info.level >= l ? (titleFor(info.level) === t ? "Current" : "Unlocked") : `${(xpAtLevel(l) - info.total).toLocaleString()} XP to go`}</small></li>`).join("")}</ol>
+    ${recent.length ? `<div class="lbl" style="margin-top:14px">Recent XP</div><ul class="acts">${recent.map(w => `<li><span>${esc(w.name || (isCardio(w) ? (CARDIO[w.activity] || CARDIO.run)[0] : "Workout"))} · ${esc(w.date)}</span><span class="num">+${xpFor(w)} XP</span></li>`).join("")}</ul>` : ""}`,
+    `<div class="right"><button class="btn primary" type="button" data-act="close">Close</button></div>`);
+}
+
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 3500);
+}
+/* Called after a save: XP toast, plus a celebration when a level (and maybe a title) is reached. */
+function rewardXP(before, after) {
+  const gained = after - before;
+  if (gained <= 0) return;
+  const a = levelInfo(before).level, b = levelInfo(after).level;
+  if (b <= a) return toast(`+${gained} XP · ${(levelInfo(after).need - levelInfo(after).into).toLocaleString()} XP to level ${b + 1}`);
+  const newTitle = titleFor(b) !== titleFor(a) ? titleFor(b) : null;
+  $("celebrate").innerHTML = `<div class="overlay celebrate" data-act="cel-close"><div class="cel-card" role="dialog" aria-modal="true" aria-labelledby="celH">
+    <p class="cel-xp num">+${gained} XP</p>
+    <h3 id="celH">Level ${b}!</h3>
+    ${newTitle ? `<p class="cel-title">New title unlocked<b>${esc(newTitle)}</b></p>` : `<p class="cel-sub">You're still a <b>${esc(titleFor(b))}</b>. ${nextTitle(b) ? `Next title at level ${nextTitle(b)[0]}.` : ""}</p>`}
+    <button class="btn primary" type="button" data-act="cel-close" id="celOk">Keep going</button></div></div>`;
+  setTimeout(() => { const ok = $("celOk"); if (ok) ok.focus(); }, 30);
+}
+$("celebrate").addEventListener("click", e => { const t = e.target.closest("[data-act=cel-close]"); if (t && (e.target === t || t.id === "celOk")) $("celebrate").innerHTML = ""; });
 
 /* Getting started: three steps, each ticked off as it's done. Hidden for good once dismissed. */
 function renderOnboard() {
@@ -811,6 +921,7 @@ function openSheet(kind, w) {
   if (kind === "lift") S.draft = w && !w.sample ? JSON.parse(JSON.stringify(w)) : { id: null, date: defaultDate(), name: "", unit: prefs.unit || "lb", exercises: [newEx()] };
   if (kind === "cardio") S.draft = w && !w.sample ? { ...w } : { id: null, kind: "cardio", date: defaultDate(), name: "", activity: prefs.activity || "run", minutes: "", distance: "", distUnit: distUnit() };
   if (kind === "goals") S.draft = JSON.parse(JSON.stringify(S.goals));
+  if (kind === "level") S.draft = {};
   renderSheet();
   setTimeout(() => { const f = document.querySelector(kind === "lift" ? "#sheetRoot .ex input" : kind === "cardio" ? "#c-min" : null); if (f && !S.draft.id) f.focus(); }, 30);
 }
@@ -845,6 +956,7 @@ function renderSheet() {
   if (S.sheet === "lift") root.innerHTML = liftSheet(d);
   if (S.sheet === "cardio") root.innerHTML = cardioSheet(d);
   if (S.sheet === "goals") root.innerHTML = goalsSheet(d);
+  if (S.sheet === "level") root.innerHTML = levelSheet();
 }
 
 function liftSheet(d) {
@@ -980,10 +1092,12 @@ async function saveDraft() {
     w = { id: d.id || `w${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, date: d.date, name: d.name.trim(), unit: d.unit, exercises, createdAt: d.createdAt || Date.now() };
   }
   try {
+    const before = totalXP(S.workouts);
     const r = await Store.save(w, S.workouts);
     if (Array.isArray(r)) S.workouts = r;
     else S.workouts = S.workouts.filter(x => x.id !== w.id).concat([w]);
     S.anchor = parse(w.date); closeSheet(); render();
+    rewardXP(before, totalXP(S.workouts));
   } catch (ex) { S.error = ex && ex.message && Store.mode === "local" ? ex.message : "Couldn't save the workout. Check your connection and try again."; renderSheet(); }
 }
 
@@ -1019,7 +1133,10 @@ $("sheetRoot").addEventListener("click", async e => {
     catch { S.error = "Couldn't delete the workout. Check your connection and try again."; renderSheet(); }
   }
 });
-document.addEventListener("keydown", e => { if (e.key === "Escape" && S.sheet) closeSheet(); });
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  if ($("celebrate").innerHTML) $("celebrate").innerHTML = ""; else if (S.sheet) closeSheet();
+});
 
 /* ---------- Main interactions ---------- */
 $("periods").addEventListener("click", e => {
@@ -1051,6 +1168,7 @@ document.addEventListener("click", e => {
   if (k === "log") openSheet("lift", null);
   if (k === "cardio") openSheet("cardio", null);
   if (k === "goals") openSheet("goals", null);
+  if (k === "level") openSheet("level", null);
   if (k === "ob-hide") { prefs.onboardHidden = true; savePrefs(); render(); }
 });
 
