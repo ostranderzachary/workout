@@ -18,6 +18,8 @@ Other ranges scale by their number of days. A day's target is a seventh of the w
 
 Each muscle is coloured by how close it is to its target: four shades for each quarter of the way, and the darkest once the goal is met. Set a goal to 0 to leave that muscle off the map.
 
+**Cardio breakdown:** for the selected range, each activity shows sessions, time, distance, and average pace (min/mi or min/km) for runs, walks and hikes, or speed for rides. Highlight cards show your longest session and best pace or fastest speed for each activity. Each session in the workout list also shows its pace or speed. Pace and speed use only sessions logged with a distance.
+
 ## Understanding your progress
 
 - **Get started checklist:** walks new users through setting goals, logging lifts and logging cardio. Each step ticks off when done. You can hide it.

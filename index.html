@@ -188,6 +188,18 @@ header.top {
 .goalline b { font-family: var(--font-display); font-size: 26px; color: var(--fg); font-weight: 700; }
 .track.big { position: relative; height: 14px; background: var(--bg); border-radius: 7px; }
 .track.big .fill { position: absolute; inset: 0 auto 0 0; border-radius: 7px; }
+.table-scroll { overflow-x: auto; }
+.breakdown { width: 100%; border-collapse: collapse; font-size: 14px; }
+.breakdown abbr { text-decoration: none; }
+.breakdown th, .breakdown td { text-align: right; padding: 7px 0 7px 8px; border-top: 1px solid var(--line); white-space: nowrap; }
+.breakdown thead th { border-top: 0; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.breakdown th:first-child { text-align: left; padding-left: 0; }
+.breakdown tbody th { font-weight: 600; }
+.highlights { list-style: none; margin: 12px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.highlights li { background: var(--bg); border-radius: 10px; padding: 8px 10px; display: grid; gap: 1px; }
+.highlights span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.highlights b { font-family: var(--font-display); font-size: 22px; font-weight: 700; }
+.highlights small { font-size: 12px; color: var(--muted); }
 .acts { list-style: none; margin: 10px 0 0; padding: 0; font-size: 14px; }
 .acts li { display: flex; justify-content: space-between; padding: 4px 0; border-top: 1px solid var(--line); }
 
@@ -282,6 +294,10 @@ button.tag { cursor: pointer; }
       <section class="panel">
         <h2>Cardio goal</h2>
         <div id="cardioGoal"></div>
+      </section>
+      <section class="panel">
+        <h2 id="breakdownTitle">Cardio breakdown</h2>
+        <div id="breakdown"></div>
       </section>
       <section class="panel">
         <h2>Workouts</h2>
@@ -548,6 +564,14 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": 
 const fmt = n => (Math.round(n * 10) / 10).toLocaleString();
 const distUnit = () => prefs.dist || "mi";
 const toUnit = (d, from) => { const to = distUnit(); return from === to ? d : from === "km" ? d / 1.609344 : d * 1.609344; };
+/* Running, walking and hiking are measured by pace (min per mi/km); cycling by speed. */
+const RATE = { run: "pace", walk: "pace", hike: "pace", cycle: "speed" };
+const mss = min => { const t = Math.round(min * 60); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
+function rateText(activity, minutes, dist) {
+  const kind = RATE[activity];
+  if (!kind || !(dist > 0) || !(minutes > 0)) return null;
+  return kind === "pace" ? `${mss(minutes / dist)} /${distUnit()}` : `${fmt(dist / (minutes / 60))} ${distUnit() === "km" ? "km/h" : "mph"}`;
+}
 const hm = min => { const h = Math.floor(min / 60), m = Math.round(min % 60); return h ? `${h}h ${m}m` : `${m}m`; };
 
 /* Days covered by a range; targets are the daily goal times this. */
@@ -568,7 +592,15 @@ function compute(list, r) {
     if (isCardio(w)) {
       const c = CARDIO[w.activity] || CARDIO.run, n = Number(w.minutes) || 0;
       cardioCount++; minutes += n; distance += toUnit(Number(w.distance) || 0, w.distUnit || "mi");
-      byActivity[c[0]] = (byActivity[c[0]] || 0) + n;
+      const d = toUnit(Number(w.distance) || 0, w.distUnit || "mi");
+      const A = byActivity[w.activity] = byActivity[w.activity] || { sessions: 0, minutes: 0, distance: 0, pacedMin: 0, longest: null, best: null };
+      A.sessions++; A.minutes += n; A.distance += d;
+      if (d > 0) A.pacedMin += n; // pace and speed use only sessions with a distance
+      if (!A.longest || (d || 0) > (A.longest.d || 0) || (!d && !A.longest.d && n > A.longest.n)) A.longest = { d, n, date: w.date };
+      if (RATE[w.activity] && d > 0 && n > 0) {
+        const v = RATE[w.activity] === "pace" ? n / d : d / n; // lower pace is better, higher speed is better
+        if (!A.best || (RATE[w.activity] === "pace" ? v < A.best.v : v > A.best.v)) A.best = { v, n, d, date: w.date };
+      }
       add(card, c[1], n, 1, c[0]); add(card, c[2], n, 0.5, c[0]);
       continue;
     }
@@ -665,13 +697,15 @@ function render() {
 
   // Cardio goal
   const cp = cardioTarget ? Math.min(100, (c.minutes / cardioTarget) * 100) : 0;
-  const acts = Object.entries(c.byActivity).sort((a, b) => b[1] - a[1]);
   const cmark = cardioTarget && isCurrent && pace.days > 1 && elapsed < days ? `<span class="pace" style="left:${(elapsed / days) * 100}%"></span>` : "";
   $("cardioGoal").innerHTML = `<div class="goalline"><span class="num"><b>${hm(c.minutes)}</b> of ${hm(cardioTarget)}</span><span class="num">${pctOf(c.minutes, cardioTarget)}%</span></div>
     <div class="track big"><span class="fill" style="width:${cp}%;background:var(--h${level(c.minutes, cardioTarget) || 1})"></span>${cmark}</div>
     <div style="margin-top:8px">${pill(cardioSt)}</div>
-    ${acts.length ? `<ul class="acts">${acts.map(([k, v]) => `<li><span>${esc(k)}</span><span class="num">${hm(v)}</span></li>`).join("")}</ul>` : `<p class="note">No cardio in this range.</p>`}
+    ${c.cardioCount ? "" : `<p class="note">No cardio in this range.</p>`}
     <p class="note">Target is ${hm(g.cardio)} a week${days === 7 ? "" : ` ÷ 7 × ${days} day${days === 1 ? "" : "s"}`}. On the map, a muscle's main cardio counts full minutes and supporting cardio counts half.</p>`;
+
+  // Cardio breakdown
+  renderBreakdown(c, r);
 
   // History
   $("history").innerHTML = c.ws.length ? c.ws.slice(0, 60).map(w => {
@@ -679,7 +713,8 @@ function render() {
     const chip = `<span class="date-chip"><b>${d.getDate()}</b><span>${MON[d.getMonth()]} · ${DOW[d.getDay()]}</span></span>`;
     if (isCardio(w)) {
       const a = CARDIO[w.activity] || CARDIO.run;
-      const bits = [`${fmt(Number(w.minutes) || 0)} min`, Number(w.distance) ? `${fmt(toUnit(Number(w.distance), w.distUnit || "mi"))} ${distUnit()}` : null].filter(Boolean);
+      const wd = toUnit(Number(w.distance) || 0, w.distUnit || "mi");
+      const bits = [`${fmt(Number(w.minutes) || 0)} min`, wd ? `${fmt(wd)} ${distUnit()}` : null, rateText(w.activity, Number(w.minutes) || 0, wd)].filter(Boolean);
       return `<li><button type="button" data-w="${esc(w.id)}">${chip}<span style="min-width:0"><div class="t"><span class="badge cardio">${esc(a[0])}</span>${esc(w.name || a[0])}</div><div class="s num">${esc(bits.join(" · "))}</div></span></button></li>`;
     }
     const n = (w.exercises || []).reduce((a, x) => a + (x.sets || []).length, 0);
@@ -687,6 +722,26 @@ function render() {
       `<div class="s">${esc((w.exercises || []).map(x => x.name).join(", "))}</div></span></button></li>`;
   }).join("") + (c.ws.length > 60 ? `<li class="empty">Showing the 60 most recent of ${c.ws.length}.</li>` : "")
     : `<li class="empty">No workouts in this range.</li>`;
+}
+
+function renderBreakdown(c, r) {
+  const rows = Object.entries(c.byActivity).sort((a, b) => b[1].minutes - a[1].minutes);
+  const u = distUnit(), shortDate = ds => { const d = parse(ds); return `${MON[d.getMonth()]} ${d.getDate()}`; };
+  $("breakdownTitle").textContent = `Cardio breakdown · ${r.label}`;
+  if (!rows.length) { $("breakdown").innerHTML = `<p class="note" style="margin:0">No cardio in this range. Log a session with its distance to see pace and speed here.</p>`; return; }
+  const highlights = [];
+  for (const [k, A] of rows) {
+    const label = CARDIO[k] ? CARDIO[k][0] : k;
+    if (A.longest && A.longest.d > 0) highlights.push(`<li><span>Longest ${esc(label.toLowerCase())}</span><b class="num">${fmt(A.longest.d)} ${u}</b><small>${shortDate(A.longest.date)}</small></li>`);
+    if (A.best && A.sessions > 1) highlights.push(`<li><span>${RATE[k] === "pace" ? "Best pace" : "Fastest"} · ${esc(label.toLowerCase())}</span><b class="num">${esc(rateText(k, A.best.n, A.best.d))}</b><small>${shortDate(A.best.date)}</small></li>`);
+  }
+  $("breakdown").innerHTML = `<div class="table-scroll"><table class="breakdown">
+    <thead><tr><th scope="col">Activity</th><th scope="col"><abbr title="Sessions">#</abbr></th><th scope="col">Time</th><th scope="col">Dist.</th><th scope="col">Avg pace</th></tr></thead>
+    <tbody>${rows.map(([k, A]) => `<tr><th scope="row">${esc(CARDIO[k] ? CARDIO[k][0] : k)}</th><td class="num">${A.sessions}</td><td class="num">${hm(A.minutes)}</td>
+      <td class="num">${A.distance > 0 ? `${fmt(A.distance)} ${u}` : "–"}</td><td class="num">${rateText(k, A.pacedMin, A.distance) || "–"}</td></tr>`).join("")}</tbody>
+  </table></div>
+  ${highlights.length ? `<ul class="highlights">${highlights.join("")}</ul>` : ""}
+  <p class="note"># is sessions. Avg pace is minutes per ${u} for runs, walks and hikes, and speed for rides. Both use only sessions where you entered a distance.</p>`;
 }
 
 function bodiesHTML(levels, sel, tips) {
