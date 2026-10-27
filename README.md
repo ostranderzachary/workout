@@ -29,7 +29,7 @@ Every workout earns XP:
 
 Each level needs 100 XP more than the one before. Level 1 to 2 takes 100 XP, 9 to 10 takes 900 XP, and level 10 is 4,500 XP in total.
 
-Every 10 levels unlocks a new title, named after warrior groups from history. They run from hastily raised levies to the most feared and disciplined forces: Peasant Levy, Saxon Fyrd (10), Gallic Warband (20), Viking Raiders (30), Zulu Impi (40), Varangian Guard (50), Janissaries (60), Samurai (70), Roman Legion (80), Mongol Horde (90) and Spartans (100).
+Every 10 levels unlocks a new title, named after famous warriors and elite units from history, from the least disciplined to the most formidable: Peasant Levy, Viking Berserkers (10), Gladiators (20), Aztec Jaguar Warriors (30), Ninja (40), Knights Templar (50), Winged Hussars (60), Persian Immortals (70), Samurai (80), Mongol Horde (90) and Spartans (100).
 
 ### Weekly bonuses and penalties
 

@@ -669,17 +669,17 @@ function levelInfo(total) {
   while (total >= xpAtLevel(L + 1)) L++;
   return { level: L, total, into: total - xpAtLevel(L), need: xpToNext(L) };
 }
-/* Titles: warrior groups from history, from hastily raised levies to the most feared and disciplined forces. */
+/* Titles: famous warriors and elite units from history, from the least disciplined to the most formidable. */
 const TITLES = [
   [1, "Peasant Levy", "Farmers called up with whatever tools were to hand. Everyone starts somewhere."],
-  [10, "Saxon Fyrd", "Anglo-Saxon freemen who answered the call to defend their shire."],
-  [20, "Gallic Warband", "Fierce Gaulish warriors who held off Rome for generations."],
-  [30, "Viking Raiders", "Norse seafarers who struck fast and far across Europe."],
-  [40, "Zulu Impi", "Regiments drilled to run all day and strike in the 'horns of the buffalo'."],
-  [50, "Varangian Guard", "Norse axemen chosen as the Byzantine emperors' personal bodyguard."],
-  [60, "Janissaries", "The Ottoman Empire's elite standing infantry, trained from youth."],
-  [70, "Samurai", "Japan's warrior class, bound by a lifetime of discipline and practice."],
-  [80, "Roman Legion", "Professional soldiers whose drill, marching and endurance built an empire."],
+  [10, "Viking Berserkers", "Norse warriors who charged in a battle frenzy. Plenty of fury, not much discipline."],
+  [20, "Gladiators", "Rome's arena fighters, trained in schools to perform and survive."],
+  [30, "Aztec Jaguar Warriors", "Elite Aztec fighters who earned the jaguar skin by taking captives in battle."],
+  [40, "Ninja", "Japan's shinobi: spies and infiltrators trained in stealth and endurance."],
+  [50, "Knights Templar", "Crusader monks sworn to strict rules and famed for never retreating."],
+  [60, "Winged Hussars", "Poland's heavy cavalry, whose thundering charges broke armies for two centuries."],
+  [70, "Persian Immortals", "The Achaemenid kings' 10,000 elite guards, always kept at full strength."],
+  [80, "Samurai", "Japan's warrior class, bound by a lifetime of discipline and practice."],
   [90, "Mongol Horde", "Horse archers who forged the largest land empire in history."],
   [100, "Spartans", "Trained for war from the age of seven. The most formidable of all."]
 ];
