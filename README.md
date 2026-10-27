@@ -29,7 +29,7 @@ Every workout earns XP:
 
 Each level needs 100 XP more than the one before. Level 1 to 2 takes 100 XP, 9 to 10 takes 900 XP, and level 10 is 4,500 XP in total.
 
-Every 10 levels unlocks a new title: Rookie, Gym Regular (10), Grinder (20), Iron Disciple (30), Powerhouse (40), Veteran (50), Beast (60), Titan (70), Legend (80), Mythic (90) and Olympian (100).
+Every 10 levels unlocks a new title, named after warrior groups from history. They run from hastily raised levies to the most feared and disciplined forces: Peasant Levy, Saxon Fyrd (10), Gallic Warband (20), Viking Raiders (30), Zulu Impi (40), Varangian Guard (50), Janissaries (60), Samurai (70), Roman Legion (80), Mongol Horde (90) and Spartans (100).
 
 ### Weekly bonuses and penalties
 

@@ -133,7 +133,7 @@ header.top {
 @media (max-width: 480px) { .ob-steps li { grid-template-columns: 30px minmax(0, 1fr); } .ob-steps li .btn { grid-column: 2; justify-self: start; } }
 .lvl-chip { display: grid; justify-items: start; line-height: 1.1; border: 1px solid var(--h3); background: var(--surface); border-radius: 12px; padding: 5px 10px; text-align: left; }
 .lvl-chip b { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--h5); }
-.lvl-chip span { font-size: 11px; color: var(--muted); max-width: 11ch; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lvl-chip span { font-size: 11px; color: var(--muted); max-width: 14ch; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 420px) { .lvl-chip span { display: none; } .brand .sync { display: none; } }
 .player { margin-bottom: 12px; padding: 12px 14px; }
 .player-btn { width: 100%; display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 14px; align-items: center; border: 0; background: transparent; padding: 0; text-align: left; }
@@ -162,7 +162,10 @@ header.top {
 .titles li.got b { color: var(--fg); }
 .titles li.now { background: var(--bg); outline: 1px solid var(--h3); }
 .titles li.now b { color: var(--h5); }
-.titles small { font-size: 12px; }
+.titles small { font-size: 12px; text-align: right; }
+.t-name { display: grid; gap: 1px; min-width: 0; }
+.t-name em { font-style: normal; font-size: 12px; color: var(--muted); line-height: 1.3; }
+.titles li:not(.got) .t-name em { opacity: .7; }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 40; background: var(--h5); color: #0b1a0f; font-weight: 700; border-radius: 12px; padding: 10px 16px; font-size: 14px; max-width: min(92vw, 480px); box-shadow: 0 8px 24px rgba(0,0,0,.35); }
 .overlay.celebrate { z-index: 45; align-items: center; }
 .cel-card { background: var(--surface); border: 1px solid var(--h3); border-radius: 22px; padding: 28px 24px; width: min(92vw, 360px); text-align: center; display: grid; gap: 10px; justify-items: center; animation: pop .45s cubic-bezier(.2, 1.4, .4, 1); }
@@ -666,8 +669,21 @@ function levelInfo(total) {
   while (total >= xpAtLevel(L + 1)) L++;
   return { level: L, total, into: total - xpAtLevel(L), need: xpToNext(L) };
 }
-const TITLES = [[1, "Rookie"], [10, "Gym Regular"], [20, "Grinder"], [30, "Iron Disciple"], [40, "Powerhouse"], [50, "Veteran"],
-  [60, "Beast"], [70, "Titan"], [80, "Legend"], [90, "Mythic"], [100, "Olympian"]];
+/* Titles: warrior groups from history, from hastily raised levies to the most feared and disciplined forces. */
+const TITLES = [
+  [1, "Peasant Levy", "Farmers called up with whatever tools were to hand. Everyone starts somewhere."],
+  [10, "Saxon Fyrd", "Anglo-Saxon freemen who answered the call to defend their shire."],
+  [20, "Gallic Warband", "Fierce Gaulish warriors who held off Rome for generations."],
+  [30, "Viking Raiders", "Norse seafarers who struck fast and far across Europe."],
+  [40, "Zulu Impi", "Regiments drilled to run all day and strike in the 'horns of the buffalo'."],
+  [50, "Varangian Guard", "Norse axemen chosen as the Byzantine emperors' personal bodyguard."],
+  [60, "Janissaries", "The Ottoman Empire's elite standing infantry, trained from youth."],
+  [70, "Samurai", "Japan's warrior class, bound by a lifetime of discipline and practice."],
+  [80, "Roman Legion", "Professional soldiers whose drill, marching and endurance built an empire."],
+  [90, "Mongol Horde", "Horse archers who forged the largest land empire in history."],
+  [100, "Spartans", "Trained for war from the age of seven. The most formidable of all."]
+];
+const blurbFor = t => (TITLES.find(x => x[1] === t) || [])[2] || "";
 const titleFor = L => TITLES.filter(([l]) => L >= l).pop()[1];
 const nextTitle = L => TITLES.find(([l]) => l > L);
 
@@ -916,7 +932,7 @@ function levelSheet() {
       <p><b>Missed days:</b> when a week ends short of your workout-days goal, you lose ${BONUS.missedDay} XP per missed day and your streak resets. Your first week is never penalised, and XP never drops below 0, though it can drop you a level.</p>
       <p>Each level needs 100 XP more than the one before. You earn a new title every 10 levels.</p></div>
     <div class="lbl">Titles</div>
-    <ol class="titles">${TITLES.map(([l, t]) => `<li class="${info.level >= l ? "got" : ""}${titleFor(info.level) === t ? " now" : ""}"><span class="num">Lv ${l}</span><b>${esc(t)}</b><small>${info.level >= l ? (titleFor(info.level) === t ? "Current" : "Unlocked") : `${(xpAtLevel(l) - info.total).toLocaleString()} XP to go`}</small></li>`).join("")}</ol>
+    <ol class="titles">${TITLES.map(([l, t]) => `<li class="${info.level >= l ? "got" : ""}${titleFor(info.level) === t ? " now" : ""}"><span class="num">Lv ${l}</span><span class="t-name"><b>${esc(t)}</b><em>${esc(TITLES.find(x => x[1] === t)[2])}</em></span><small>${info.level >= l ? (titleFor(info.level) === t ? "Current" : "Unlocked") : `${(xpAtLevel(l) - info.total).toLocaleString()} XP to go`}</small></li>`).join("")}</ol>
     ${recent.length ? `<div class="lbl" style="margin-top:14px">Recent XP</div><ul class="acts">${recent.map(x => `<li class="${x.xp < 0 ? "neg" : x.weekly ? "bonus" : ""}"><span>${esc(x.text)}${x.weekly ? "" : ` · ${esc(x.date)}`}</span><span class="num">${x.xp < 0 ? "−" : "+"}${Math.abs(x.xp)} XP</span></li>`).join("")}</ul>` : ""}`,
     `<div class="right"><button class="btn primary" type="button" data-act="close">Close</button></div>`);
 }
@@ -938,7 +954,7 @@ function rewardXP(beforeL, afterL) {
   $("celebrate").innerHTML = `<div class="overlay celebrate" data-act="cel-close"><div class="cel-card" role="dialog" aria-modal="true" aria-labelledby="celH">
     <p class="cel-xp num">+${gained} XP${esc(extra)}</p>
     <h3 id="celH">Level ${b}!</h3>
-    ${newTitle ? `<p class="cel-title">New title unlocked<b>${esc(newTitle)}</b></p>` : `<p class="cel-sub">You're still a <b>${esc(titleFor(b))}</b>. ${nextTitle(b) ? `Next title at level ${nextTitle(b)[0]}.` : ""}</p>`}
+    ${newTitle ? `<p class="cel-title">New title unlocked<b>${esc(newTitle)}</b></p><p class="cel-sub">${esc(blurbFor(newTitle))}</p>` : `<p class="cel-sub">Your title is still <b>${esc(titleFor(b))}</b>. ${nextTitle(b) ? `Next up: <b>${esc(nextTitle(b)[1])}</b> at level ${nextTitle(b)[0]}.` : ""}</p>`}
     <button class="btn primary" type="button" data-act="cel-close" id="celOk">Keep going</button></div></div>`;
   setTimeout(() => { const ok = $("celOk"); if (ok) ok.focus(); }, 30);
 }
