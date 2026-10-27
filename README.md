@@ -31,6 +31,23 @@ Each level needs 100 XP more than the one before. Level 1 to 2 takes 100 XP, 9 t
 
 Every 10 levels unlocks a new title: Rookie, Gym Regular (10), Grinder (20), Iron Disciple (30), Powerhouse (40), Veteran (50), Beast (60), Titan (70), Legend (80), Mythic (90) and Olympian (100).
 
+### Weekly bonuses and penalties
+
+Weeks run Monday to Sunday. Each week is judged by the goals in effect that week, so changing a goal doesn't rewrite past weeks.
+
+| Event | XP |
+|---|---|
+| Each muscle's weekly sets goal met | +20 |
+| Every muscle goal met | +100 |
+| Weekly cardio goal met | +75 |
+| Workout-days goal met (set in Goals, default 4 days) | +50 |
+| Streak: days goal met several weeks in a row | +20 per extra week, up to +200 |
+| Each workout day missed in a finished week | −40, and the streak resets |
+
+Your first week is never penalised. Total XP never goes below 0, but penalties can take you down a level.
+
+The level card shows this week's workout days, what you'll earn by hitting your goal, what you'll lose if you fall short, and last week's result.
+
 Saving a workout shows the XP earned. Reaching a new level or title brings up a celebration. Tap the level card to see the title ladder and recent XP.
 
 XP is worked out from your logged workouts, so editing or deleting a workout updates it. Example workouts don't earn XP.

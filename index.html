@@ -147,6 +147,14 @@ header.top {
 .xpbar { display: block; position: relative; height: 10px; border-radius: 5px; background: var(--bg); overflow: hidden; }
 .xpbar.big { height: 14px; border-radius: 7px; }
 .xpbar > span { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: linear-gradient(90deg, var(--h3), var(--h5)); }
+.wk { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 14px; flex-wrap: wrap; }
+.wk-dots { display: flex; gap: 4px; }
+.wk-dots i { width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--muted); display: block; }
+.wk-dots i.on { background: var(--h5); border-color: var(--h5); }
+.wk-msg { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+.wk-msg.warn { color: var(--danger); } .wk-msg.good { color: var(--h5); }
+.wk-last { margin: 4px 0 0; font-size: 12px; color: var(--muted); } .wk-last.bad { color: var(--danger); }
+.acts li.bonus .num { color: var(--h5); } .acts li.neg, .acts li.neg .num { color: var(--danger); }
 .xp-tag { display: inline-block; font-size: 11px; font-weight: 700; color: var(--h5); }
 .titles { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; }
 .titles li { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px 10px; border-radius: 10px; color: var(--muted); font-size: 14px; }
@@ -505,15 +513,25 @@ const C_IDS = Object.keys(CARDIO);
 const DEFAULT_GOALS = {
   per: "week",
   sets: { chest: 14, shoulders: 14, biceps: 10, triceps: 10, forearms: 6, traps: 8, lats: 14, lowerback: 6, abs: 10, obliques: 6, glutes: 10, quads: 14, hamstrings: 10, adductors: 6, calves: 10 },
-  cardio: 150
+  cardio: 150,
+  days: 4 // workout days per week, for consistency bonuses and missed-day penalties
 };
 /* Goals saved before weekly goals existed were per day; scale those by 7. */
 const normGoals = g => {
   const f = g && g.per !== "week" ? 7 : 1;
   const sets = { ...DEFAULT_GOALS.sets };
   if (g && g.sets) for (const [m, v] of Object.entries(g.sets)) sets[m] = Math.round((Number(v) || 0) * f * 10) / 10;
-  return { per: "week", sets, cardio: g && g.cardio != null ? (Number(g.cardio) || 0) * f : DEFAULT_GOALS.cardio };
+  return { per: "week", sets, cardio: g && g.cardio != null ? (Number(g.cardio) || 0) * f : DEFAULT_GOALS.cardio,
+    days: g && g.days != null ? Math.min(7, Math.max(0, Math.round(Number(g.days) || 0))) : DEFAULT_GOALS.days,
+    history: g && Array.isArray(g.history) ? g.history : [] };
 };
+/* The goals that applied on a date, so changing goals later doesn't rewrite past weeks' bonuses. */
+function goalsAt(date) {
+  const h = S.goals.history;
+  if (!h.length) return S.goals;
+  const e = h.filter(x => x.from <= date).pop() || h[0];
+  return normGoals({ per: "week", sets: e.sets, cardio: e.cardio, days: e.days });
+}
 const perDay = w => (Number(w) || 0) / 7;
 
 /* ---------- Storage: shared db per signed-in person, else this browser ---------- */
@@ -604,7 +622,42 @@ const setsIn = w => (w.exercises || []).reduce((a, x) => a + (x.sets || []).leng
 const xpFor = w => isCardio(w)
   ? XP.session + Math.round(Math.min(XP.maxMin, Number(w.minutes) || 0) * XP.perMin)
   : XP.workout + Math.min(XP.maxSets, setsIn(w)) * XP.perSet;
-const totalXP = list => list.filter(w => !w.sample).reduce((a, w) => a + xpFor(w), 0);
+/* Weekly bonuses and penalties (Monday–Sunday weeks), judged with the goals in effect that week. */
+const BONUS = { muscle: 20, allMuscles: 100, cardio: 75, days: 50, streakStep: 20, streakMax: 200, missedDay: 40 };
+function xpLedger(list) {
+  const real = list.filter(w => !w.sample);
+  const workoutXP = real.reduce((a, w) => a + xpFor(w), 0);
+  const entries = [];
+  if (!real.length) return { total: 0, workoutXP, entries, week: null };
+  const t = today(), curMon = weekStart(t), firstMon = weekStart(parse(real.map(w => w.date).sort()[0]));
+  let streak = 0, week = null;
+  for (let mon = firstMon; mon <= curMon; mon = addDays(mon, 7)) {
+    const sun = addDays(mon, 6), isCur = +mon === +curMon;
+    const label = `Week of ${MON[mon.getMonth()]} ${mon.getDate()}`, when = ymd(isCur ? t : sun);
+    const g = goalsAt(when), c = compute(real, { start: mon, end: sun });
+    const days = new Set(c.ws.map(w => w.date)).size;
+    const add = (xp, text) => entries.push({ date: when, label, xp, text });
+    const withGoal = M_IDS.filter(m => (Number(g.sets[m]) || 0) > 0);
+    const met = withGoal.filter(m => c.lift[m].v >= Number(g.sets[m])).length;
+    if (met) add(met * BONUS.muscle, `${met} muscle goal${met === 1 ? "" : "s"} met`);
+    if (withGoal.length && met === withGoal.length) add(BONUS.allMuscles, "Every muscle goal met");
+    if (g.cardio > 0 && c.minutes >= g.cardio) add(BONUS.cardio, "Cardio goal met");
+    if (g.days > 0) {
+      if (days >= g.days) {
+        streak++;
+        add(BONUS.days, `Trained ${days} of ${g.days} days`);
+        if (streak > 1) add(Math.min(BONUS.streakMax, BONUS.streakStep * (streak - 1)), `${streak}-week streak`);
+      } else if (!isCur) {
+        if (+mon !== +firstMon) add(-BONUS.missedDay * (g.days - days), `Missed ${g.days - days} of ${g.days} workout days`);
+        streak = 0;
+      }
+    }
+    if (isCur) week = { days, target: g.days, streak, left: 7 - ((t.getDay() + 6) % 7), atRisk: g.days > days ? BONUS.missedDay * (g.days - days) : 0 };
+  }
+  const total = Math.max(0, workoutXP + entries.reduce((a, e) => a + e.xp, 0));
+  return { total, workoutXP, entries, week };
+}
+const totalXP = list => xpLedger(list).total;
 /* Each level takes 100 XP more than the last: level 1→2 is 100 XP, 9→10 is 900 XP. */
 const xpToNext = L => 100 * L;
 const xpAtLevel = L => (100 * L * (L - 1)) / 2;
@@ -820,7 +873,22 @@ function selHTML(sel, per, targetFor, unitWord, hint, st, rangeLabel) {
 }
 
 function renderPlayer() {
-  const info = levelInfo(totalXP(S.workouts)), nt = nextTitle(info.level), pct = (info.into / info.need) * 100;
+  const L = xpLedger(S.workouts), info = levelInfo(L.total), nt = nextTitle(info.level), pct = (info.into / info.need) * 100;
+  const wk = L.week, lastMon = ymd(addDays(weekStart(today()), -7));
+  const last = L.entries.filter(e => e.date >= lastMon && e.date < ymd(weekStart(today())));
+  const lastNet = last.reduce((a, e) => a + e.xp, 0), lastPen = last.find(e => e.xp < 0);
+  let weekLine = "";
+  if (wk && wk.target) {
+    const need = wk.target - wk.days;
+    weekLine = `<div class="wk"><span class="wk-dots" aria-label="${wk.days} of ${wk.target} workout days this week">${Array.from({ length: Math.max(wk.target, wk.days) }, (_, i) => `<i class="${i < wk.days ? "on" : ""}"></i>`).join("")}</span>
+      <span><b>${wk.days} of ${wk.target}</b> workout days this week${wk.streak > 1 || (need <= 0 && wk.streak) ? ` · <b>${wk.streak}-week streak</b>` : ""}</span></div>
+      <p class="wk-msg ${need > 0 ? (need >= wk.left ? "warn" : "") : "good"}">${need > 0
+        ? `Train ${need} more day${need === 1 ? "" : "s"} by Sunday (${wk.left} day${wk.left === 1 ? "" : "s"} left) to earn +${BONUS.days} XP${wk.streak ? " and keep your streak" : ""}. Falling short costs ${wk.atRisk} XP.`
+        : `Weekly days goal met: +${BONUS.days} XP${wk.streak > 1 ? ` and +${Math.min(BONUS.streakMax, BONUS.streakStep * (wk.streak - 1))} streak bonus` : ""}.`}</p>
+      ${last.length ? `<p class="wk-last ${lastPen ? "bad" : ""}">${lastPen
+        ? `Last week you ${esc(lastPen.text.toLowerCase())}: −${Math.abs(lastPen.xp)} XP${lastNet > lastPen.xp ? ` (net ${lastNet >= 0 ? "+" : "−"}${Math.abs(lastNet)} XP with bonuses)` : ""}.`
+        : `Last week you earned +${lastNet} XP in weekly bonuses.`}</p>` : ""}`;
+  }
   $("lvlChip").innerHTML = `<b class="num">Lv ${info.level}</b><span>${esc(titleFor(info.level))}</span>`;
   $("player").innerHTML = `<button type="button" class="player-btn" data-open="level">
       <span class="lvl-badge"><small>Level</small><b class="num">${info.level}</b></span>
@@ -831,21 +899,25 @@ function renderPlayer() {
       </span>
       <span class="player-more" aria-hidden="true">›</span>
     </button>
-    ${info.total === 0 ? `<p class="note" style="margin:8px 0 0">Log a workout to earn your first XP. Each set and each minute of cardio counts.</p>` : ""}`;
+    ${info.total === 0 && !L.entries.length ? `<p class="note" style="margin:8px 0 0">Log a workout to earn your first XP. Each set and each minute of cardio counts.</p>` : weekLine}`;
 }
 
 function levelSheet() {
-  const info = levelInfo(totalXP(S.workouts));
-  const recent = S.workouts.filter(w => !w.sample).sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 5);
+  const L = xpLedger(S.workouts), info = levelInfo(L.total);
+  const recent = S.workouts.filter(w => !w.sample).map(w => ({ date: w.date, order: w.createdAt || 0, text: w.name || (isCardio(w) ? (CARDIO[w.activity] || CARDIO.run)[0] : "Workout"), xp: xpFor(w) }))
+    .concat(L.entries.map(e => ({ date: e.date, order: Infinity, text: `${e.text} · ${e.label}`, xp: e.xp, weekly: true })))
+    .sort((a, b) => b.date.localeCompare(a.date) || b.order - a.order).slice(0, 10);
   return sheetFrame(`Level ${info.level} · ${esc(titleFor(info.level))}`, `
     <div class="xpbar big"><span style="width:${(info.into / info.need) * 100}%"></span></div>
     <p class="num" style="margin:6px 0 14px">${info.into.toLocaleString()} of ${info.need.toLocaleString()} XP to level ${info.level + 1} · ${info.total.toLocaleString()} XP in total</p>
     <div class="explain"><p><b>How to earn XP</b></p>
       <p>Lifting workout: <b>${XP.workout} XP</b> + <b>${XP.perSet} XP per set</b> (up to ${XP.maxSets} sets).<br>Cardio session: <b>${XP.session} XP</b> + <b>${XP.perMin} XP per minute</b> (up to ${XP.maxMin} minutes).</p>
+      <p><b>Weekly bonuses</b> (Monday–Sunday): +${BONUS.muscle} XP per muscle goal met, +${BONUS.allMuscles} XP if every muscle goal is met, +${BONUS.cardio} XP for your cardio goal, +${BONUS.days} XP for training on your goal number of days. Hitting your days goal week after week adds a streak bonus of +${BONUS.streakStep} XP for each week in a row (up to +${BONUS.streakMax}).</p>
+      <p><b>Missed days:</b> when a week ends short of your workout-days goal, you lose ${BONUS.missedDay} XP per missed day and your streak resets. Your first week is never penalised, and XP never drops below 0, though it can drop you a level.</p>
       <p>Each level needs 100 XP more than the one before. You earn a new title every 10 levels.</p></div>
     <div class="lbl">Titles</div>
     <ol class="titles">${TITLES.map(([l, t]) => `<li class="${info.level >= l ? "got" : ""}${titleFor(info.level) === t ? " now" : ""}"><span class="num">Lv ${l}</span><b>${esc(t)}</b><small>${info.level >= l ? (titleFor(info.level) === t ? "Current" : "Unlocked") : `${(xpAtLevel(l) - info.total).toLocaleString()} XP to go`}</small></li>`).join("")}</ol>
-    ${recent.length ? `<div class="lbl" style="margin-top:14px">Recent XP</div><ul class="acts">${recent.map(w => `<li><span>${esc(w.name || (isCardio(w) ? (CARDIO[w.activity] || CARDIO.run)[0] : "Workout"))} · ${esc(w.date)}</span><span class="num">+${xpFor(w)} XP</span></li>`).join("")}</ul>` : ""}`,
+    ${recent.length ? `<div class="lbl" style="margin-top:14px">Recent XP</div><ul class="acts">${recent.map(x => `<li class="${x.xp < 0 ? "neg" : x.weekly ? "bonus" : ""}"><span>${esc(x.text)}${x.weekly ? "" : ` · ${esc(x.date)}`}</span><span class="num">${x.xp < 0 ? "−" : "+"}${Math.abs(x.xp)} XP</span></li>`).join("")}</ul>` : ""}`,
     `<div class="right"><button class="btn primary" type="button" data-act="close">Close</button></div>`);
 }
 
@@ -854,14 +926,17 @@ function toast(msg) {
   clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 3500);
 }
 /* Called after a save: XP toast, plus a celebration when a level (and maybe a title) is reached. */
-function rewardXP(before, after) {
-  const gained = after - before;
+function rewardXP(beforeL, afterL) {
+  const before = beforeL.total, after = afterL.total, gained = after - before;
   if (gained <= 0) return;
+  const seen = new Set(beforeL.entries.map(e => e.label + e.text));
+  const fresh = afterL.entries.filter(e => e.xp > 0 && !seen.has(e.label + e.text));
+  const extra = fresh.length ? ` · ${fresh.map(e => `${e.text} +${e.xp}`).join(", ")}` : "";
   const a = levelInfo(before).level, b = levelInfo(after).level;
-  if (b <= a) return toast(`+${gained} XP · ${(levelInfo(after).need - levelInfo(after).into).toLocaleString()} XP to level ${b + 1}`);
+  if (b <= a) return toast(`+${gained} XP${extra || ` · ${(levelInfo(after).need - levelInfo(after).into).toLocaleString()} XP to level ${b + 1}`}`);
   const newTitle = titleFor(b) !== titleFor(a) ? titleFor(b) : null;
   $("celebrate").innerHTML = `<div class="overlay celebrate" data-act="cel-close"><div class="cel-card" role="dialog" aria-modal="true" aria-labelledby="celH">
-    <p class="cel-xp num">+${gained} XP</p>
+    <p class="cel-xp num">+${gained} XP${esc(extra)}</p>
     <h3 id="celH">Level ${b}!</h3>
     ${newTitle ? `<p class="cel-title">New title unlocked<b>${esc(newTitle)}</b></p>` : `<p class="cel-sub">You're still a <b>${esc(titleFor(b))}</b>. ${nextTitle(b) ? `Next title at level ${nextTitle(b)[0]}.` : ""}</p>`}
     <button class="btn primary" type="button" data-act="cel-close" id="celOk">Keep going</button></div></div>`;
@@ -1013,11 +1088,11 @@ const GOAL_GROUPS = [
 ];
 /* Presets scale the default split: big muscles get the most sets. */
 const BIG = ["chest", "shoulders", "lats", "quads"];
-const PRESETS = { light: ["Light", 8, 4, 90], standard: ["Standard", 14, 8, 150], high: ["High volume", 20, 12, 300] };
+const PRESETS = { light: ["Light", 8, 4, 90, 3], standard: ["Standard", 14, 8, 150, 4], high: ["High volume", 20, 12, 300, 5] };
 function presetGoals(k) {
-  const [, big, small, cardio] = PRESETS[k];
+  const [, big, small, cardio, days] = PRESETS[k];
   const mid = Math.round((big + small) / 2);
-  return { per: "week", cardio, sets: Object.fromEntries(M_IDS.map(m => [m, BIG.includes(m) ? big : DEFAULT_GOALS.sets[m] >= 10 ? mid : small])) };
+  return { per: "week", cardio, days, history: S.draft ? S.draft.history : [], sets: Object.fromEntries(M_IDS.map(m => [m, BIG.includes(m) ? big : DEFAULT_GOALS.sets[m] >= 10 ? mid : small])) };
 }
 function goalsSheet(d) {
   const row = m => `<label class="goal" for="g-${m}"><span>${esc(MUSCLES[m])}</span>
@@ -1030,7 +1105,12 @@ function goalsSheet(d) {
     </div>
     <div class="lbl">Start from a preset</div>
     <div class="chips" style="margin:6px 0 14px">${Object.entries(PRESETS).map(([k, [n, big, small, cm]]) =>
-      `<button type="button" class="chip" data-preset="${k}">${n} <small>${small}–${big} sets · ${cm} min</small></button>`).join("")}</div>
+      `<button type="button" class="chip" data-preset="${k}">${n} <small>${PRESETS[k][4]} days · ${small}–${big} sets · ${cm} min</small></button>`).join("")}</div>
+    <div class="lbl">Consistency · workout days per week</div>
+    <div class="goals"><label class="goal" for="g-days"><span>Days with a workout</span>
+      <input class="inp num" id="g-days" type="number" inputmode="numeric" min="0" max="7" step="1" value="${esc(d.days)}" data-goal="days">
+      <small class="num">of 7</small></label></div>
+    <p class="note" style="margin-top:4px">Hit this each week for +${BONUS.days} XP and a growing streak bonus. Each day short costs ${BONUS.missedDay} XP. Set it to 0 to turn off bonuses and penalties for days.</p>
     ${GOAL_GROUPS.map(([title, ms]) => `<div class="lbl" style="margin-top:12px">${title} · sets per week</div><div class="goals">${ms.map(row).join("")}</div>`).join("")}
     <div class="lbl" style="margin-top:16px">Cardio · minutes per week</div>
     <div class="goals"><label class="goal" for="g-cardio"><span>All cardio</span>
@@ -1046,7 +1126,8 @@ $("sheetRoot").addEventListener("input", e => {
   if (t.dataset.f) d[t.dataset.f] = t.value;
   if (t.dataset.goal) {
     const k = t.dataset.goal;
-    if (k === "cardio") { d.cardio = t.value; $("gw-cardio").textContent = `${hm(perDay(t.value))}/day`; }
+    if (k === "days") d.days = t.value;
+    else if (k === "cardio") { d.cardio = t.value; $("gw-cardio").textContent = `${hm(perDay(t.value))}/day`; }
     else { d.sets[k] = t.value; $(`gw-${k}`).textContent = `${fmt(perDay(t.value))}/day`; }
   }
   if (t.dataset.set) { const [i, j, k] = t.dataset.set.split(":"); d.exercises[i].sets[j][k] = t.value; }
@@ -1067,7 +1148,14 @@ async function saveDraft() {
   const d = S.draft;
   let w;
   if (S.sheet === "goals") {
-    const g = { per: "week", sets: Object.fromEntries(M_IDS.map(m => [m, Math.max(0, Number(d.sets[m]) || 0)])), cardio: Math.max(0, Number(d.cardio) || 0) };
+    const g = { per: "week", sets: Object.fromEntries(M_IDS.map(m => [m, Math.max(0, Number(d.sets[m]) || 0)])), cardio: Math.max(0, Number(d.cardio) || 0),
+      days: Math.min(7, Math.max(0, Math.round(Number(d.days) || 0))) };
+    // Keep a dated history so past weeks are still judged by the goals that applied then.
+    const prev = S.goals, entry = { from: ymd(today()), sets: g.sets, cardio: g.cardio, days: g.days };
+    let hist = prev.history.slice();
+    // The goals in effect until now (defaults if never saved) still apply to earlier weeks.
+    if (!hist.length) hist.push({ from: "0000-01-01", sets: prev.sets, cardio: prev.cardio, days: prev.days });
+    g.history = hist.filter(h => h.from !== entry.from).concat([entry]).slice(-100);
     try { await Store.saveGoals(g); S.goals = normGoals(g); S.goalsSaved = true; closeSheet(); render(); }
     catch (ex) { S.error = ex && ex.message ? ex.message : "Couldn't save your goals. Try again."; renderSheet(); }
     return;
@@ -1092,12 +1180,12 @@ async function saveDraft() {
     w = { id: d.id || `w${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, date: d.date, name: d.name.trim(), unit: d.unit, exercises, createdAt: d.createdAt || Date.now() };
   }
   try {
-    const before = totalXP(S.workouts);
+    const before = xpLedger(S.workouts);
     const r = await Store.save(w, S.workouts);
     if (Array.isArray(r)) S.workouts = r;
     else S.workouts = S.workouts.filter(x => x.id !== w.id).concat([w]);
     S.anchor = parse(w.date); closeSheet(); render();
-    rewardXP(before, totalXP(S.workouts));
+    rewardXP(before, xpLedger(S.workouts));
   } catch (ex) { S.error = ex && ex.message && Store.mode === "local" ? ex.message : "Couldn't save the workout. Check your connection and try again."; renderSheet(); }
 }
 
