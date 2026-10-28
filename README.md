@@ -1,4 +1,4 @@
-# Musclemap
+# Forged
 
 A mobile-friendly workout tracker. Log lifts and cardio, set daily goals, and see how close each muscle is to its goal on two body heat maps (lifting and cardio), by day, week, month, year or all time.
 
