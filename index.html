@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#111418"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content"><meta name="theme-color" content="#111418"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
 <title>Forged</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -130,7 +130,8 @@ header.top {
 .ob-steps li.done b { text-decoration: line-through; color: var(--muted); }
 .ob-body { display: grid; gap: 2px; font-size: 13px; color: var(--muted); }
 .ob-body b { font-size: 15px; color: var(--fg); }
-@media (max-width: 480px) { .ob-steps li { grid-template-columns: 30px minmax(0, 1fr); } .ob-steps li .btn { grid-column: 2; justify-self: start; } }
+/* Phones: the checklist shrinks to one line per step. */
+@media (max-width: 599px) { .ob-body > span { display: none; } .ob-steps { gap: 8px; } .onboard .note { font-size: 13px; } }
 .lvl-chip { display: grid; justify-items: start; line-height: 1.1; border: 1px solid var(--h3); background: var(--surface); border-radius: 12px; padding: 5px 10px; text-align: left; }
 .lvl-chip b { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--h5); }
 .lvl-chip span { font-size: 11px; color: var(--muted); max-width: 14ch; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -209,12 +210,26 @@ header.top {
 .empty { color: var(--muted); font-size: 14px; padding: 8px 0; }
 
 .top-actions { display: flex; gap: 8px; flex: none; }
-.dock { display: none; }
-@media (max-width: 599px) {
+.tabbar, .maptoggle { display: none; }
+/* Phones and small tablets: one section at a time, switched from a bottom tab bar. */
+@media (max-width: 899px) {
   .desk-only { display: none; }
-  .dock { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--bg); border-top: 1px solid var(--line);
-    padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
-  .dock .btn { padding: 13px 0; font-size: 16px; }
+  body { padding-block: 0 calc(96px + env(safe-area-inset-bottom, 0px)); }
+  body:not([data-tab="today"]) [data-tab="today"], body:not([data-tab="maps"]) [data-tab="maps"],
+  body:not([data-tab="stats"]) [data-tab="stats"], body:not([data-tab="history"]) [data-tab="history"],
+  body:not([data-map="lift"]) [data-map="lift"], body:not([data-map="cardio"]) [data-map="cardio"] { display: none !important; }
+  .grid { margin-top: 12px; }
+  .maptoggle { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 3px; }
+  .maptoggle button { border: 0; background: transparent; border-radius: 9px; padding: 10px 0; font-weight: 700; font-size: 15px; color: var(--muted); }
+  .maptoggle button[aria-pressed="true"] { background: var(--h3); color: #0b1a0f; }
+  .tabbar { display: grid; grid-template-columns: repeat(5, 1fr); align-items: end; position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--surface); border-top: 1px solid var(--line);
+    padding: 4px max(8px, env(safe-area-inset-right, 0px)) calc(4px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
+  .tabbar button { border: 0; background: transparent; color: var(--muted); display: grid; justify-items: center; gap: 2px; font-size: 11px; font-weight: 600; padding: 6px 0; min-height: 54px; align-content: center; }
+  .tabbar button svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .tabbar button[aria-current="page"] { color: var(--h5); }
+  .tabbar .tab-add { justify-self: center; width: 58px; height: 58px; min-height: 0; padding: 0; border-radius: 50%; background: var(--h4); color: #0b1a0f; margin-bottom: 6px; place-items: center; box-shadow: 0 6px 18px rgba(0,0,0,.5); }
+  .tabbar .tab-add svg { width: 28px; height: 28px; stroke-width: 2.6; }
+  .toast { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
 }
 .col { display: grid; gap: 16px; min-width: 0; }
 .banner-actions { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -273,6 +288,30 @@ button.tag { cursor: pointer; }
 .x svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.4; fill: none; stroke-linecap: round; }
 .sheet-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; margin-top: 16px; }
 .sheet-actions .right { display: flex; gap: 8px; margin-left: auto; }
+/* Phones: forms open full screen, sized to the visible area above the keyboard,
+   with the title and Save button pinned and the fields scrolling between them. */
+@media (max-width: 599px) {
+  .overlay:not(.celebrate):not(.compact) { align-items: stretch; top: var(--vv-top, 0px); bottom: auto; height: var(--vv-h, 100dvh); }
+  .overlay:not(.celebrate):not(.compact) > .sheet { max-height: none; height: 100%; border-radius: 0; padding: 0; display: flex; flex-direction: column; overflow: hidden; }
+  .overlay:not(.celebrate):not(.compact) .sheet-head { flex: none; margin: 0; border-bottom: 1px solid var(--line);
+    padding: calc(10px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px)); }
+  .overlay:not(.celebrate):not(.compact) .sheet-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+    padding: 14px max(16px, env(safe-area-inset-right, 0px)) 28px max(16px, env(safe-area-inset-left, 0px)); }
+  .overlay:not(.celebrate):not(.compact) .sheet-actions { flex: none; margin: 0; background: var(--surface); border-top: 1px solid var(--line);
+    padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+  .sheet-actions .btn { padding: 12px 18px; font-size: 16px; }
+  .sheet-head h3 { font-size: 22px; }
+  .x { width: 44px; height: 44px; }
+  .ex { padding: 12px 10px; }
+  .set { grid-template-columns: 24px minmax(0,1fr) minmax(0,1fr) 44px; }
+  .set .inp { padding: 11px 10px; }
+  .row2 { grid-template-columns: 1fr; }
+  .btn.small { padding: 9px 14px; font-size: 14px; }
+}
+.addgrid { display: grid; gap: 10px; }
+.addopt { display: grid; gap: 4px; text-align: left; border: 1px solid var(--line); background: var(--bg); border-radius: 14px; padding: 16px; }
+.addopt b { font-family: var(--font-display); font-size: 24px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; color: var(--h5); }
+.addopt span { font-size: 14px; color: var(--muted); }
 .err { color: var(--danger); font-size: 14px; margin-top: 10px; }
 .confirm { display: flex; align-items: center; gap: 8px; font-size: 14px; }
 </style>
@@ -288,9 +327,9 @@ button.tag { cursor: pointer; }
     </div>
   </header>
 
-  <div id="banner"></div>
-  <section class="panel player" id="player" aria-label="Your level"></section>
-  <div id="onboard"></div>
+  <div id="banner" data-tab="today"></div>
+  <section class="panel player" id="player" aria-label="Your level" data-tab="today"></section>
+  <div id="onboard" data-tab="today"></div>
 
   <div class="periods" role="group" aria-label="Time range" id="periods">
     <button type="button" data-p="day">Day</button>
@@ -305,11 +344,15 @@ button.tag { cursor: pointer; }
     <button class="iconbtn" id="next" type="button" aria-label="Next"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
   </div>
 
-  <section class="panel summary" id="summary" aria-labelledby="sumH"></section>
+  <section class="panel summary" id="summary" aria-labelledby="sumH" data-tab="today"></section>
 
   <div class="grid">
     <div class="col">
-      <section class="panel" aria-labelledby="liftH">
+      <div class="maptoggle" data-tab="maps" role="group" aria-label="Which heat map">
+        <button type="button" data-maptab="lift">Lifting</button>
+        <button type="button" data-maptab="cardio">Cardio</button>
+      </div>
+      <section class="panel" aria-labelledby="liftH" data-tab="maps" data-map="lift">
         <h2 id="liftH">Lifting heat map</h2>
         <div class="stats" id="liftStats"></div>
         <div class="bodies" id="liftBodies"></div>
@@ -320,7 +363,7 @@ button.tag { cursor: pointer; }
           <p>Tap a muscle to see its numbers and which exercises counted.</p></details>
         <div id="liftSel"></div>
       </section>
-      <section class="panel" aria-labelledby="cardioH">
+      <section class="panel" aria-labelledby="cardioH" data-tab="maps" data-map="cardio">
         <h2 id="cardioH">Cardio heat map</h2>
         <div class="stats" id="cardioStats"></div>
         <div class="bodies" id="cardioBodies"></div>
@@ -333,29 +376,32 @@ button.tag { cursor: pointer; }
       </section>
     </div>
     <div class="col">
-      <section class="panel">
+      <section class="panel" data-tab="stats">
         <h2 id="barsTitle">Lifting goals</h2>
         <ul class="bars" id="bars"></ul>
         <p class="note" id="barsNote"></p>
       </section>
-      <section class="panel">
+      <section class="panel" data-tab="stats">
         <h2>Cardio goal</h2>
         <div id="cardioGoal"></div>
       </section>
-      <section class="panel">
+      <section class="panel" data-tab="stats">
         <h2 id="breakdownTitle">Cardio breakdown</h2>
         <div id="breakdown"></div>
       </section>
-      <section class="panel">
+      <section class="panel" data-tab="history">
         <h2>Workouts</h2>
         <ul class="history" id="history"></ul>
       </section>
     </div>
   </div>
 </div>
-<nav class="dock" aria-label="Log a workout">
-  <button class="btn" type="button" data-open="cardio">Log cardio</button>
-  <button class="btn primary" type="button" data-open="log">Log lifts</button>
+<nav class="tabbar" aria-label="Sections">
+  <button type="button" data-tabbtn="today"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span>Today</span></button>
+  <button type="button" data-tabbtn="maps"><svg viewBox="0 0 24 24"><circle cx="12" cy="4.5" r="2.5"/><path d="M7 9h10l-1.5 6h-2l-.5 7h-2l-.5-7h-2z"/></svg><span>Maps</span></button>
+  <button type="button" class="tab-add" data-open="add" aria-label="Log a workout"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+  <button type="button" data-tabbtn="stats"><svg viewBox="0 0 24 24"><path d="M5 20V11M12 20V4M19 20v-6"/></svg><span>Stats</span></button>
+  <button type="button" data-tabbtn="history"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>History</span></button>
 </nav>
 <div id="sheetRoot"></div>
 <div id="celebrate"></div>
@@ -1012,17 +1058,24 @@ function openSheet(kind, w) {
   if (kind === "lift") S.draft = w && !w.sample ? JSON.parse(JSON.stringify(w)) : { id: null, date: defaultDate(), name: "", unit: prefs.unit || "lb", exercises: [newEx()] };
   if (kind === "cardio") S.draft = w && !w.sample ? { ...w } : { id: null, kind: "cardio", date: defaultDate(), name: "", activity: prefs.activity || "run", minutes: "", distance: "", distUnit: distUnit() };
   if (kind === "goals") S.draft = JSON.parse(JSON.stringify(S.goals));
-  if (kind === "level") S.draft = {};
+  if (kind === "level" || kind === "add") S.draft = {};
   renderSheet();
-  setTimeout(() => { const f = document.querySelector(kind === "lift" ? "#sheetRoot .ex input" : kind === "cardio" ? "#c-min" : null); if (f && !S.draft.id) f.focus(); }, 30);
+  // On touch screens, don't pop the keyboard straight away; let people see the whole form first.
+  if (!matchMedia("(pointer: coarse)").matches) setTimeout(() => { const f = document.querySelector(kind === "lift" ? "#sheetRoot .ex input" : kind === "cardio" ? "#c-min" : null); if (f && !S.draft.id) f.focus(); }, 30);
 }
 function closeSheet() { S.sheet = null; S.draft = null; renderSheet(); }
 
-function sheetFrame(title, body, actions) {
-  return `<div class="overlay" data-act="close-bg"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+function sheetFrame(title, body, actions, { compact = false } = {}) {
+  return `<div class="overlay${compact ? " compact" : ""}" data-act="close-bg"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
     <div class="sheet-head"><h3 id="sheetTitle">${title}</h3><button class="x" type="button" data-act="close" aria-label="Close">${XSVG}</button></div>
-    ${body}${S.error ? `<div class="err" role="alert">${esc(S.error)}</div>` : ""}
+    <div class="sheet-body">${body}${S.error ? `<div class="err" role="alert">${esc(S.error)}</div>` : ""}</div>
     <div class="sheet-actions">${actions}</div></div></div>`;
+}
+function addSheet() {
+  return sheetFrame("Log a workout", `<div class="addgrid">
+      <button type="button" class="addopt" data-act="pick-lift"><b>Lifting</b><span>Exercises with their sets, reps and weight</span></button>
+      <button type="button" class="addopt" data-act="pick-cardio"><b>Cardio</b><span>A run, ride, swim or other session: minutes and distance</span></button>
+    </div>`, `<div class="right"><button class="btn ghost" type="button" data-act="close">Cancel</button></div>`, { compact: true });
 }
 function delActions(saveLabel) {
   const d = S.draft;
@@ -1042,12 +1095,18 @@ function musclesHTML(x, i) {
 
 function renderSheet() {
   const root = $("sheetRoot"), d = S.draft;
-  if (!S.sheet || !d) { root.innerHTML = ""; document.body.style.overflow = ""; return; }
+  if (!S.sheet || !d) { root.innerHTML = ""; root.dataset.kind = ""; document.body.style.overflow = ""; return; }
   document.body.style.overflow = "hidden";
+  const same = root.dataset.kind === S.sheet;
+  const keep = [(root.querySelector(".sheet-body") || {}).scrollTop || 0, (root.querySelector(".sheet") || {}).scrollTop || 0];
   if (S.sheet === "lift") root.innerHTML = liftSheet(d);
   if (S.sheet === "cardio") root.innerHTML = cardioSheet(d);
   if (S.sheet === "goals") root.innerHTML = goalsSheet(d);
   if (S.sheet === "level") root.innerHTML = levelSheet();
+  if (S.sheet === "add") root.innerHTML = addSheet();
+  // Re-rendering the same form (adding a set, picking an option) keeps your scroll position.
+  if (same) { const b = root.querySelector(".sheet-body"), sh = root.querySelector(".sheet"); if (b) b.scrollTop = keep[0]; if (sh) sh.scrollTop = keep[1]; }
+  root.dataset.kind = S.sheet;
 }
 
 function liftSheet(d) {
@@ -1068,8 +1127,8 @@ function liftSheet(d) {
         <div id="mus-${i}">${musclesHTML(x, i)}</div>
         <div class="sets"><div class="set lbl"><span></span><span>Reps</span><span>Weight (${esc(d.unit)})</span><span></span></div>
         ${x.sets.map((st, j) => `<div class="set"><span class="n">${j + 1}</span>
-          <input class="inp num" id="r-${i}-${j}" type="number" inputmode="numeric" min="0" placeholder="0" value="${esc(st.reps)}" data-set="${i}:${j}:reps" aria-label="Set ${j + 1} reps">
-          <input class="inp num" id="w-${i}-${j}" type="number" inputmode="decimal" min="0" step="any" placeholder="0" value="${esc(st.weight)}" data-set="${i}:${j}:weight" aria-label="Set ${j + 1} weight">
+          <input class="inp num" id="r-${i}-${j}" type="number" inputmode="numeric" min="0" placeholder="Reps" value="${esc(st.reps)}" data-set="${i}:${j}:reps" aria-label="Set ${j + 1} reps">
+          <input class="inp num" id="w-${i}-${j}" type="number" inputmode="decimal" min="0" step="any" placeholder="${esc(d.unit)}" value="${esc(st.weight)}" data-set="${i}:${j}:weight" aria-label="Set ${j + 1} weight">
           <button class="x" type="button" data-rmset="${i}:${j}" aria-label="Remove set ${j + 1}">${XSVG}</button></div>`).join("")}
         </div>
         <div><button class="btn small" type="button" data-addset="${i}">+ Add set</button></div>
@@ -1212,6 +1271,8 @@ $("sheetRoot").addEventListener("click", async e => {
   if (b.classList.contains("overlay")) { if (e.target === b) closeSheet(); return; }
   const a = b.dataset;
   if (a.act === "close") return closeSheet();
+  if (a.act === "pick-lift") return openSheet("lift", null);
+  if (a.act === "pick-cardio") return openSheet("cardio", null);
   if (a.act === "save") return saveDraft();
   if (a.act === "goals-reset") { S.draft = JSON.parse(JSON.stringify(DEFAULT_GOALS)); return renderSheet(); }
   if (a.preset) { S.draft = presetGoals(a.preset); return renderSheet(); }
@@ -1252,7 +1313,11 @@ $("next").addEventListener("click", () => { const n = shift(S.period, S.anchor, 
 const pick = (key, m) => { S[key] = m && S[key] !== m ? m : null; render(); };
 $("liftBodies").addEventListener("click", e => { const p = e.target.closest("[data-m]"); pick("selLift", p && p.dataset.m); });
 $("cardioBodies").addEventListener("click", e => { const p = e.target.closest("[data-m]"); pick("selCardio", p && p.dataset.m); });
-$("bars").addEventListener("click", e => { const b = e.target.closest("[data-m]"); if (b) pick("selLift", b.dataset.m); });
+$("bars").addEventListener("click", e => {
+  const b = e.target.closest("[data-m]"); if (!b) return;
+  pick("selLift", b.dataset.m);
+  if (S.selLift && tabMode.matches) showLiftMap();
+});
 $("history").addEventListener("click", e => {
   const b = e.target.closest("[data-w]"); if (!b) return;
   const w = data().find(x => x.id === b.dataset.w); if (!w) return;
@@ -1264,7 +1329,7 @@ $("history").addEventListener("click", e => {
 });
 document.addEventListener("click", e => {
   const gap = e.target.closest("#summary .gap");
-  if (gap) { S.selLift = gap.dataset.m; render(); $("liftH").scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+  if (gap) { S.selLift = gap.dataset.m; render(); showLiftMap(); return; }
   const clr = e.target.closest("[data-clear]");
   if (clr) { if (clr.closest("#liftSel")) S.selLift = null; else S.selCardio = null; return render(); }
   const b = e.target.closest("[data-open], #banner [data-act], #onboard [data-act], #summary [data-act]"); if (!b) return;
@@ -1273,7 +1338,43 @@ document.addEventListener("click", e => {
   if (k === "cardio") openSheet("cardio", null);
   if (k === "goals") openSheet("goals", null);
   if (k === "level") openSheet("level", null);
+  if (k === "add") openSheet("add", null);
   if (k === "ob-hide") { prefs.onboardHidden = true; savePrefs(); render(); }
+});
+
+/* ---------- Phone layout: tabs, map switch, keyboard ---------- */
+const tabMode = matchMedia("(max-width: 899px)");
+function setTab(t, scroll = true) {
+  prefs.tab = t; savePrefs();
+  document.body.dataset.tab = t;
+  document.querySelectorAll("[data-tabbtn]").forEach(b => { if (b.dataset.tabbtn === t) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
+  if (scroll && tabMode.matches) window.scrollTo(0, 0);
+}
+function setMap(m) {
+  prefs.map = m; savePrefs();
+  document.body.dataset.map = m;
+  document.querySelectorAll("[data-maptab]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.maptab === m)));
+}
+function showLiftMap() {
+  if (tabMode.matches) { setTab("maps"); setMap("lift"); }
+  else $("liftH").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+document.querySelector(".tabbar").addEventListener("click", e => { const b = e.target.closest("[data-tabbtn]"); if (b) setTab(b.dataset.tabbtn); });
+document.querySelector(".maptoggle").addEventListener("click", e => { const b = e.target.closest("[data-maptab]"); if (b) setMap(b.dataset.maptab); });
+setTab(["today", "maps", "stats", "history"].includes(prefs.tab) ? prefs.tab : "today", false);
+setMap(prefs.map === "cardio" ? "cardio" : "lift");
+
+// Size full-screen forms to the part of the screen above the keyboard, and keep the field you tap in view.
+const vv = window.visualViewport;
+function syncViewport() {
+  if (!vv) return;
+  document.documentElement.style.setProperty("--vv-h", `${vv.height}px`);
+  document.documentElement.style.setProperty("--vv-top", `${vv.offsetTop}px`);
+}
+if (vv) { vv.addEventListener("resize", syncViewport); vv.addEventListener("scroll", syncViewport); syncViewport(); }
+$("sheetRoot").addEventListener("focusin", e => {
+  if (!e.target.matches("input, select, textarea")) return;
+  setTimeout(() => { if (document.activeElement === e.target) e.target.scrollIntoView({ block: "center", behavior: "smooth" }); }, 320);
 });
 
 render();

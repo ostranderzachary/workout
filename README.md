@@ -10,6 +10,17 @@ A mobile-friendly workout tracker. Log lifts and cardio, set daily goals, and se
 - **History:** tap a workout to edit or delete it.
 - Example workouts are shown until you log your first one. They are never saved.
 
+## On your phone
+
+On screens narrower than 900px, the app splits into four tabs on a bottom bar:
+
+- **Today:** your level, the get-started checklist and your progress summary.
+- **Maps:** one heat map at a time, with a Lifting/Cardio switch.
+- **Stats:** goal bars, the cardio goal and the cardio breakdown.
+- **History:** your workout list.
+
+The **+** button in the middle logs lifts or cardio. On phones, forms open full screen and fit the space above the keyboard. The Save button stays pinned at the bottom, and the field you're typing in scrolls into view. Wider screens show everything on one page.
+
 ## Goals
 
 Tap **Goals** to set a weekly target: sets per week for each muscle group, and minutes per week for cardio. The defaults are 14 sets a week for big muscles, 6–10 for smaller ones, and 150 minutes of cardio.
