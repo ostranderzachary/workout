@@ -1076,7 +1076,7 @@ function openSheet(kind, w) {
 function closeSheet() { S.sheet = null; S.draft = null; renderSheet(); }
 
 /* An input with − and + buttons either side, so numbers can be set without the keyboard.
-   Hold a button to keep counting. `step` is the amount per tap. */
+   `step` is the amount per tap. */
 const stepper = (input, step, label) => `<div class="stepper">
   <button type="button" class="stp" data-d="${-step}" aria-label="Decrease ${esc(label)}">−</button>${input}<button type="button" class="stp" data-d="${step}" aria-label="Increase ${esc(label)}">+</button></div>`;
 const weightStep = unit => (unit === "kg" ? 2.5 : 5);
@@ -1262,19 +1262,8 @@ function stepInput(btn) {
   input.value = String(Number(v.toFixed(dec + (input.dataset.set && input.dataset.set.endsWith("weight") ? 1 : 0))));
   input.dispatchEvent(new Event("input", { bubbles: true }));
 }
-// Tap to step once; hold to repeat, speeding up the longer you hold.
-let stepTimer = null;
-const stopStep = () => { clearTimeout(stepTimer); stepTimer = null; };
-$("sheetRoot").addEventListener("pointerdown", e => {
-  const btn = e.target.closest(".stp"); if (!btn) return;
-  e.preventDefault();
-  stepInput(btn);
-  let n = 0;
-  const again = () => { stepInput(btn); n++; stepTimer = setTimeout(again, n > 10 ? 50 : 110); };
-  stepTimer = setTimeout(again, 450);
-});
-["pointerup", "pointercancel", "pointerleave"].forEach(ev => $("sheetRoot").addEventListener(ev, e => { if (e.target.closest && e.target.closest(".stp")) stopStep(); }, true));
-$("sheetRoot").addEventListener("click", e => { const btn = e.target.closest(".stp"); if (btn && e.detail === 0) stepInput(btn); }); // keyboard Enter/Space
+// Each tap (or Enter/Space) steps once.
+$("sheetRoot").addEventListener("click", e => { const btn = e.target.closest(".stp"); if (btn) stepInput(btn); });
 
 // On touch screens, bring the new field into view without opening the keyboard (the −/+ buttons are there).
 function refocus(id) {
