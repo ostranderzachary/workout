@@ -284,6 +284,13 @@ button.tag { cursor: pointer; }
 .set { display: grid; grid-template-columns: 28px minmax(0,1fr) minmax(0,1fr) 36px; gap: 8px; align-items: center; }
 .set .n { font-family: var(--font-display); font-weight: 600; color: var(--muted); text-align: center; }
 .set .inp { padding: 8px 10px; }
+.stepper { display: grid; grid-template-columns: 36px minmax(0, 1fr) 36px; align-items: stretch; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); overflow: hidden; min-width: 0; }
+.stepper .inp { border: 0; border-radius: 0; background: transparent; text-align: center; padding-inline: 2px; -moz-appearance: textfield; }
+.stepper .inp::-webkit-outer-spin-button, .stepper .inp::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.stepper .inp:focus-visible { outline-offset: -2px; }
+.stp { -webkit-tap-highlight-color: transparent; border: 0; background: var(--surface); color: var(--fg); font-size: 22px; font-weight: 600; line-height: 1; min-height: 40px; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.stp:active { background: var(--h2); }
+.field label small { text-transform: none; letter-spacing: 0; font-weight: 500; }
 .x { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: transparent; display: grid; place-items: center; color: var(--muted); }
 .x svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.4; fill: none; stroke-linecap: round; }
 .sheet-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; margin-top: 16px; }
@@ -303,8 +310,11 @@ button.tag { cursor: pointer; }
   .sheet-head h3 { font-size: 22px; }
   .x { width: 44px; height: 44px; }
   .ex { padding: 12px 10px; }
-  .set { grid-template-columns: 24px minmax(0,1fr) minmax(0,1fr) 44px; }
-  .set .inp { padding: 11px 10px; }
+  .set { grid-template-columns: 18px minmax(0,1fr) minmax(0,1fr) 40px; gap: 6px; }
+  .set .inp { padding: 11px 2px; }
+  .set .x { width: 40px; height: 40px; }
+  .stepper { grid-template-columns: 38px minmax(0, 1fr) 38px; }
+  .stp { min-height: 46px; }
   .row2 { grid-template-columns: 1fr; }
   .btn.small { padding: 9px 14px; font-size: 14px; }
 }
@@ -1065,6 +1075,12 @@ function openSheet(kind, w) {
 }
 function closeSheet() { S.sheet = null; S.draft = null; renderSheet(); }
 
+/* An input with − and + buttons either side, so numbers can be set without the keyboard.
+   Hold a button to keep counting. `step` is the amount per tap. */
+const stepper = (input, step, label) => `<div class="stepper">
+  <button type="button" class="stp" data-d="${-step}" aria-label="Decrease ${esc(label)}">−</button>${input}<button type="button" class="stp" data-d="${step}" aria-label="Increase ${esc(label)}">+</button></div>`;
+const weightStep = unit => (unit === "kg" ? 2.5 : 5);
+
 function sheetFrame(title, body, actions, { compact = false } = {}) {
   return `<div class="overlay${compact ? " compact" : ""}" data-act="close-bg"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
     <div class="sheet-head"><h3 id="sheetTitle">${title}</h3><button class="x" type="button" data-act="close" aria-label="Close">${XSVG}</button></div>
@@ -1125,10 +1141,10 @@ function liftSheet(d) {
         <div class="ex-top"><div class="field"><label for="ex-${i}">Exercise ${i + 1}</label><input class="inp" id="ex-${i}" list="exnames" placeholder="Search or type a new one" value="${esc(x.name)}" data-ex="${i}" autocomplete="off"></div>
         <button class="x" type="button" data-rmex="${i}" aria-label="Remove exercise">${XSVG}</button></div>
         <div id="mus-${i}">${musclesHTML(x, i)}</div>
-        <div class="sets"><div class="set lbl"><span></span><span>Reps</span><span>Weight (${esc(d.unit)})</span><span></span></div>
+        <div class="sets"><div class="set lbl"><span></span><span>Reps</span><span>Weight (${esc(d.unit)}) ±${weightStep(d.unit)}</span><span></span></div>
         ${x.sets.map((st, j) => `<div class="set"><span class="n">${j + 1}</span>
-          <input class="inp num" id="r-${i}-${j}" type="number" inputmode="numeric" min="0" placeholder="Reps" value="${esc(st.reps)}" data-set="${i}:${j}:reps" aria-label="Set ${j + 1} reps">
-          <input class="inp num" id="w-${i}-${j}" type="number" inputmode="decimal" min="0" step="any" placeholder="${esc(d.unit)}" value="${esc(st.weight)}" data-set="${i}:${j}:weight" aria-label="Set ${j + 1} weight">
+          ${stepper(`<input class="inp num" id="r-${i}-${j}" type="number" inputmode="numeric" min="0" placeholder="Reps" value="${esc(st.reps)}" data-set="${i}:${j}:reps" aria-label="Set ${j + 1} reps">`, 1, `set ${j + 1} reps`)}
+          ${stepper(`<input class="inp num" id="w-${i}-${j}" type="number" inputmode="decimal" min="0" step="any" placeholder="${esc(d.unit)}" value="${esc(st.weight)}" data-set="${i}:${j}:weight" aria-label="Set ${j + 1} weight">`, weightStep(d.unit), `set ${j + 1} weight by ${weightStep(d.unit)} ${d.unit}`)}
           <button class="x" type="button" data-rmset="${i}:${j}" aria-label="Remove set ${j + 1}">${XSVG}</button></div>`).join("")}
         </div>
         <div><button class="btn small" type="button" data-addset="${i}">+ Add set</button></div>
@@ -1144,8 +1160,8 @@ function cardioSheet(d) {
       `<button type="button" class="chip" data-activity="${k}" aria-pressed="${d.activity === k}">${esc(CARDIO[k][0])}</button>`).join("")}</div></div>
     <div class="tags" style="margin-top:8px">${a[1].map(m => `<span class="tag p">${esc(MUSCLES[m])}</span>`).join("")}${a[2].map(m => `<span class="tag s">${esc(MUSCLES[m])}</span>`).join("")}</div>
     <div class="row2" style="margin-top:12px">
-      <div class="field"><label for="c-min">Minutes</label><input class="inp num" id="c-min" type="number" inputmode="numeric" min="0" placeholder="30" value="${esc(d.minutes)}" data-f="minutes"></div>
-      <div class="field"><label for="c-dist">Distance · optional</label><div class="withunit"><input class="inp num" id="c-dist" type="number" inputmode="decimal" min="0" step="any" placeholder="0" value="${esc(d.distance)}" data-f="distance">
+      <div class="field"><label for="c-min">Minutes <small>±5</small></label>${stepper(`<input class="inp num" id="c-min" type="number" inputmode="numeric" min="0" placeholder="30" value="${esc(d.minutes)}" data-f="minutes">`, 5, "minutes by 5")}</div>
+      <div class="field"><label for="c-dist">Distance · optional <small>±0.1</small></label><div class="withunit">${stepper(`<input class="inp num" id="c-dist" type="number" inputmode="decimal" min="0" step="any" placeholder="0" value="${esc(d.distance)}" data-f="distance">`, 0.1, "distance by 0.1")}
         ${["mi", "km"].map(u => `<button type="button" class="tag ${d.distUnit === u ? "p" : ""}" data-dunit="${u}">${u}</button>`).join("")}</div></div>
     </div>
     <div class="row2" style="margin-top:10px">
@@ -1217,7 +1233,55 @@ $("sheetRoot").addEventListener("input", e => {
   }
 });
 
-function refocus(id) { const el = $(id); if (el) { el.focus(); if (el.select) try { el.select(); } catch {} } }
+/* Starting value when + is tapped on an empty field: the same set last time you did this exercise,
+   else the set above, else a sensible default. */
+function stepStart(input) {
+  const d = S.draft;
+  if (input.dataset.set) {
+    const [i, j, k] = input.dataset.set.split(":"), x = d.exercises[i];
+    const above = j > 0 ? x.sets[j - 1][k] : "";
+    if (String(above).trim() !== "") return Number(above);
+    const name = (x.name || "").trim().toLowerCase();
+    const past = name && S.workouts.filter(w => !isCardio(w)).sort((a, b) => b.date.localeCompare(a.date))
+      .flatMap(w => w.exercises || []).find(e => e.name.toLowerCase() === name && e.sets && e.sets.length);
+    if (past) { const st = past.sets[Math.min(+j, past.sets.length - 1)]; if (st && st[k] !== "" && st[k] != null) return Number(st[k]); }
+    return k === "reps" ? 8 : null;
+  }
+  if (input.dataset.f === "minutes") return 30;
+  return null;
+}
+function stepInput(btn) {
+  const input = btn.parentElement.querySelector("input"); if (!input) return;
+  const delta = Number(btn.dataset.d), dec = Math.max(0, (String(btn.dataset.d).split(".")[1] || "").length);
+  let v = input.value.trim() === "" ? null : Number(input.value);
+  if (v == null || Number.isNaN(v)) {
+    if (delta < 0) return;
+    const start = stepStart(input);
+    v = start != null ? start : delta;
+  } else v = Math.max(0, v + delta);
+  input.value = String(Number(v.toFixed(dec + (input.dataset.set && input.dataset.set.endsWith("weight") ? 1 : 0))));
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+}
+// Tap to step once; hold to repeat, speeding up the longer you hold.
+let stepTimer = null;
+const stopStep = () => { clearTimeout(stepTimer); stepTimer = null; };
+$("sheetRoot").addEventListener("pointerdown", e => {
+  const btn = e.target.closest(".stp"); if (!btn) return;
+  e.preventDefault();
+  stepInput(btn);
+  let n = 0;
+  const again = () => { stepInput(btn); n++; stepTimer = setTimeout(again, n > 10 ? 50 : 110); };
+  stepTimer = setTimeout(again, 450);
+});
+["pointerup", "pointercancel", "pointerleave"].forEach(ev => $("sheetRoot").addEventListener(ev, e => { if (e.target.closest && e.target.closest(".stp")) stopStep(); }, true));
+$("sheetRoot").addEventListener("click", e => { const btn = e.target.closest(".stp"); if (btn && e.detail === 0) stepInput(btn); }); // keyboard Enter/Space
+
+// On touch screens, bring the new field into view without opening the keyboard (the −/+ buttons are there).
+function refocus(id) {
+  const el = $(id); if (!el) return;
+  if (matchMedia("(pointer: coarse)").matches) { el.scrollIntoView({ block: "center", behavior: "smooth" }); return; }
+  el.focus(); if (el.select) try { el.select(); } catch {}
+}
 
 async function saveDraft() {
   const d = S.draft;
