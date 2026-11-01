@@ -1161,7 +1161,7 @@ function cardioSheet(d) {
     <div class="tags" style="margin-top:8px">${a[1].map(m => `<span class="tag p">${esc(MUSCLES[m])}</span>`).join("")}${a[2].map(m => `<span class="tag s">${esc(MUSCLES[m])}</span>`).join("")}</div>
     <div class="row2" style="margin-top:12px">
       <div class="field"><label for="c-min">Minutes <small>±5</small></label>${stepper(`<input class="inp num" id="c-min" type="number" inputmode="numeric" min="0" placeholder="30" value="${esc(d.minutes)}" data-f="minutes">`, 5, "minutes by 5")}</div>
-      <div class="field"><label for="c-dist">Distance · optional <small>±0.1</small></label><div class="withunit">${stepper(`<input class="inp num" id="c-dist" type="number" inputmode="decimal" min="0" step="any" placeholder="0" value="${esc(d.distance)}" data-f="distance">`, 0.1, "distance by 0.1")}
+      <div class="field"><label for="c-dist">Distance · optional <small>±0.5</small></label><div class="withunit">${stepper(`<input class="inp num" id="c-dist" type="number" inputmode="decimal" min="0" step="any" placeholder="0" value="${esc(d.distance)}" data-f="distance">`, 0.5, "distance by 0.5")}
         ${["mi", "km"].map(u => `<button type="button" class="tag ${d.distUnit === u ? "p" : ""}" data-dunit="${u}">${u}</button>`).join("")}</div></div>
     </div>
     <div class="row2" style="margin-top:10px">

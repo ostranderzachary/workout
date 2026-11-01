@@ -19,7 +19,7 @@ On screens narrower than 900px, the app splits into four tabs on a bottom bar:
 - **Stats:** goal bars, the cardio goal and the cardio breakdown.
 - **History:** your workout list.
 
-The **+** button in the middle logs lifts or cardio. On phones, forms open full screen and fit the space above the keyboard. The Save button stays pinned at the bottom, and the field you're typing in scrolls into view. Number fields have **− / +** buttons, so you rarely need the keyboard. Each tap changes reps by 1, weight by 5 lb (2.5 kg), cardio minutes by 5 and distance by 0.1. Tapping + on an empty set starts from the set above, or from what you did last time for that exercise. New sets copy the set above.
+The **+** button in the middle logs lifts or cardio. On phones, forms open full screen and fit the space above the keyboard. The Save button stays pinned at the bottom, and the field you're typing in scrolls into view. Number fields have **− / +** buttons, so you rarely need the keyboard. Each tap changes reps by 1, weight by 5 lb (2.5 kg), cardio minutes by 5 and distance by 0.5. Tapping + on an empty set starts from the set above, or from what you did last time for that exercise. New sets copy the set above.
 
 Wider screens show everything on one page.
 
