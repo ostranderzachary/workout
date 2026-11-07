@@ -1077,16 +1077,13 @@ function weekSnapshot() {
 
 function shareText(x) {
   const { info, c, g, wk } = x, u = distUnit();
-  const lines = [
-    `Forged - Level ${info.level}, ${x.title}`,
-    `${info.total.toLocaleString()} XP total, ${(info.need - info.into).toLocaleString()} XP to level ${info.level + 1}`
-  ];
+  const days = new Set(c.ws.map(w => w.date)).size;
+  const lines = [`Forged: Level ${info.level}, ${x.title} (${info.total.toLocaleString()} XP)`];
   if (x.next) lines.push(`Next title: ${x.next[1]} at level ${x.next[0]}`);
-  lines.push("", `This week (${x.r.label})`);
-  lines.push(`Workouts: ${c.ws.length}${wk && wk.target ? `, ${wk.days} workout day${wk.days === 1 ? "" : "s"} (goal ${wk.target})` : ""}${wk && wk.streak > 1 ? `, ${wk.streak}-week streak` : ""}`);
-  lines.push(`Lifting: ${c.sets} sets, ${x.met} of ${x.withGoal.length} muscle goals met`);
-  lines.push(`Cardio: ${hm(c.minutes)} of ${hm(g.cardio)} (${pctOf(c.minutes, g.cardio)}%), ${fmt(c.distance)} of ${fmt(x.distGoal)} ${u} (${pctOf(c.distance, x.distGoal)}%)`);
-  lines.push("", "Titles: " + TITLES.map(([l, t]) => `${t} (${l})${t === x.title ? " - current" : ""}`).join(", "));
+  lines.push("", `This week, ${x.r.label}`);
+  lines.push(`- ${c.ws.length} workout${c.ws.length === 1 ? "" : "s"} on ${days} day${days === 1 ? "" : "s"}${wk && wk.streak > 1 ? `, ${wk.streak}-week streak` : ""}`);
+  lines.push(`- Lifting: ${c.sets} sets, ${x.met}/${x.withGoal.length} muscle goals`);
+  lines.push(`- Cardio: ${hm(c.minutes)} (${pctOf(c.minutes, g.cardio)}%), ${fmt(c.distance)} ${u} (${pctOf(c.distance, x.distGoal)}%)`);
   return lines.join("\n");
 }
 
