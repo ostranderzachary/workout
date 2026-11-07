@@ -15,8 +15,8 @@ A mobile-friendly workout tracker. Log lifts and cardio, set daily goals, and se
 On screens narrower than 900px, the app splits into four tabs on a bottom bar:
 
 - **Today:** your level, the get-started checklist and your progress summary.
-- **Maps:** one heat map at a time, with a Lifting/Cardio switch.
-- **Stats:** goal bars, the cardio goal and the cardio breakdown.
+- **Maps:** the lifting heat map.
+- **Stats:** cardio gauges, lifting goal bars and the cardio breakdown.
 - **History:** your workout list.
 
 The **+** button in the middle logs lifts or cardio. On phones, forms open full screen and fit the space above the keyboard. The Save button stays pinned at the bottom, and the field you're typing in scrolls into view. Number fields have **− / +** buttons, so you rarely need the keyboard. Each tap changes reps by 1, weight by 5 lb (2.5 kg), cardio minutes by 5 and distance by 0.5. Tapping + on an empty set starts from the set above, or from what you did last time for that exercise. New sets copy the set above.
@@ -74,7 +74,7 @@ XP is worked out from your logged workouts, so editing or deleting a workout upd
 
 ## Cardio
 
-Tap **Log cardio** to add a session: activity type, minutes, optional distance (mi or km), date and name. Each activity maps to the muscles it works. For example, a cycle works quads fully and calves, hamstrings and glutes partly. Those minutes fill the separate cardio heat map. A muscle's main activities count full minutes and supporting ones count half.
+Tap **Log cardio** to add a session: activity type, minutes, optional distance (mi or km), date and name. Each activity maps to the muscles it works. For example, a cycle works quads fully and calves, hamstrings and glutes partly. Cardio progress shows as two doughnut gauges, **Time** and **Distance**, each filling toward your weekly goal for the selected range (default 150 minutes and 10 miles a week, set in Goals). A tick on each ring marks where you'd be today at an even pace.
 
 ## Running it
 

@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Figtree:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: one column on phones (lifting map, cardio map, goals, history); two columns from 900px with both maps on the left. */
+/* Layout: tabs on phones (Today, Maps, Stats, History); two columns from 900px with the lifting map and cardio gauges on the left. */
 :root {
   /* Dark theme only. */
   --bg: #111418;
@@ -210,18 +210,14 @@ header.top {
 .empty { color: var(--muted); font-size: 14px; padding: 8px 0; }
 
 .top-actions { display: flex; gap: 8px; flex: none; }
-.tabbar, .maptoggle { display: none; }
+.tabbar { display: none; }
 /* Phones and small tablets: one section at a time, switched from a bottom tab bar. */
 @media (max-width: 899px) {
   .desk-only { display: none; }
   body { padding-block: 0 calc(96px + env(safe-area-inset-bottom, 0px)); }
   body:not([data-tab="today"]) [data-tab="today"], body:not([data-tab="maps"]) [data-tab="maps"],
-  body:not([data-tab="stats"]) [data-tab="stats"], body:not([data-tab="history"]) [data-tab="history"],
-  body:not([data-map="lift"]) [data-map="lift"], body:not([data-map="cardio"]) [data-map="cardio"] { display: none !important; }
+  body:not([data-tab="stats"]) [data-tab="stats"], body:not([data-tab="history"]) [data-tab="history"] { display: none !important; }
   .grid { margin-top: 12px; }
-  .maptoggle { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 3px; }
-  .maptoggle button { border: 0; background: transparent; border-radius: 9px; padding: 10px 0; font-weight: 700; font-size: 15px; color: var(--muted); }
-  .maptoggle button[aria-pressed="true"] { background: var(--h3); color: #0b1a0f; }
   .tabbar { display: grid; grid-template-columns: repeat(5, 1fr); align-items: end; position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--surface); border-top: 1px solid var(--line);
     padding: 4px max(8px, env(safe-area-inset-right, 0px)) calc(4px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
   .tabbar button { border: 0; background: transparent; color: var(--muted); display: grid; justify-items: center; gap: 2px; font-size: 11px; font-weight: 600; padding: 6px 0; min-height: 54px; align-content: center; }
@@ -246,6 +242,19 @@ header.top {
 .goal small { color: var(--muted); font-size: 12px; text-align: right; }
 .goalline { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 14px; color: var(--muted); margin-bottom: 6px; }
 .goalline b { font-family: var(--font-display); font-size: 26px; color: var(--fg); font-weight: 700; }
+.gauges { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.gauge { margin: 0; display: grid; justify-items: center; gap: 6px; min-width: 0; }
+.gauge svg { width: 100%; max-width: 170px; height: auto; display: block; }
+.g-track { fill: none; stroke: var(--bg); stroke-width: 13; }
+.g-fill { fill: none; stroke-width: 13; transition: stroke-dasharray .4s ease; }
+.g-tick { stroke: var(--fg); stroke-width: 2.5; stroke-linecap: round; opacity: .75; }
+.g-val { fill: var(--fg); font-family: var(--font-display); font-weight: 700; font-size: 24px; text-anchor: middle; font-variant-numeric: tabular-nums; }
+.g-of { fill: var(--muted); font-family: var(--font-body); font-size: 11px; text-anchor: middle; }
+.gauge figcaption { display: grid; justify-items: center; gap: 4px; text-align: center; font-size: 13px; color: var(--muted); }
+.gauge figcaption b { color: var(--fg); font-size: 14px; text-transform: uppercase; letter-spacing: .06em; }
+.g-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+@media (prefers-reduced-motion: reduce) { .g-fill { transition: none; } }
+.gauges .pill { white-space: normal; text-align: center; line-height: 1.3; }
 .track.big { position: relative; height: 14px; background: var(--bg); border-radius: 7px; }
 .track.big .fill { position: absolute; inset: 0 auto 0 0; border-radius: 7px; }
 .table-scroll { overflow-x: auto; }
@@ -310,9 +319,25 @@ button.tag { cursor: pointer; }
   .sheet-head h3 { font-size: 22px; }
   .x { width: 44px; height: 44px; }
   .ex { padding: 12px 10px; }
-  .set { grid-template-columns: 18px minmax(0,1fr) minmax(0,1fr) 40px; gap: 6px; }
-  .set .inp { padding: 11px 2px; }
-  .set .x { width: 40px; height: 40px; }
+  /* Each set on two lines: "Set 1" and remove, then Reps and Weight at full half-width each. */
+  .set { grid-template-columns: minmax(0,1fr) minmax(0,1fr); grid-template-areas: "n x" "r w"; gap: 4px 8px; }
+  .set > .n { grid-area: n; text-align: left; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; align-self: end; }
+  .set > .n::before { content: "Set "; }
+  .set > div.stepper:nth-of-type(1) { grid-area: r; }
+  .set > div.stepper:nth-of-type(2) { grid-area: w; }
+  .set > .x { grid-area: x; justify-self: end; width: 34px; height: 34px; }
+  .set.lbl { grid-template-areas: "r w"; margin-bottom: -2px; }
+  .set.lbl > span:first-child, .set.lbl > span:last-child { display: none; }
+  .set.lbl > span:nth-child(2) { grid-area: r; }
+  .set.lbl > span:nth-child(3) { grid-area: w; }
+  .sets { gap: 10px; }
+  .set .inp { padding: 11px 4px; font-size: 18px; }
+}
+/* The narrowest phones: Reps and Weight each get a full-width line. */
+@media (max-width: 359px) {
+  .set { grid-template-areas: "n x" "r r" "w w"; }
+  .set.lbl { display: none; }
+  .set > div.stepper .inp::placeholder { opacity: 1; }
   .stepper { grid-template-columns: 38px minmax(0, 1fr) 38px; }
   .stp { min-height: 46px; }
   .row2 { grid-template-columns: 1fr; }
@@ -358,11 +383,7 @@ button.tag { cursor: pointer; }
 
   <div class="grid">
     <div class="col">
-      <div class="maptoggle" data-tab="maps" role="group" aria-label="Which heat map">
-        <button type="button" data-maptab="lift">Lifting</button>
-        <button type="button" data-maptab="cardio">Cardio</button>
-      </div>
-      <section class="panel" aria-labelledby="liftH" data-tab="maps" data-map="lift">
+      <section class="panel" aria-labelledby="liftH" data-tab="maps">
         <h2 id="liftH">Lifting heat map</h2>
         <div class="stats" id="liftStats"></div>
         <div class="bodies" id="liftBodies"></div>
@@ -373,16 +394,9 @@ button.tag { cursor: pointer; }
           <p>Tap a muscle to see its numbers and which exercises counted.</p></details>
         <div id="liftSel"></div>
       </section>
-      <section class="panel" aria-labelledby="cardioH" data-tab="maps" data-map="cardio">
-        <h2 id="cardioH">Cardio heat map</h2>
-        <div class="stats" id="cardioStats"></div>
-        <div class="bodies" id="cardioBodies"></div>
-        <div class="legend" id="cardioLegend"></div>
-        <details class="howto"><summary>How to read this map</summary>
-          <p>Each muscle is coloured by how many cardio minutes worked it, compared with your cardio goal for the range above. Bright lime means that muscle got your full goal's worth of minutes.</p>
-          <p>Each activity counts full minutes for the muscles it mainly works and half for supporting ones. A 30-minute run is 30 minutes for quads and calves and 15 for hamstrings and glutes.</p>
-          <p>Tap a muscle to see which activities counted.</p></details>
-        <div id="cardioSel"></div>
+      <section class="panel" aria-labelledby="cardioH" data-tab="stats">
+        <h2 id="cardioH">Cardio</h2>
+        <div id="cardioGoal"></div>
       </section>
     </div>
     <div class="col">
@@ -390,10 +404,6 @@ button.tag { cursor: pointer; }
         <h2 id="barsTitle">Lifting goals</h2>
         <ul class="bars" id="bars"></ul>
         <p class="note" id="barsNote"></p>
-      </section>
-      <section class="panel" data-tab="stats">
-        <h2>Cardio goal</h2>
-        <div id="cardioGoal"></div>
       </section>
       <section class="panel" data-tab="stats">
         <h2 id="breakdownTitle">Cardio breakdown</h2>
@@ -573,6 +583,7 @@ const DEFAULT_GOALS = {
   per: "week",
   sets: { chest: 14, shoulders: 14, biceps: 10, triceps: 10, forearms: 6, traps: 8, lats: 14, lowerback: 6, abs: 10, obliques: 6, glutes: 10, quads: 14, hamstrings: 10, adductors: 6, calves: 10 },
   cardio: 150,
+  distance: 10, // miles per week, shown in km when that unit is chosen
   days: 4 // workout days per week, for consistency bonuses and missed-day penalties
 };
 /* Goals saved before weekly goals existed were per day; scale those by 7. */
@@ -581,6 +592,7 @@ const normGoals = g => {
   const sets = { ...DEFAULT_GOALS.sets };
   if (g && g.sets) for (const [m, v] of Object.entries(g.sets)) sets[m] = Math.round((Number(v) || 0) * f * 10) / 10;
   return { per: "week", sets, cardio: g && g.cardio != null ? (Number(g.cardio) || 0) * f : DEFAULT_GOALS.cardio,
+    distance: g && g.distance != null ? Math.max(0, Number(g.distance) || 0) : DEFAULT_GOALS.distance,
     days: g && g.days != null ? Math.min(7, Math.max(0, Math.round(Number(g.days) || 0))) : DEFAULT_GOALS.days,
     history: g && Array.isArray(g.history) ? g.history : [] };
 };
@@ -589,7 +601,7 @@ function goalsAt(date) {
   const h = S.goals.history;
   if (!h.length) return S.goals;
   const e = h.filter(x => x.from <= date).pop() || h[0];
-  return normGoals({ per: "week", sets: e.sets, cardio: e.cardio, days: e.days });
+  return normGoals({ per: "week", sets: e.sets, cardio: e.cardio, distance: e.distance, days: e.days });
 }
 const perDay = w => (Number(w) || 0) / 7;
 
@@ -668,7 +680,7 @@ function sampleWorkouts() {
 let prefs = {};
 try { prefs = JSON.parse(localStorage.getItem("musclemap.prefs") || "{}"); } catch {}
 const savePrefs = () => { try { localStorage.setItem("musclemap.prefs", JSON.stringify(prefs)); } catch {} };
-const S = { workouts: [], goals: normGoals(null), goalsSaved: false, loaded: false, period: prefs.period || "week", anchor: today(), selLift: null, selCardio: null, sheet: null, draft: null, error: "", confirmDel: false };
+const S = { workouts: [], goals: normGoals(null), goalsSaved: false, loaded: false, period: prefs.period || "week", anchor: today(), selLift: null, sheet: null, draft: null, error: "", confirmDel: false };
 const SAMPLE = sampleWorkouts();
 const data = () => (S.workouts.length ? S.workouts : SAMPLE);
 const usingSample = () => S.workouts.length === 0;
@@ -807,7 +819,7 @@ const plural = (n, w) => `${fmt(n)} ${w}${Math.abs(n - 1) < 1e-9 ? "" : "s"}`;
 function status(v, t, pace, unitWord) {
   if (!t) return { k: "none", txt: "No goal set" };
   if (v >= t) return { k: "met", txt: "Goal met" };
-  const left = t - v, togo = unitWord === "min" ? `${hm(left)} to go` : `${plural(Math.round(left * 10) / 10, "set")} to go`;
+  const left = t - v, togo = unitWord === "min" ? `${hm(left)} to go` : unitWord === "dist" ? `${fmt(left)} ${distUnit()} to go` : `${plural(Math.round(left * 10) / 10, "set")} to go`;
   if (!pace.current) return { k: "missed", txt: `Missed · ${togo.replace(" to go", " short")}` };
   if (pace.days > 1 && v >= (t * pace.elapsed) / pace.days) return { k: "on", txt: `On pace · ${togo}` };
   if (pace.days > 1) return { k: "behind", txt: `Behind pace · ${togo}` };
@@ -824,8 +836,9 @@ function render() {
   // Rounded to whole sets (at least 1 when there is a goal) so targets read naturally.
   const liftTarget = m => { const x = perDay(g.sets[m]) * days; return x > 0 ? Math.max(1, Math.round(x)) : 0; };
   const cardioTarget = Math.round(perDay(g.cardio) * days);
-  const liftLv = {}, cardLv = {};
-  for (const m of M_IDS) { liftLv[m] = level(c.lift[m].v, liftTarget(m)); cardLv[m] = level(c.card[m].v, cardioTarget); }
+  const liftLv = {};
+  for (const m of M_IDS) liftLv[m] = level(c.lift[m].v, liftTarget(m));
+  const distTarget = Math.round(perDay(toUnit(Number(g.distance) || 0, "mi")) * days * 10) / 10;
   // Pace: in a range that includes today, compare progress with how much of the range has passed.
   const t0 = today(), isCurrent = S.period === "all" || (r.start <= t0 && r.end >= t0);
   const elapsed = isCurrent ? daysIn({ start: r.start, end: r.end < t0 ? r.end : t0 }) : days;
@@ -859,13 +872,6 @@ function render() {
 
   // Cardio map
   const dist = c.distance;
-  $("cardioStats").innerHTML = [["Sessions", c.cardioCount], ["Time", hm(c.minutes)], [`Distance ${distUnit()}`, fmt(dist)], ["Of goal", `${pctOf(c.minutes, cardioTarget)}%`]]
-    .map(([k, v]) => `<div class="stat"><b>${v}</b><span>${esc(k)}</span></div>`).join("");
-  $("cardioBodies").className = "bodies" + (S.selCardio ? " has-sel" : "");
-  const cardTips = Object.fromEntries(M_IDS.map(m => [m, `${MUSCLES[m]}: ${hm(c.card[m].v)} of ${hm(cardioTarget)} cardio`]));
-  $("cardioBodies").innerHTML = bodiesHTML(cardLv, S.selCardio, cardTips);
-  $("cardioLegend").innerHTML = legendHTML;
-  $("cardioSel").innerHTML = selHTML(S.selCardio, c.card, () => cardioTarget, "min", "Tap a muscle to see which cardio worked it.", S.selCardio && status(c.card[S.selCardio].v, cardioTarget, pace, "min"), r.label);
 
   // Lifting goal bars
   const sorted = M_IDS.slice().sort((a, b) => Math.min(1, c.lift[b].v / (liftTarget(b) || Infinity)) - Math.min(1, c.lift[a].v / (liftTarget(a) || Infinity)) || c.lift[b].v - c.lift[a].v);
@@ -880,14 +886,19 @@ function render() {
   $("barsNote").innerHTML = `Sets done / target for ${esc(r.label)}. ${days === 7 ? "Targets are your weekly goals." : `Targets are your weekly goal scaled to ${days} day${days === 1 ? "" : "s"} (weekly goal ÷ 7 × ${days}).`}` +
     (isCurrent && pace.days > 1 && elapsed < days ? ` The thin line on each bar is where you'd be today at an even pace, ${elapsed} of ${days} days in.` : "") + ` Tap a muscle to see it on the map.`;
 
-  // Cardio goal
-  const cp = cardioTarget ? Math.min(100, (c.minutes / cardioTarget) * 100) : 0;
-  const cmark = cardioTarget && isCurrent && pace.days > 1 && elapsed < days ? `<span class="pace" style="left:${(elapsed / days) * 100}%"></span>` : "";
-  $("cardioGoal").innerHTML = `<div class="goalline"><span class="num"><b>${hm(c.minutes)}</b> of ${hm(cardioTarget)}</span><span class="num">${pctOf(c.minutes, cardioTarget)}%</span></div>
-    <div class="track big"><span class="fill" style="width:${cp}%;background:var(--h${level(c.minutes, cardioTarget) || 1})"></span>${cmark}</div>
-    <div style="margin-top:8px">${pill(cardioSt)}</div>
-    ${c.cardioCount ? "" : `<p class="note">No cardio in this range.</p>`}
-    <p class="note">Target is ${hm(g.cardio)} a week${days === 7 ? "" : ` ÷ 7 × ${days} day${days === 1 ? "" : "s"}`}. On the map, a muscle's main cardio counts full minutes and supporting cardio counts half.</p>`;
+  // Cardio gauges: time and distance against their goals for this range
+  const tick = isCurrent && pace.days > 1 && elapsed < days ? elapsed / days : null;
+  const distSt = status(c.distance, distTarget, pace, "dist");
+  const showDist = v => `${fmt(v)} ${distUnit()}`;
+  $("cardioGoal").innerHTML = `<div class="gauges">
+      ${gauge({ value: c.minutes, target: cardioTarget, label: "Time", show: hm, tick })}
+      ${gauge({ value: c.distance, target: distTarget, label: "Distance", show: showDist, tick })}
+    </div>
+    <div class="gauges" style="margin-top:6px"><div style="text-align:center">${pill(cardioSt)}</div><div style="text-align:center">${pill(distSt)}</div></div>
+    <div class="stats g-stats">${[["Sessions", c.cardioCount], ["Avg session", c.cardioCount ? hm(c.minutes / c.cardioCount) : "–"], ["Active days", new Set(c.ws.filter(isCardio).map(w => w.date)).size]]
+      .map(([k, v]) => `<div class="stat"><b>${v}</b><span>${esc(k)}</span></div>`).join("")}</div>
+    ${c.cardioCount ? "" : `<p class="note">No cardio in this range yet.</p>`}
+    <p class="note">Goals: ${hm(g.cardio)} and ${showDist(Math.round(toUnit(Number(g.distance) || 0, "mi") * 10) / 10)} a week${days === 7 ? "" : `, scaled to ${days} day${days === 1 ? "" : "s"} (weekly goal ÷ 7 × ${days})`}.${tick != null ? " The tick on each ring is where you'd be today at an even pace." : ""}</p>`;
 
   // Cardio breakdown
   renderBreakdown(c, r);
@@ -927,6 +938,22 @@ function renderBreakdown(c, r) {
   </table></div>
   ${highlights.length ? `<ul class="highlights">${highlights.join("")}</ul>` : ""}
   <p class="note"># is sessions. Avg pace is minutes per ${u} for runs, walks and hikes, and speed for rides. Both use only sessions where you entered a distance.</p>`;
+}
+
+/* A doughnut gauge: the ring fills toward the target; a tick marks today's even-pace point. */
+function gauge({ value, target, label, show, tick }) {
+  const R = 52, C = 2 * Math.PI * R, frac = target ? Math.min(1, value / target) : 0, lv = level(value, target);
+  const tickSvg = tick != null && target ? (() => {
+    const a = (tick * 360 - 90) * Math.PI / 180, x = r => (66 + r * Math.cos(a)).toFixed(1), y = r => (66 + r * Math.sin(a)).toFixed(1);
+    return `<line class="g-tick" x1="${x(43)}" y1="${y(43)}" x2="${x(61)}" y2="${y(61)}"/>`;
+  })() : "";
+  return `<figure class="gauge"><svg viewBox="0 0 132 132" role="img" aria-label="${esc(label)}: ${esc(show(value))} of ${target ? esc(show(target)) : "no goal"}">
+      <circle class="g-track" cx="66" cy="66" r="${R}"/>
+      ${frac > 0 ? `<circle class="g-fill" cx="66" cy="66" r="${R}" style="stroke:var(--h${lv || 1})" stroke-linecap="round" stroke-dasharray="${(frac * C).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 66 66)"/>` : ""}
+      ${tickSvg}
+      <text class="g-val" x="66" y="66">${esc(show(value))}</text>
+      <text class="g-of" x="66" y="84">${target ? `of ${esc(show(target))}` : "no goal set"}</text>
+    </svg><figcaption><b>${esc(label)}</b><span class="num">${target ? `${pctOf(value, target)}% of goal` : "Set a goal in Goals"}</span></figcaption></figure>`;
 }
 
 function bodiesHTML(levels, sel, tips) {
@@ -1022,7 +1049,7 @@ function renderOnboard() {
   const steps = [
     ["goals", "Set your weekly goals", "Choose how many sets each muscle should get per week, and your weekly cardio minutes. Defaults are filled in to start from.", S.goalsSaved, "Set goals"],
     ["log", "Log a lifting workout", "Add exercises with their sets and reps. Each set counts toward the muscles that exercise works.", real.some(w => !isCardio(w)), "Log lifts"],
-    ["cardio", "Log some cardio", "Add a run, ride, swim or other session with its minutes. It fills the cardio map.", real.some(isCardio), "Log cardio"]
+    ["cardio", "Log some cardio", "Add a run, ride, swim or other session with its minutes. It fills your cardio gauges.", real.some(isCardio), "Log cardio"]
   ];
   const done = steps.filter(x => x[3]).length;
   if (prefs.onboardHidden || (done === steps.length)) { $("onboard").innerHTML = ""; return; }
@@ -1179,11 +1206,11 @@ const GOAL_GROUPS = [
 ];
 /* Presets scale the default split: big muscles get the most sets. */
 const BIG = ["chest", "shoulders", "lats", "quads"];
-const PRESETS = { light: ["Light", 8, 4, 90, 3], standard: ["Standard", 14, 8, 150, 4], high: ["High volume", 20, 12, 300, 5] };
+const PRESETS = { light: ["Light", 8, 4, 90, 3, 5], standard: ["Standard", 14, 8, 150, 4, 10], high: ["High volume", 20, 12, 300, 5, 20] };
 function presetGoals(k) {
-  const [, big, small, cardio, days] = PRESETS[k];
+  const [, big, small, cardio, days, distance] = PRESETS[k];
   const mid = Math.round((big + small) / 2);
-  return { per: "week", cardio, days, history: S.draft ? S.draft.history : [], sets: Object.fromEntries(M_IDS.map(m => [m, BIG.includes(m) ? big : DEFAULT_GOALS.sets[m] >= 10 ? mid : small])) };
+  return { per: "week", cardio, distance, days, history: S.draft ? S.draft.history : [], sets: Object.fromEntries(M_IDS.map(m => [m, BIG.includes(m) ? big : DEFAULT_GOALS.sets[m] >= 10 ? mid : small])) };
 }
 function goalsSheet(d) {
   const row = m => `<label class="goal" for="g-${m}"><span>${esc(MUSCLES[m])}</span>
@@ -1206,8 +1233,11 @@ function goalsSheet(d) {
     <div class="lbl" style="margin-top:16px">Cardio · minutes per week</div>
     <div class="goals"><label class="goal" for="g-cardio"><span>All cardio</span>
       <input class="inp num" id="g-cardio" type="number" inputmode="numeric" min="0" step="10" value="${esc(d.cardio)}" data-goal="cardio">
-      <small class="num" id="gw-cardio">${hm(perDay(d.cardio))}/day</small></label></div>
-    <p class="note">150 minutes a week is the usual health guideline. Set any goal to 0 to leave it off the maps.</p>`,
+      <small class="num" id="gw-cardio">${hm(perDay(d.cardio))}/day</small></label>
+    <label class="goal" for="g-distance"><span>Distance (${distUnit()})</span>
+      <input class="inp num" id="g-distance" type="number" inputmode="decimal" min="0" step="0.5" value="${esc(Math.round(toUnit(Number(d.distance) || 0, "mi") * 10) / 10)}" data-goal="distance">
+      <small class="num" id="gw-distance">${fmt(perDay(toUnit(Number(d.distance) || 0, "mi")))}/day</small></label></div>
+    <p class="note">150 minutes a week is the usual health guideline. Distance counts every cardio session you log with one. Set any goal to 0 to leave it off.</p>`,
     `<button class="btn ghost" type="button" data-act="goals-reset">Reset to defaults</button>
      <div class="right"><button class="btn ghost" type="button" data-act="close">Cancel</button><button class="btn primary" type="button" data-act="save">Save goals</button></div>`);
 }
@@ -1218,6 +1248,7 @@ $("sheetRoot").addEventListener("input", e => {
   if (t.dataset.goal) {
     const k = t.dataset.goal;
     if (k === "days") d.days = t.value;
+    else if (k === "distance") { d.distance = distUnit() === "km" ? (Number(t.value) || 0) / 1.609344 : Number(t.value) || 0; $("gw-distance").textContent = `${fmt(perDay(Number(t.value) || 0))}/day`; }
     else if (k === "cardio") { d.cardio = t.value; $("gw-cardio").textContent = `${hm(perDay(t.value))}/day`; }
     else { d.sets[k] = t.value; $(`gw-${k}`).textContent = `${fmt(perDay(t.value))}/day`; }
   }
@@ -1277,12 +1308,12 @@ async function saveDraft() {
   let w;
   if (S.sheet === "goals") {
     const g = { per: "week", sets: Object.fromEntries(M_IDS.map(m => [m, Math.max(0, Number(d.sets[m]) || 0)])), cardio: Math.max(0, Number(d.cardio) || 0),
-      days: Math.min(7, Math.max(0, Math.round(Number(d.days) || 0))) };
+      distance: Math.max(0, Number(d.distance) || 0), days: Math.min(7, Math.max(0, Math.round(Number(d.days) || 0))) };
     // Keep a dated history so past weeks are still judged by the goals that applied then.
-    const prev = S.goals, entry = { from: ymd(today()), sets: g.sets, cardio: g.cardio, days: g.days };
+    const prev = S.goals, entry = { from: ymd(today()), sets: g.sets, cardio: g.cardio, distance: g.distance, days: g.days };
     let hist = prev.history.slice();
     // The goals in effect until now (defaults if never saved) still apply to earlier weeks.
-    if (!hist.length) hist.push({ from: "0000-01-01", sets: prev.sets, cardio: prev.cardio, days: prev.days });
+    if (!hist.length) hist.push({ from: "0000-01-01", sets: prev.sets, cardio: prev.cardio, distance: prev.distance, days: prev.days });
     g.history = hist.filter(h => h.from !== entry.from).concat([entry]).slice(-100);
     try { await Store.saveGoals(g); S.goals = normGoals(g); S.goalsSaved = true; closeSheet(); render(); }
     catch (ex) { S.error = ex && ex.message ? ex.message : "Couldn't save your goals. Try again."; renderSheet(); }
@@ -1365,7 +1396,6 @@ $("prev").addEventListener("click", () => { S.anchor = shift(S.period, S.anchor,
 $("next").addEventListener("click", () => { const n = shift(S.period, S.anchor, 1); S.anchor = n > today() ? today() : n; render(); });
 const pick = (key, m) => { S[key] = m && S[key] !== m ? m : null; render(); };
 $("liftBodies").addEventListener("click", e => { const p = e.target.closest("[data-m]"); pick("selLift", p && p.dataset.m); });
-$("cardioBodies").addEventListener("click", e => { const p = e.target.closest("[data-m]"); pick("selCardio", p && p.dataset.m); });
 $("bars").addEventListener("click", e => {
   const b = e.target.closest("[data-m]"); if (!b) return;
   pick("selLift", b.dataset.m);
@@ -1384,7 +1414,7 @@ document.addEventListener("click", e => {
   const gap = e.target.closest("#summary .gap");
   if (gap) { S.selLift = gap.dataset.m; render(); showLiftMap(); return; }
   const clr = e.target.closest("[data-clear]");
-  if (clr) { if (clr.closest("#liftSel")) S.selLift = null; else S.selCardio = null; return render(); }
+  if (clr) { S.selLift = null; return render(); }
   const b = e.target.closest("[data-open], #banner [data-act], #onboard [data-act], #summary [data-act]"); if (!b) return;
   const k = b.dataset.open || b.dataset.act;
   if (k === "log") openSheet("lift", null);
@@ -1403,19 +1433,12 @@ function setTab(t, scroll = true) {
   document.querySelectorAll("[data-tabbtn]").forEach(b => { if (b.dataset.tabbtn === t) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
   if (scroll && tabMode.matches) window.scrollTo(0, 0);
 }
-function setMap(m) {
-  prefs.map = m; savePrefs();
-  document.body.dataset.map = m;
-  document.querySelectorAll("[data-maptab]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.maptab === m)));
-}
 function showLiftMap() {
-  if (tabMode.matches) { setTab("maps"); setMap("lift"); }
+  if (tabMode.matches) setTab("maps");
   else $("liftH").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 document.querySelector(".tabbar").addEventListener("click", e => { const b = e.target.closest("[data-tabbtn]"); if (b) setTab(b.dataset.tabbtn); });
-document.querySelector(".maptoggle").addEventListener("click", e => { const b = e.target.closest("[data-maptab]"); if (b) setMap(b.dataset.maptab); });
 setTab(["today", "maps", "stats", "history"].includes(prefs.tab) ? prefs.tab : "today", false);
-setMap(prefs.map === "cardio" ? "cardio" : "lift");
 
 // Size full-screen forms to the part of the screen above the keyboard, and keep the field you tap in view.
 const vv = window.visualViewport;
