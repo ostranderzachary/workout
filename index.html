@@ -247,7 +247,7 @@ header.top {
 .gauge svg { width: 100%; max-width: 170px; height: auto; display: block; }
 .g-track { fill: none; stroke: var(--bg); stroke-width: 13; }
 .g-fill { fill: none; stroke-width: 13; transition: stroke-dasharray .4s ease; }
-.g-tick { stroke: var(--fg); stroke-width: 2.5; stroke-linecap: round; opacity: .75; }
+.g-tick { fill: var(--fg); stroke: var(--surface); stroke-width: 2.5; }
 .g-val { fill: var(--fg); font-family: var(--font-display); font-weight: 700; font-size: 24px; text-anchor: middle; font-variant-numeric: tabular-nums; }
 .g-of { fill: var(--muted); font-family: var(--font-body); font-size: 11px; text-anchor: middle; }
 .gauge figcaption { display: grid; justify-items: center; gap: 4px; text-align: center; font-size: 13px; color: var(--muted); }
@@ -909,7 +909,7 @@ function render() {
     <div class="stats g-stats">${[["Sessions", c.cardioCount], ["Avg session", c.cardioCount ? hm(c.minutes / c.cardioCount) : "–"], ["Active days", new Set(c.ws.filter(isCardio).map(w => w.date)).size]]
       .map(([k, v]) => `<div class="stat"><b>${v}</b><span>${esc(k)}</span></div>`).join("")}</div>
     ${c.cardioCount ? "" : `<p class="note">No cardio in this range yet.</p>`}
-    <p class="note">Goals: ${hm(g.cardio)} and ${showDist(Math.round(toUnit(Number(g.distance) || 0, "mi") * 10) / 10)} a week${days === 7 ? "" : `, scaled to ${days} day${days === 1 ? "" : "s"} (weekly goal ÷ 7 × ${days})`}.${tick != null ? " The tick on each ring is where you'd be today at an even pace." : ""}</p>`;
+    <p class="note">Goals: ${hm(g.cardio)} and ${showDist(Math.round(toUnit(Number(g.distance) || 0, "mi") * 10) / 10)} a week${days === 7 ? "" : `, scaled to ${days} day${days === 1 ? "" : "s"} (weekly goal ÷ 7 × ${days})`}.${tick != null ? " The white dot on each ring is where you'd be today at an even pace." : ""}</p>`;
 
   // Cardio breakdown
   renderBreakdown(c, r);
@@ -951,12 +951,13 @@ function renderBreakdown(c, r) {
   <p class="note"># is sessions. Avg pace is minutes per ${u} for runs, walks and hikes, and speed for rides. Both use only sessions where you entered a distance.</p>`;
 }
 
-/* A doughnut gauge: the ring fills toward the target; a tick marks today's even-pace point. */
+/* A doughnut gauge: the ring fills toward the target; a dot on the ring marks today's even-pace point. */
 function gauge({ value, target, label, show, tick }) {
   const R = 52, C = 2 * Math.PI * R, frac = target ? Math.min(1, value / target) : 0, lv = level(value, target);
+  // The pace dot sits on the ring's centre line (radius R), so it lines up with the band at any angle.
   const tickSvg = tick != null && target ? (() => {
-    const a = (tick * 360 - 90) * Math.PI / 180, x = r => (66 + r * Math.cos(a)).toFixed(1), y = r => (66 + r * Math.sin(a)).toFixed(1);
-    return `<line class="g-tick" x1="${x(43)}" y1="${y(43)}" x2="${x(61)}" y2="${y(61)}"/>`;
+    const a = (tick * 360 - 90) * Math.PI / 180;
+    return `<circle class="g-tick" cx="${(66 + R * Math.cos(a)).toFixed(2)}" cy="${(66 + R * Math.sin(a)).toFixed(2)}" r="5"><title>Even pace for today</title></circle>`;
   })() : "";
   return `<figure class="gauge"><svg viewBox="0 0 132 132" role="img" aria-label="${esc(label)}: ${esc(show(value))} of ${target ? esc(show(target)) : "no goal"}">
       <circle class="g-track" cx="66" cy="66" r="${R}"/>
