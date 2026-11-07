@@ -66,6 +66,22 @@ Saving a workout shows the XP earned. Reaching a new level or title brings up a 
 
 XP is worked out from your logged workouts, so editing or deleting a workout updates it. Example workouts don't earn XP.
 
+## Sharing your progress
+
+Tap **Share progress** on the level card, or on the Level screen, to open a preview of a share card. The card shows:
+
+- your level, title, XP bar and next title
+- this week's workouts, workout days, streak and muscle goals met
+- the time and distance rings
+- a small lifting heat map
+- the title ladder
+
+A plain-text summary goes with it.
+
+**Share** opens your phone's share menu with the image and text. Where a browser can't share images, the card is saved to your downloads and the text is copied for you to paste. **Copy text** copies just the summary.
+
+Everything is generated on your device; nothing is uploaded.
+
 ## Understanding your progress
 
 - **Get started checklist:** walks new users through setting goals, logging lifts and logging cardio. Each step ticks off when done. You can hide it.

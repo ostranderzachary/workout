@@ -156,6 +156,11 @@ header.top {
 .wk-msg.warn { color: var(--danger); } .wk-msg.good { color: var(--h5); }
 .wk-last { margin: 4px 0 0; font-size: 12px; color: var(--muted); } .wk-last.bad { color: var(--danger); }
 .acts li.bonus .num { color: var(--h5); } .acts li.neg, .acts li.neg .num { color: var(--danger); }
+.player-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
+.share-prev img { display: block; width: 100%; max-width: 420px; height: auto; margin: 0 auto; border-radius: 14px; border: 1px solid var(--line); }
+.share-wait { max-width: 420px; aspect-ratio: 4 / 5; margin: 0 auto; display: grid; place-items: center; border-radius: 14px; background: var(--bg); color: var(--muted); }
+.share-text { margin: 6px 0 0; white-space: pre-wrap; word-break: break-word; font-family: var(--font-body); font-size: 13px; line-height: 1.5; color: var(--muted); background: var(--bg); border-radius: 10px; padding: 10px 12px; user-select: text; -webkit-user-select: text; }
+.btn:disabled { opacity: .45; cursor: default; }
 .xp-tag { display: inline-block; font-size: 11px; font-weight: 700; color: var(--h5); }
 .titles { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; }
 .titles li { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px 10px; border-radius: 10px; color: var(--muted); font-size: 14px; }
@@ -1011,7 +1016,8 @@ function renderPlayer() {
       </span>
       <span class="player-more" aria-hidden="true">›</span>
     </button>
-    ${info.total === 0 && !L.entries.length ? `<p class="note" style="margin:8px 0 0">Log a workout to earn your first XP. Each set and each minute of cardio counts.</p>` : weekLine}`;
+    ${info.total === 0 && !L.entries.length ? `<p class="note" style="margin:8px 0 0">Log a workout to earn your first XP. Each set and each minute of cardio counts.</p>` : weekLine}
+    <div class="player-actions"><button class="btn small" type="button" data-open="share">Share progress</button></div>`;
 }
 
 function levelSheet() {
@@ -1030,7 +1036,7 @@ function levelSheet() {
     <div class="lbl">Titles</div>
     <ol class="titles">${TITLES.map(([l, t]) => `<li class="${info.level >= l ? "got" : ""}${titleFor(info.level) === t ? " now" : ""}"><span class="num">Lv ${l}</span><span class="t-name"><b>${esc(t)}</b><em>${esc(TITLES.find(x => x[1] === t)[2])}</em></span><small>${info.level >= l ? (titleFor(info.level) === t ? "Current" : "Unlocked") : `${(xpAtLevel(l) - info.total).toLocaleString()} XP to go`}</small></li>`).join("")}</ol>
     ${recent.length ? `<div class="lbl" style="margin-top:14px">Recent XP</div><ul class="acts">${recent.map(x => `<li class="${x.xp < 0 ? "neg" : x.weekly ? "bonus" : ""}"><span>${esc(x.text)}${x.weekly ? "" : ` · ${esc(x.date)}`}</span><span class="num">${x.xp < 0 ? "−" : "+"}${Math.abs(x.xp)} XP</span></li>`).join("")}</ul>` : ""}`,
-    `<div class="right"><button class="btn primary" type="button" data-act="close">Close</button></div>`);
+    `<button class="btn" type="button" data-act="open-share">Share progress</button><div class="right"><button class="btn primary" type="button" data-act="close">Close</button></div>`);
 }
 
 function toast(msg) {
@@ -1055,6 +1061,204 @@ function rewardXP(beforeL, afterL) {
   setTimeout(() => { const ok = $("celOk"); if (ok) ok.focus(); }, 30);
 }
 $("celebrate").addEventListener("click", e => { const t = e.target.closest("[data-act=cel-close]"); if (t && (e.target === t || t.id === "celOk")) $("celebrate").innerHTML = ""; });
+
+/* ---------- Sharing: an image card plus a plain-text summary of level, titles and this week ---------- */
+function weekSnapshot() {
+  const real = S.workouts.filter(w => !w.sample);
+  const r = rangeFor("week", today(), real), c = compute(real, r), g = S.goals;
+  const goalOf = m => Number(g.sets[m]) || 0; // a week's targets are the weekly goals themselves
+  const withGoal = M_IDS.filter(m => goalOf(m) > 0);
+  const met = withGoal.filter(m => c.lift[m].v >= goalOf(m)).length;
+  const levels = Object.fromEntries(M_IDS.map(m => [m, level(c.lift[m].v, goalOf(m))]));
+  const distGoal = Math.round(toUnit(Number(g.distance) || 0, "mi") * 10) / 10;
+  const L = xpLedger(S.workouts), info = levelInfo(L.total);
+  return { r, c, g, withGoal, met, levels, distGoal, wk: L.week, info, title: titleFor(info.level), next: nextTitle(info.level) };
+}
+
+function shareText(x) {
+  const { info, c, g, wk } = x, u = distUnit();
+  const lines = [
+    `Forged - Level ${info.level}, ${x.title}`,
+    `${info.total.toLocaleString()} XP total, ${(info.need - info.into).toLocaleString()} XP to level ${info.level + 1}`
+  ];
+  if (x.next) lines.push(`Next title: ${x.next[1]} at level ${x.next[0]}`);
+  lines.push("", `This week (${x.r.label})`);
+  lines.push(`Workouts: ${c.ws.length}${wk && wk.target ? `, ${wk.days} workout day${wk.days === 1 ? "" : "s"} (goal ${wk.target})` : ""}${wk && wk.streak > 1 ? `, ${wk.streak}-week streak` : ""}`);
+  lines.push(`Lifting: ${c.sets} sets, ${x.met} of ${x.withGoal.length} muscle goals met`);
+  lines.push(`Cardio: ${hm(c.minutes)} of ${hm(g.cardio)} (${pctOf(c.minutes, g.cardio)}%), ${fmt(c.distance)} of ${fmt(x.distGoal)} ${u} (${pctOf(c.distance, x.distGoal)}%)`);
+  lines.push("", "Titles: " + TITLES.map(([l, t]) => `${t} (${l})${t === x.title ? " - current" : ""}`).join(", "));
+  return lines.join("\n");
+}
+
+/* Draws the card on a canvas (1080 x 1350, a portrait size that suits chat apps).
+   The body figures are redrawn from the same outlines the heat map uses. */
+async function drawCard(x) {
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const C = { bg: css("--bg"), surface: css("--surface"), fg: css("--fg"), muted: css("--muted"), line: css("--line"), body: css("--body"), idle: css("--idle") };
+  for (let i = 1; i <= 5; i++) C["h" + i] = css("--h" + i);
+  const DISP = css("--font-display"), BODY = css("--font-body");
+  try { await Promise.all([document.fonts.load(`700 80px ${DISP}`), document.fonts.load(`500 28px ${BODY}`), document.fonts.load(`700 28px ${BODY}`)]); } catch {}
+
+  const W = 1080, H = 1350, cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext("2d");
+  const rr = (x0, y0, w, h, r) => { ctx.beginPath(); ctx.moveTo(x0 + r, y0); ctx.arcTo(x0 + w, y0, x0 + w, y0 + h, r); ctx.arcTo(x0 + w, y0 + h, x0, y0 + h, r); ctx.arcTo(x0, y0 + h, x0, y0, r); ctx.arcTo(x0, y0, x0 + w, y0, r); ctx.closePath(); };
+  const text = (t, x0, y0, font, color, align = "left") => { ctx.font = font; ctx.fillStyle = color; ctx.textAlign = align; ctx.fillText(t, x0, y0); };
+  const fit = (t, font, max) => { ctx.font = font; let s = t; while (ctx.measureText(s).width > max && s.length > 1) s = s.slice(0, -2) + "…"; return s; };
+  const panel = (y0, h) => { rr(40, y0, W - 80, h, 28); ctx.fillStyle = C.surface; ctx.fill(); };
+  const { info, c, g, wk } = x;
+
+  ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
+  text("FORGED", 64, 104, `700 64px ${DISP}`, C.fg);
+  text(`This week · ${x.r.label}`, W - 64, 100, `500 30px ${BODY}`, C.muted, "right");
+
+  // Level, title and XP
+  panel(140, 250);
+  const grad = ctx.createLinearGradient(80, 175, 260, 355); grad.addColorStop(0, C.h4); grad.addColorStop(1, C.h2);
+  rr(80, 175, 180, 180, 36); ctx.fillStyle = grad; ctx.fill();
+  text("LEVEL", 170, 225, `700 24px ${BODY}`, "#0b1a0f", "center");
+  text(String(info.level), 170, 330, `700 112px ${DISP}`, "#0b1a0f", "center");
+  text(fit(x.title.toUpperCase(), `700 62px ${DISP}`, 700), 300, 240, `700 62px ${DISP}`, C.fg);
+  rr(300, 270, 700, 24, 12); ctx.fillStyle = C.bg; ctx.fill();
+  const xpW = Math.max(24, 700 * (info.into / info.need));
+  const xg = ctx.createLinearGradient(300, 0, 1000, 0); xg.addColorStop(0, C.h3); xg.addColorStop(1, C.h5);
+  rr(300, 270, xpW, 24, 12); ctx.fillStyle = xg; ctx.fill();
+  text(`${info.into.toLocaleString()} / ${info.need.toLocaleString()} XP to level ${info.level + 1}`, 300, 336, `500 28px ${BODY}`, C.muted);
+  if (x.next) text(fit(`Next title: ${x.next[1]} at level ${x.next[0]}`, `700 28px ${BODY}`, 700), 300, 372, `700 28px ${BODY}`, C.fg);
+
+  // This week's numbers
+  panel(410, 150);
+  const tiles = [["Workouts", String(c.ws.length)], ["Workout days", wk && wk.target ? `${wk.days}/${wk.target}` : String(new Set(c.ws.map(w => w.date)).size)],
+    ["Week streak", String(wk ? wk.streak : 0)], ["Muscle goals", `${x.met}/${x.withGoal.length}`]];
+  tiles.forEach(([k, v], i) => {
+    const tx = 80 + i * 245;
+    text(v, tx, 498, `700 64px ${DISP}`, C.fg);
+    text(k.toUpperCase(), tx, 536, `600 22px ${BODY}`, C.muted);
+  });
+
+  // Cardio rings (left) and lifting heat map (right)
+  panel(580, 590);
+  text("CARDIO", 80, 632, `700 26px ${DISP}`, C.muted);
+  text("LIFTING", 580, 632, `700 26px ${DISP}`, C.muted);
+  text(`${c.sets} set${c.sets === 1 ? "" : "s"} this week`, 1000, 632, `500 24px ${BODY}`, C.muted, "right");
+  const ring = (cx, cy, value, target, show, label) => {
+    const R = 92, frac = target ? Math.min(1, value / target) : 0, lv = level(value, target);
+    ctx.lineWidth = 26; ctx.lineCap = "butt"; ctx.strokeStyle = C.bg;
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
+    if (frac > 0) { ctx.lineCap = "round"; ctx.strokeStyle = C["h" + (lv || 1)]; ctx.beginPath(); ctx.arc(cx, cy, R, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2); ctx.stroke(); }
+    text(fit(show(value), `700 44px ${DISP}`, 150), cx, cy + 6, `700 44px ${DISP}`, C.fg, "center");
+    text(target ? `of ${show(target)}` : "no goal", cx, cy + 40, `500 20px ${BODY}`, C.muted, "center");
+    text(label, cx, cy + 150, `700 24px ${BODY}`, C.fg, "center");
+    text(target ? `${pctOf(value, target)}% of goal` : "No goal set", cx, cy + 184, `500 24px ${BODY}`, C.muted, "center");
+  };
+  ring(190, 770, c.minutes, Number(g.cardio) || 0, hm, "TIME");
+  ring(420, 770, c.distance, x.distGoal, v => `${fmt(v)} ${distUnit()}`, "DISTANCE");
+  text(`${c.cardioCount} session${c.cardioCount === 1 ? "" : "s"} this week`, 305, 1010, `500 24px ${BODY}`, C.muted, "center");
+
+  const drawFig = (shapes, ox, oy, sc) => {
+    ctx.save(); ctx.translate(ox, oy); ctx.scale(sc, sc);
+    const both = (d, fill, stroke) => {
+      const pth = new Path2D(d);
+      for (const m of [false, true]) {
+        ctx.save(); if (m) ctx.transform(-1, 0, 0, 1, 200, 0);
+        ctx.fillStyle = fill; ctx.fill(pth);
+        if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 1.2; ctx.stroke(pth); }
+        ctx.restore();
+      }
+    };
+    ctx.fillStyle = C.body; ctx.beginPath(); ctx.ellipse(100, 36, 20, 25, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillRect(91, 56, 18, 22);
+    both(SIL_TORSO, C.body); both(SIL_ARM, C.body);
+    for (const [id, paths] of Object.entries(shapes)) {
+      const lv = x.levels[id] || 0;
+      for (const d of paths) both(d, lv ? C["h" + lv] : C.idle, C.surface);
+    }
+    ctx.restore();
+  };
+  drawFig(FRONT, 585, 660, 0.98);
+  drawFig(BACK, 815, 660, 0.98);
+  // Legend under the figures
+  const sw = ["idle", "h1", "h2", "h3", "h4", "h5"];
+  sw.forEach((k, i) => { rr(600 + i * 62, 1112, 54, 14, 7); ctx.fillStyle = C[k]; ctx.fill(); });
+  text("None", 600, 1150, `500 20px ${BODY}`, C.muted);
+  text("Goal met", 600 + 5 * 62 + 54, 1150, `500 20px ${BODY}`, C.muted, "right");
+
+  // Title ladder
+  panel(1190, 120);
+  text("TITLES", 80, 1236, `700 24px ${DISP}`, C.muted);
+  const lx = l => 250 + (l / 100) * 720, ly = 1236;
+  ctx.strokeStyle = C.line; ctx.lineWidth = 6; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(lx(0), ly - 8); ctx.lineTo(lx(100), ly - 8); ctx.stroke();
+  ctx.strokeStyle = C.h4; ctx.beginPath(); ctx.moveTo(lx(0), ly - 8); ctx.lineTo(lx(Math.min(100, info.level)), ly - 8); ctx.stroke();
+  TITLES.forEach(([l, t]) => {
+    const cur = t === x.title, got = info.level >= l;
+    ctx.beginPath(); ctx.arc(lx(l === 1 ? 0 : l), ly - 8, cur ? 14 : 9, 0, Math.PI * 2);
+    ctx.fillStyle = got ? C.h5 : C.surface; ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = got ? C.h5 : C.muted; ctx.stroke();
+  });
+  // Label the current title under its dot, and the top title at the end when there's room.
+  const curL = TITLES.filter(([l]) => info.level >= l).pop()[0], curX = lx(curL === 1 ? 0 : curL);
+  ctx.font = `700 24px ${BODY}`;
+  const curW = ctx.measureText(x.title).width, labelX = Math.min(Math.max(curX, 250 + curW / 2 - 18), 1000 - curW / 2);
+  text(x.title, labelX, ly + 44, `700 24px ${BODY}`, C.h5, "center");
+  const top = TITLES[TITLES.length - 1][1];
+  ctx.font = `500 22px ${BODY}`;
+  if (x.title !== top && labelX + curW / 2 + 40 < 1000 - ctx.measureText(top).width) text(top, 1000, ly + 44, `500 22px ${BODY}`, C.muted, "right");
+
+  text("Logged with Forged", W / 2, H - 14, `500 20px ${BODY}`, C.muted, "center");
+  const url = cv.toDataURL("image/png");
+  const blob = await new Promise(res => cv.toBlob(res, "image/png"));
+  return { url, blob };
+}
+
+function shareSheet() {
+  const x = S.share || {};
+  return sheetFrame("Share progress", `
+    <div class="share-prev">${x.url ? `<img src="${x.url}" alt="Progress card: level ${x.level}, ${esc(x.title)}, with this week's stats">` : `<div class="share-wait">Making your card…</div>`}</div>
+    <div class="lbl" style="margin-top:14px">Message sent with it</div>
+    <pre class="share-text" id="shareText">${esc(x.text || "")}</pre>
+    ${S.shareMsg ? `<p class="note" role="status">${esc(S.shareMsg)}</p>` : ""}`,
+    `<button class="btn ghost" type="button" data-act="share-copy">Copy text</button>
+     <div class="right"><button class="btn primary" type="button" data-act="share-send"${x.blob ? "" : " disabled"}>Share</button></div>`);
+}
+function openShare() {
+  const x = weekSnapshot();
+  S.share = { text: shareText(x), level: x.info.level, title: x.title };
+  S.shareMsg = "";
+  openSheet("share", null);
+  drawCard(x).then(r => { if (S.sheet === "share") { Object.assign(S.share, r); renderSheet(); } })
+    .catch(() => { if (S.sheet === "share") { S.shareMsg = "Couldn't draw the image on this device. You can still copy and send the text."; renderSheet(); } });
+}
+async function copyShareText() {
+  const t = S.share ? S.share.text : "";
+  try { await navigator.clipboard.writeText(t); return true; } catch {}
+  try {
+    const el = $("shareText"), range = document.createRange(); range.selectNodeContents(el);
+    const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+    return document.execCommand("copy");
+  } catch { return false; }
+}
+function saveShareImage() {
+  const a = document.createElement("a");
+  a.href = S.share.url; a.download = `forged-level-${S.share.level}.png`;
+  document.body.appendChild(a); a.click(); a.remove();
+}
+/* Share the image with the text; if images can't be shared, share or copy the text and save the image. */
+async function sendShare() {
+  const x = S.share; if (!x || !x.blob) return;
+  const file = new File([x.blob], `forged-level-${x.level}.png`, { type: "image/png" });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text: x.text }); return; }
+    if (navigator.share) {
+      await navigator.share({ text: x.text });
+      saveShareImage(); S.shareMsg = "Sent the text. This browser can't share images, so the card was saved to your downloads to attach."; return renderSheet();
+    }
+  } catch (e) { if (e && e.name === "AbortError") return; }
+  saveShareImage();
+  const ok = await copyShareText();
+  S.shareMsg = `Saved the card to your downloads${ok ? " and copied the text" : ""}. Paste the text and attach the image in your message.`;
+  renderSheet();
+}
 
 /* Getting started: three steps, each ticked off as it's done. Hidden for good once dismissed. */
 function renderOnboard() {
@@ -1108,7 +1312,7 @@ function openSheet(kind, w) {
   if (kind === "lift") S.draft = w && !w.sample ? JSON.parse(JSON.stringify(w)) : { id: null, date: defaultDate(), name: "", unit: prefs.unit || "lb", exercises: [newEx()] };
   if (kind === "cardio") S.draft = w && !w.sample ? { ...w } : { id: null, kind: "cardio", date: defaultDate(), name: "", activity: prefs.activity || "run", minutes: "", distance: "", distUnit: distUnit() };
   if (kind === "goals") S.draft = JSON.parse(JSON.stringify(S.goals));
-  if (kind === "level" || kind === "add") S.draft = {};
+  if (kind === "level" || kind === "add" || kind === "share") S.draft = {};
   renderSheet();
   // On touch screens, don't pop the keyboard straight away; let people see the whole form first.
   if (!matchMedia("(pointer: coarse)").matches) setTimeout(() => { const f = document.querySelector(kind === "lift" ? "#sheetRoot .ex input" : kind === "cardio" ? "#c-min" : null); if (f && !S.draft.id) f.focus(); }, 30);
@@ -1160,6 +1364,7 @@ function renderSheet() {
   if (S.sheet === "goals") root.innerHTML = goalsSheet(d);
   if (S.sheet === "level") root.innerHTML = levelSheet();
   if (S.sheet === "add") root.innerHTML = addSheet();
+  if (S.sheet === "share") root.innerHTML = shareSheet();
   // Re-rendering the same form (adding a set, picking an option) keeps your scroll position.
   if (same) { const b = root.querySelector(".sheet-body"), sh = root.querySelector(".sheet"); if (b) b.scrollTop = keep[0]; if (sh) sh.scrollTop = keep[1]; }
   root.dataset.kind = S.sheet;
@@ -1367,6 +1572,9 @@ $("sheetRoot").addEventListener("click", async e => {
   const a = b.dataset;
   if (a.act === "close") return closeSheet();
   if (a.act === "pick-lift") return openSheet("lift", null);
+  if (a.act === "open-share") return openShare();
+  if (a.act === "share-send") return sendShare();
+  if (a.act === "share-copy") { const ok = await copyShareText(); S.shareMsg = ok ? "Text copied." : "Couldn't copy automatically. Press and hold the text to copy it."; return renderSheet(); }
   if (a.act === "pick-cardio") return openSheet("cardio", null);
   if (a.act === "save") return saveDraft();
   if (a.act === "goals-reset") { S.draft = JSON.parse(JSON.stringify(DEFAULT_GOALS)); return renderSheet(); }
@@ -1432,6 +1640,7 @@ document.addEventListener("click", e => {
   if (k === "cardio") openSheet("cardio", null);
   if (k === "goals") openSheet("goals", null);
   if (k === "level") openSheet("level", null);
+  if (k === "share") openShare();
   if (k === "add") openSheet("add", null);
   if (k === "ob-hide") { prefs.onboardHidden = true; savePrefs(); render(); }
 });
