@@ -25,7 +25,7 @@ Wider screens show everything on one page.
 
 ## Goals
 
-Tap **Goals** to set a weekly target: sets per week for each muscle group, and minutes per week for cardio. The defaults are 14 sets a week for big muscles, 6–10 for smaller ones, and 150 minutes of cardio.
+Tap **Goals** to set a weekly target: sets per week for each muscle group, and minutes per week for cardio. The defaults match the Standard preset: 10 sets a week for big muscles, 5–8 for smaller ones, 150 minutes of cardio and 10 miles.
 
 Other ranges scale by their number of days. A day's target is a seventh of the weekly goal, and a 31-day month is 31/7 of it. A year uses 365 or 366 days, and all time counts from your first workout to today.
 

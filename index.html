@@ -577,11 +577,12 @@ const CARDIO = {
 };
 const C_IDS = Object.keys(CARDIO);
 
-/* Weekly goals. Bigger muscles default to 14 sets a week, smaller ones 6–10 (the common 10–20 range, scaled
-   for small muscles that also get indirect work). Cardio defaults to 150 minutes, the usual weekly guideline. */
+/* Weekly goals (matching the Standard preset): 10 sets a week for big muscles, 8 for medium, 5 for small ones,
+   which also get indirect work. About 10 sets a week is enough for steady progress for most people.
+   Cardio defaults to 150 minutes, the usual weekly guideline. */
 const DEFAULT_GOALS = {
   per: "week",
-  sets: { chest: 14, shoulders: 14, biceps: 10, triceps: 10, forearms: 6, traps: 8, lats: 14, lowerback: 6, abs: 10, obliques: 6, glutes: 10, quads: 14, hamstrings: 10, adductors: 6, calves: 10 },
+  sets: { chest: 10, shoulders: 10, biceps: 8, triceps: 8, forearms: 5, traps: 5, lats: 10, lowerback: 5, abs: 8, obliques: 5, glutes: 8, quads: 10, hamstrings: 8, adductors: 5, calves: 8 },
   cardio: 150,
   distance: 10, // miles per week, shown in km when that unit is chosen
   days: 4 // workout days per week, for consistency bonuses and missed-day penalties
@@ -1215,11 +1216,12 @@ const GOAL_GROUPS = [
 ];
 /* Presets scale the default split: big muscles get the most sets. */
 const BIG = ["chest", "shoulders", "lats", "quads"];
-const PRESETS = { light: ["Light", 8, 4, 90, 3, 5], standard: ["Standard", 14, 8, 150, 4, 10], high: ["High volume", 20, 12, 300, 5, 20] };
+const MID = ["biceps", "triceps", "abs", "glutes", "hamstrings", "calves"];
+// [name, big, medium, small sets per week, cardio minutes, workout days, distance in miles]
+const PRESETS = { light: ["Light", 6, 5, 3, 90, 3, 5], standard: ["Standard", 10, 8, 5, 150, 4, 10], high: ["High volume", 16, 12, 8, 300, 5, 20] };
 function presetGoals(k) {
-  const [, big, small, cardio, days, distance] = PRESETS[k];
-  const mid = Math.round((big + small) / 2);
-  return { per: "week", cardio, distance, days, history: S.draft ? S.draft.history : [], sets: Object.fromEntries(M_IDS.map(m => [m, BIG.includes(m) ? big : DEFAULT_GOALS.sets[m] >= 10 ? mid : small])) };
+  const [, big, mid, small, cardio, days, distance] = PRESETS[k];
+  return { per: "week", cardio, distance, days, history: S.draft ? S.draft.history : [], sets: Object.fromEntries(M_IDS.map(m => [m, BIG.includes(m) ? big : MID.includes(m) ? mid : small])) };
 }
 function goalsSheet(d) {
   const row = m => `<label class="goal" for="g-${m}"><span>${esc(MUSCLES[m])}</span>
@@ -1228,11 +1230,11 @@ function goalsSheet(d) {
   return sheetFrame("Weekly goals", `
     <div class="explain">
       <p><b>How many sets should each muscle get per week?</b> A set is one round of an exercise, such as 8 reps of bench press. Exercises also give half a set to the muscles that help, so the total adds up across your workouts.</p>
-      <p>Most people aim for <b>10–20 sets a week</b> for big muscles. Start with a preset and adjust any muscle. Day, month and year targets are worked out from these weekly numbers.</p>
+      <p>About <b>10 sets a week</b> for a big muscle is enough for steady progress for most people; experienced lifters often go higher. Start with a preset and adjust any muscle. Day, month and year targets are worked out from these weekly numbers.</p>
     </div>
     <div class="lbl">Start from a preset</div>
-    <div class="chips" style="margin:6px 0 14px">${Object.entries(PRESETS).map(([k, [n, big, small, cm]]) =>
-      `<button type="button" class="chip" data-preset="${k}">${n} <small>${PRESETS[k][4]} days · ${small}–${big} sets · ${cm} min</small></button>`).join("")}</div>
+    <div class="chips" style="margin:6px 0 14px">${Object.entries(PRESETS).map(([k, [n, big, , small, cm, days]]) =>
+      `<button type="button" class="chip" data-preset="${k}">${n} <small>${days} days · ${small}–${big} sets · ${cm} min</small></button>`).join("")}</div>
     <div class="lbl">Consistency · workout days per week</div>
     <div class="goals"><label class="goal" for="g-days"><span>Days with a workout</span>
       <input class="inp num" id="g-days" type="number" inputmode="numeric" min="0" max="7" step="1" value="${esc(d.days)}" data-goal="days">
