@@ -922,7 +922,7 @@ function render() {
       const a = CARDIO[w.activity] || CARDIO.run;
       const wd = toUnit(Number(w.distance) || 0, w.distUnit || "mi");
       const bits = [`${fmt(Number(w.minutes) || 0)} min`, wd ? `${fmt(wd)} ${distUnit()}` : null, rateText(w.activity, Number(w.minutes) || 0, wd)].filter(Boolean);
-      return `<li><button type="button" data-w="${esc(w.id)}">${chip}<span style="min-width:0"><div class="t"><span class="badge cardio">${esc(a[0])}</span>${esc(w.name || a[0])}</div><div class="s num">${esc(bits.join(" · "))}${w.sample ? "" : ` <span class="xp-tag">+${xpFor(w)} XP</span>`}</div></span></button></li>`;
+      return `<li><button type="button" data-w="${esc(w.id)}">${chip}<span style="min-width:0"><div class="t"><span class="badge cardio">${esc(a[0])}</span>${esc(w.name || a[0])}</div><div class="s num">${w.sample ? "" : `<span class="xp-tag">+${xpFor(w)} XP</span> `}${esc(bits.join(" · "))}</div></span></button></li>`;
     }
     const n = (w.exercises || []).reduce((a, x) => a + (x.sets || []).length, 0);
     return `<li><button type="button" data-w="${esc(w.id)}">${chip}<span style="min-width:0"><div class="t"><span class="badge">Lift</span>${esc(liftTitle(w))} <span class="num" style="color:var(--muted);font-weight:500">· ${n} sets</span></div>` +
