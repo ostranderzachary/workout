@@ -685,6 +685,14 @@ const SAMPLE = sampleWorkouts();
 const data = () => (S.workouts.length ? S.workouts : SAMPLE);
 const usingSample = () => S.workouts.length === 0;
 const isCardio = w => w.kind === "cardio";
+/* A lifting workout's title: its saved name (older workouts), else its top two muscles by sets. */
+function liftTitle(w) {
+  if (w.name) return w.name;
+  const n = {};
+  for (const x of w.exercises || []) for (const m of x.p || []) n[m] = (n[m] || 0) + (x.sets || []).length;
+  const top = Object.entries(n).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([m]) => MUSCLES[m]);
+  return top.length ? top.join(" & ") : "Lifting";
+}
 
 /* ---------- XP, levels and titles ---------- */
 // Lifting: 25 XP per workout + 10 per set (up to 40 sets). Cardio: 25 XP per session + 2 per minute (up to 180 min).
@@ -694,7 +702,7 @@ const xpFor = w => isCardio(w)
   ? XP.session + Math.round(Math.min(XP.maxMin, Number(w.minutes) || 0) * XP.perMin)
   : XP.workout + Math.min(XP.maxSets, setsIn(w)) * XP.perSet;
 /* Weekly bonuses and penalties (Monday–Sunday weeks), judged with the goals in effect that week. */
-const BONUS = { muscle: 20, allMuscles: 100, cardio: 75, days: 50, streakStep: 20, streakMax: 200, missedDay: 40 };
+const BONUS = { muscle: 20, allMuscles: 100, cardio: 75, distance: 75, days: 50, streakStep: 20, streakMax: 200, missedDay: 40 };
 function xpLedger(list) {
   const real = list.filter(w => !w.sample);
   const workoutXP = real.reduce((a, w) => a + xpFor(w), 0);
@@ -713,6 +721,9 @@ function xpLedger(list) {
     if (met) add(met * BONUS.muscle, `${met} muscle goal${met === 1 ? "" : "s"} met`);
     if (withGoal.length && met === withGoal.length) add(BONUS.allMuscles, "Every muscle goal met");
     if (g.cardio > 0 && c.minutes >= g.cardio) add(BONUS.cardio, "Cardio goal met");
+    // c.distance is in the display unit; the distance goal is stored in miles.
+    const miles = distUnit() === "km" ? c.distance / 1.609344 : c.distance;
+    if (g.distance > 0 && miles >= g.distance - 1e-9) add(BONUS.distance, "Distance goal met");
     if (g.days > 0) {
       if (days >= g.days) {
         streak++;
@@ -914,7 +925,7 @@ function render() {
       return `<li><button type="button" data-w="${esc(w.id)}">${chip}<span style="min-width:0"><div class="t"><span class="badge cardio">${esc(a[0])}</span>${esc(w.name || a[0])}</div><div class="s num">${esc(bits.join(" · "))}${w.sample ? "" : ` <span class="xp-tag">+${xpFor(w)} XP</span>`}</div></span></button></li>`;
     }
     const n = (w.exercises || []).reduce((a, x) => a + (x.sets || []).length, 0);
-    return `<li><button type="button" data-w="${esc(w.id)}">${chip}<span style="min-width:0"><div class="t"><span class="badge">Lift</span>${esc(w.name || "Workout")} <span class="num" style="color:var(--muted);font-weight:500">· ${n} sets</span></div>` +
+    return `<li><button type="button" data-w="${esc(w.id)}">${chip}<span style="min-width:0"><div class="t"><span class="badge">Lift</span>${esc(liftTitle(w))} <span class="num" style="color:var(--muted);font-weight:500">· ${n} sets</span></div>` +
       `<div class="s">${w.sample ? "" : `<span class="xp-tag">+${xpFor(w)} XP</span> `}${esc((w.exercises || []).map(x => x.name).join(", "))}</div></span></button></li>`;
   }).join("") + (c.ws.length > 60 ? `<li class="empty">Showing the 60 most recent of ${c.ws.length}.</li>` : "")
     : `<li class="empty">No workouts in this range.</li>`;
@@ -1003,7 +1014,7 @@ function renderPlayer() {
 
 function levelSheet() {
   const L = xpLedger(S.workouts), info = levelInfo(L.total);
-  const recent = S.workouts.filter(w => !w.sample).map(w => ({ date: w.date, order: w.createdAt || 0, text: w.name || (isCardio(w) ? (CARDIO[w.activity] || CARDIO.run)[0] : "Workout"), xp: xpFor(w) }))
+  const recent = S.workouts.filter(w => !w.sample).map(w => ({ date: w.date, order: w.createdAt || 0, text: isCardio(w) ? w.name || (CARDIO[w.activity] || CARDIO.run)[0] : liftTitle(w), xp: xpFor(w) }))
     .concat(L.entries.map(e => ({ date: e.date, order: Infinity, text: `${e.text} · ${e.label}`, xp: e.xp, weekly: true })))
     .sort((a, b) => b.date.localeCompare(a.date) || b.order - a.order).slice(0, 10);
   return sheetFrame(`Level ${info.level} · ${esc(titleFor(info.level))}`, `
@@ -1011,7 +1022,7 @@ function levelSheet() {
     <p class="num" style="margin:6px 0 14px">${info.into.toLocaleString()} of ${info.need.toLocaleString()} XP to level ${info.level + 1} · ${info.total.toLocaleString()} XP in total</p>
     <div class="explain"><p><b>How to earn XP</b></p>
       <p>Lifting workout: <b>${XP.workout} XP</b> + <b>${XP.perSet} XP per set</b> (up to ${XP.maxSets} sets).<br>Cardio session: <b>${XP.session} XP</b> + <b>${XP.perMin} XP per minute</b> (up to ${XP.maxMin} minutes).</p>
-      <p><b>Weekly bonuses</b> (Monday–Sunday): +${BONUS.muscle} XP per muscle goal met, +${BONUS.allMuscles} XP if every muscle goal is met, +${BONUS.cardio} XP for your cardio goal, +${BONUS.days} XP for training on your goal number of days. Hitting your days goal week after week adds a streak bonus of +${BONUS.streakStep} XP for each week in a row (up to +${BONUS.streakMax}).</p>
+      <p><b>Weekly bonuses</b> (Monday–Sunday): +${BONUS.muscle} XP per muscle goal met, +${BONUS.allMuscles} XP if every muscle goal is met, +${BONUS.cardio} XP for your cardio time goal, +${BONUS.distance} XP for your distance goal, +${BONUS.days} XP for training on your goal number of days. Hitting your days goal week after week adds a streak bonus of +${BONUS.streakStep} XP for each week in a row (up to +${BONUS.streakMax}).</p>
       <p><b>Missed days:</b> when a week ends short of your workout-days goal, you lose ${BONUS.missedDay} XP per missed day and your streak resets. Your first week is never penalised, and XP never drops below 0, though it can drop you a level.</p>
       <p>Each level needs 100 XP more than the one before. You earn a new title every 10 levels.</p></div>
     <div class="lbl">Titles</div>
@@ -1157,10 +1168,7 @@ function liftSheet(d) {
   S.workouts.forEach(w => (w.exercises || []).forEach(x => { if (!LIB[x.name]) custom.add(x.name); }));
   const names = Object.keys(LIB).concat([...custom]).sort();
   return sheetFrame(d.id ? "Edit lifts" : "Log lifts", `
-    <div class="row2">
-      <div class="field"><label for="f-date">Date</label><input class="inp" id="f-date" type="date" value="${esc(d.date)}" max="${ymd(today())}" data-f="date"></div>
-      <div class="field"><label for="f-name">Name</label><input class="inp" id="f-name" type="text" placeholder="e.g. Push day" value="${esc(d.name)}" data-f="name"></div>
-    </div>
+    <div class="field"><label for="f-date">Date</label><input class="inp" id="f-date" type="date" value="${esc(d.date)}" max="${ymd(today())}" data-f="date"></div>
     <div class="field" style="margin-top:10px"><span class="lbl">Weight unit</span>
       <div class="tags">${["lb", "kg"].map(u => `<button type="button" class="tag ${d.unit === u ? "p" : ""}" data-unit="${u}">${u}</button>`).join("")}</div></div>
     <datalist id="exnames">${names.map(n => `<option value="${esc(n)}"></option>`).join("")}</datalist>

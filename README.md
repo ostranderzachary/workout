@@ -52,7 +52,8 @@ Weeks run Monday to Sunday. Each week is judged by the goals in effect that week
 |---|---|
 | Each muscle's weekly sets goal met | +20 |
 | Every muscle goal met | +100 |
-| Weekly cardio goal met | +75 |
+| Weekly cardio time goal met | +75 |
+| Weekly distance goal met | +75 |
 | Workout-days goal met (set in Goals, default 4 days) | +50 |
 | Streak: days goal met several weeks in a row | +20 per extra week, up to +200 |
 | Each workout day missed in a finished week | −40, and the streak resets |
