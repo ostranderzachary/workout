@@ -1238,10 +1238,19 @@ async function copyShareText() {
     return document.execCommand("copy");
   } catch { return false; }
 }
-function saveShareImage() {
+/* Saves the card. Inside the Claude viewer, plain download links are blocked, so use its save prompt;
+   elsewhere, a normal download. Resolves true if a save was started. */
+async function saveShareImage() {
+  const filename = `forged-level-${S.share.level}.png`;
+  if (window.claude && typeof window.claude.use === "function") {
+    const dl = await window.claude.use("downloads").catch(() => null);
+    if (!dl) return false;
+    try { await dl.save({ filename, data: S.share.blob }); return true; } catch { return false; }
+  }
   const a = document.createElement("a");
-  a.href = S.share.url; a.download = `forged-level-${S.share.level}.png`;
+  a.href = S.share.url; a.download = filename;
   document.body.appendChild(a); a.click(); a.remove();
+  return true;
 }
 /* Share the image with the text; if images can't be shared, share or copy the text and save the image. */
 async function sendShare() {
@@ -1251,12 +1260,16 @@ async function sendShare() {
     if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text: x.text }); return; }
     if (navigator.share) {
       await navigator.share({ text: x.text });
-      saveShareImage(); S.shareMsg = "Sent the text. This browser can't share images, so the card was saved to your downloads to attach."; return renderSheet();
+      const saved = await saveShareImage();
+      S.shareMsg = saved ? "Sent the text. This browser can't share images, so the card was saved to attach." : "Sent the text. This browser can't share or save images: press and hold the card above to save it.";
+      return renderSheet();
     }
   } catch (e) { if (e && e.name === "AbortError") return; }
-  saveShareImage();
+  const saved = await saveShareImage();
   const ok = await copyShareText();
-  S.shareMsg = `Saved the card to your downloads${ok ? " and copied the text" : ""}. Paste the text and attach the image in your message.`;
+  S.shareMsg = saved
+    ? `Saved the card${ok ? " and copied the text" : ""}. Paste the text and attach the image in your message.`
+    : `${ok ? "Copied the text. " : ""}This view can't share or save images: press and hold the card above to save it.`;
   renderSheet();
 }
 
