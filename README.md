@@ -42,7 +42,7 @@ Every workout earns XP:
 
 Each level needs 100 XP more than the one before. Level 1 to 2 takes 100 XP, 9 to 10 takes 900 XP, and level 10 is 4,500 XP in total.
 
-Every 10 levels unlocks a new title from the world of Game of Thrones, from the least disciplined fighters to the most formidable: Smallfolk, Gold Cloak (10), Brother of the Night's Watch (20), Ironborn Reaver (30), Wildling Raider (40), Second Sons (50), Dothraki Screamer (60), Unsullied (70), Kingsguard (80), Faceless Man (90) and Dragonrider (100).
+Every 10 levels unlocks a new title. Pick a **title theme** on the Level screen: Game of Thrones (default), Warriors, Disney, Solo Leveling (Shadow Monarch at level 100), Star Wars, Dragon Ball or Martial arts belts. Each has 11 titles from a humble start at level 1 to the top at level 100, each with a short description. Switching themes only changes the names; your level and XP stay the same. The theme is saved on your device.
 
 ### Weekly bonuses and penalties
 

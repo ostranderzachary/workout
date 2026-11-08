@@ -799,20 +799,104 @@ function levelInfo(total) {
   while (total >= xpAtLevel(L + 1)) L++;
   return { level: L, total, into: total - xpAtLevel(L), need: xpToNext(L) };
 }
-/* Titles: fighters of Westeros and Essos (Game of Thrones), from pressed-in smallfolk to dragonriders. */
-const TITLES = [
-  [1, "Smallfolk", "Common folk handed a spear and sent to war. Everyone starts somewhere."],
-  [10, "Gold Cloak", "The City Watch of King's Landing. Many men, little discipline."],
-  [20, "Brother of the Night's Watch", "Sworn to the Wall. You've taken the oath; now hold it."],
-  [30, "Ironborn Reaver", "Raiders of the Iron Islands who pay the iron price."],
-  [40, "Wildling Raider", "The Free Folk beyond the Wall, hardened by endless winter."],
-  [50, "Second Sons", "A sellsword company that fights for gold and keeps its word."],
-  [60, "Dothraki Screamer", "Horselords of the grass sea who have never been beaten in the saddle."],
-  [70, "Unsullied", "Trained from childhood to feel no pain and never break formation."],
-  [80, "Kingsguard", "The seven greatest knights of the realm, sworn to guard the king."],
-  [90, "Faceless Man", "Assassins of Braavos, masters of patience and total discipline."],
-  [100, "Dragonrider", "Fire and blood. Nothing in the known world is more formidable."]
-];
+/* Title themes: 11 titles each (levels 1, 10, 20 ... 100), ordered from humble start to the top of that world.
+   Descriptions are short summaries written for this app. The chosen theme is a per-device preference. */
+const THEMES = {
+  got: { name: "Game of Thrones", titles: [
+    [1, "Smallfolk", "Common folk handed a spear and sent to war. Everyone starts somewhere."],
+    [10, "Gold Cloak", "The City Watch of King's Landing. Many men, little discipline."],
+    [20, "Brother of the Night's Watch", "Sworn to the Wall. You've taken the oath; now hold it."],
+    [30, "Ironborn Reaver", "Raiders of the Iron Islands who take what they want by force."],
+    [40, "Wildling Raider", "The Free Folk beyond the Wall, hardened by endless winter."],
+    [50, "Second Sons", "A sellsword company that fights for gold and keeps its word."],
+    [60, "Dothraki Screamer", "Horselords of the grass sea who have never been beaten in the saddle."],
+    [70, "Unsullied", "Trained from childhood to feel no pain and never break formation."],
+    [80, "Kingsguard", "The seven greatest knights of the realm, sworn to guard the king."],
+    [90, "Faceless Man", "Assassins of Braavos, masters of patience and total discipline."],
+    [100, "Dragonrider", "Master of a dragon. Nothing in the known world is more formidable."]
+  ] },
+  warriors: { name: "Warriors", titles: [
+    [1, "Peasant Levy", "Farmers called up with whatever tools were to hand. Everyone starts somewhere."],
+    [10, "Viking Berserker", "Norse warriors who charged in a battle frenzy. Plenty of fury, not much discipline."],
+    [20, "Gladiator", "Rome's arena fighters, trained in schools to perform and survive."],
+    [30, "Aztec Jaguar Warrior", "Elite Aztec fighters who earned the jaguar skin by taking captives in battle."],
+    [40, "Ninja", "Japan's shinobi: spies and infiltrators trained in stealth and endurance."],
+    [50, "Knight Templar", "Crusader monks sworn to strict rules and famed for never retreating."],
+    [60, "Winged Hussar", "Poland's heavy cavalry, whose charges broke armies for two centuries."],
+    [70, "Persian Immortal", "The Achaemenid kings' 10,000 elite guards, always kept at full strength."],
+    [80, "Samurai", "Japan's warrior class, bound by a lifetime of discipline and practice."],
+    [90, "Mongol Horseman", "Horse archers who forged the largest land empire in history."],
+    [100, "Spartan", "Trained for war from the age of seven. The most formidable of all."]
+  ] },
+  disney: { name: "Disney", titles: [
+    [1, "Dopey", "The youngest of the seven dwarfs. Big heart, still learning the ropes."],
+    [10, "Olaf", "A cheerful snowman who never lets a setback melt his mood."],
+    [20, "Pumbaa", "Loyal, laid-back and much tougher than he looks."],
+    [30, "Flynn Rider", "A charming rogue who learns to show up when it counts."],
+    [40, "Moana", "A wayfinder who sails past the reef to face whatever is out there."],
+    [50, "Mulan", "Trained harder than anyone in camp and saved her country."],
+    [60, "Simba", "Grew from a runaway cub into the king of the Pride Lands."],
+    [70, "Merida", "Archer of the Highlands who wins her own hand in a contest."],
+    [80, "Elsa", "Learned to control a power strong enough to freeze a kingdom."],
+    [90, "Maui", "Shapeshifting demigod with a magic hook and very big arms."],
+    [100, "Hercules", "Son of Zeus who trained his way from ordinary to true hero."]
+  ] },
+  solo: { name: "Solo Leveling", titles: [
+    [1, "E-Rank Hunter", "The weakest hunter rank. Every legend has to start at the bottom."],
+    [10, "D-Rank Hunter", "Can clear low-level gates without needing rescue."],
+    [20, "C-Rank Hunter", "A dependable raid member that guilds want on their team."],
+    [30, "B-Rank Hunter", "Strong enough to lead raids into tougher gates."],
+    [40, "A-Rank Hunter", "An elite hunter that the big guilds compete to recruit."],
+    [50, "S-Rank Hunter", "Among the strongest hunters in the country."],
+    [60, "National Level Hunter", "A hunter whose strength rivals a whole nation's forces."],
+    [70, "Shadow Soldier", "Raised from the fallen to fight on in the shadow army."],
+    [80, "Shadow Knight", "A commander among the shadows, loyal to the end."],
+    [90, "Shadow Marshal", "The highest rank a shadow can reach in the army."],
+    [100, "Shadow Monarch", "Ruler of the shadow army. Nobody levels higher."]
+  ] },
+  starwars: { name: "Star Wars", titles: [
+    [1, "Moisture Farmer", "Life on a desert farm, staring at the twin suns and wanting more."],
+    [10, "Youngling", "A Force-sensitive child taking the first steps of training."],
+    [20, "Padawan", "An apprentice training at a Jedi Master's side."],
+    [30, "Rebel Pilot", "Flies into impossible odds for the cause."],
+    [40, "Bounty Hunter", "Tough, resourceful and paid to never give up."],
+    [50, "Mandalorian", "Armoured warrior living by a strict creed."],
+    [60, "Jedi Knight", "A full Jedi, trusted to defend the galaxy alone."],
+    [70, "Sith Lord", "Wields the dark side with frightening power."],
+    [80, "Jedi Master", "Has mastered the Force and now trains others."],
+    [90, "Jedi Council Member", "One of the few chosen to guide the whole Order."],
+    [100, "Grand Master", "Leader of the Jedi Order and the wisest of them all."]
+  ] },
+  dbz: { name: "Dragon Ball", titles: [
+    [1, "Farmer", "Every power level starts low. Yours starts here."],
+    [10, "Saibaman", "Small, scrappy and surprisingly dangerous."],
+    [20, "Z Fighter", "Earth's defenders, training hard between every battle."],
+    [30, "Saiyan Warrior", "Born for battle and stronger after every fight."],
+    [40, "Super Saiyan", "Golden hair and a huge jump in power."],
+    [50, "Super Saiyan 2", "Crackling with energy, faster and stronger again."],
+    [60, "Super Saiyan 3", "Enormous power that is hard to sustain."],
+    [70, "Super Saiyan God", "A godly form reached through combined strength."],
+    [80, "Super Saiyan Blue", "Godly power with total Saiyan control."],
+    [90, "Ultra Instinct Sign", "The body moves on its own, without thinking."],
+    [100, "Mastered Ultra Instinct", "Perfect movement and perfect focus. The peak."]
+  ] },
+  belts: { name: "Martial arts belts", titles: [
+    [1, "White Belt", "Day one on the mat. Show up and learn the basics."],
+    [10, "Yellow Belt", "The fundamentals are starting to stick."],
+    [20, "Orange Belt", "Building strength, timing and confidence."],
+    [30, "Green Belt", "Growing skills and steady technique."],
+    [40, "Blue Belt", "Reaching for harder techniques and holding your own."],
+    [50, "Purple Belt", "Solid skills and the discipline to keep improving."],
+    [60, "Brown Belt", "Advanced and refining every detail."],
+    [70, "Black Belt", "Mastery of the fundamentals. The real training begins."],
+    [80, "2nd Dan Black Belt", "Years of dedication, and teaching others."],
+    [90, "Master", "A recognised master of the art."],
+    [100, "Grandmaster", "The highest rank. A lifetime of discipline."]
+  ] }
+};
+const themeKey = () => (THEMES[prefs.theme] ? prefs.theme : "got");
+let TITLES = THEMES[themeKey()].titles;
+function setTheme(k) { prefs.theme = k; savePrefs(); TITLES = THEMES[themeKey()].titles; }
 const blurbFor = t => (TITLES.find(x => x[1] === t) || [])[2] || "";
 const titleFor = L => TITLES.filter(([l]) => L >= l).pop()[1];
 const nextTitle = L => TITLES.find(([l]) => l > L);
@@ -1081,7 +1165,10 @@ function levelSheet() {
       <p><b>Weekly bonuses</b> (Monday–Sunday): +${BONUS.muscle} XP per muscle goal met, +${BONUS.allMuscles} XP if every muscle goal is met, +${BONUS.cardio} XP for your cardio time goal, +${BONUS.distance} XP for your distance goal, +${BONUS.days} XP for training on your goal number of days. Hitting your days goal week after week adds a streak bonus of +${BONUS.streakStep} XP for each week in a row (up to +${BONUS.streakMax}).</p>
       <p><b>Missed days:</b> when a week ends short of your workout-days goal, you lose ${BONUS.missedDay} XP per missed day and your streak resets. Your first week is never penalised, and XP never drops below 0, though it can drop you a level.</p>
       <p>Each level needs 100 XP more than the one before. You earn a new title every 10 levels.</p></div>
-    <div class="lbl">Titles</div>
+    <div class="lbl">Title theme</div>
+    <div class="chips themes" style="margin:6px 0 4px">${Object.entries(THEMES).map(([k, th]) => `<button type="button" class="chip" data-theme="${k}" aria-pressed="${k === themeKey()}">${esc(th.name)}</button>`).join("")}</div>
+    <p class="note" style="margin:0 0 12px">Pick a theme you follow. It only changes the names; your level and XP stay the same.</p>
+    <div class="lbl">Titles · ${esc(THEMES[themeKey()].name)}</div>
     <ol class="titles">${TITLES.map(([l, t]) => `<li class="${info.level >= l ? "got" : ""}${titleFor(info.level) === t ? " now" : ""}"><span class="num">Lv ${l}</span><span class="t-name"><b>${esc(t)}</b><em>${esc(TITLES.find(x => x[1] === t)[2])}</em></span><small>${info.level >= l ? (titleFor(info.level) === t ? "Current" : "Unlocked") : `${(xpAtLevel(l) - info.total).toLocaleString()} XP to go`}</small></li>`).join("")}</ol>
     ${recent.length ? `<div class="lbl" style="margin-top:14px">Recent XP</div><ul class="acts">${recent.map(x => `<li class="${x.xp < 0 ? "neg" : x.weekly ? "bonus" : ""}"><span>${esc(x.text)}${x.weekly ? "" : ` · ${esc(x.date)}`}</span><span class="num">${x.xp < 0 ? "−" : "+"}${Math.abs(x.xp)} XP</span></li>`).join("")}</ul>` : ""}`,
     `<button class="btn" type="button" data-act="open-share">Share progress</button><div class="right"><button class="btn primary" type="button" data-act="close">Close</button></div>`);
@@ -1785,6 +1872,7 @@ $("sheetRoot").addEventListener("click", async e => {
   if (a.act === "close") return closeSheet();
   if (a.act === "pick-lift") return openSheet("lift", null);
   if (a.act === "open-share") return openShare();
+  if (a.theme) { setTheme(a.theme); render(); return renderSheet(); }
   if (a.act === "share-send") return sendShare();
   if (a.act === "share-copy") { const ok = await copyShareText(); S.shareMsg = ok ? "Text copied." : "Couldn't copy automatically. Press and hold the text to copy it."; return renderSheet(); }
   if (a.act === "pick-cardio") return openSheet("cardio", null);
