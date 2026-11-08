@@ -1488,7 +1488,7 @@ function presetGoals(k) {
   return { per: "week", cardio, distance, days, history: S.draft ? S.draft.history : [], sets: Object.fromEntries(M_IDS.map(m => [m, BIG.includes(m) ? big : MID.includes(m) ? mid : small])) };
 }
 function latestWeight() { const b = S.goals.bodyweight; return b.length ? b[b.length - 1] : null; }
-const bwStep = () => (wtUnit() === "kg" ? 0.2 : 0.5);
+const bwStep = () => (wtUnit() === "kg" ? 0.5 : 1);
 function bodyWeightField(d) {
   const last = latestWeight();
   const shown = d.bwInput !== undefined ? d.bwInput : last ? Math.round((wtUnit() === "kg" ? last.lb / LB_PER_KG : last.lb) * 10) / 10 : "";
