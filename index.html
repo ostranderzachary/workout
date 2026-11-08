@@ -167,7 +167,12 @@ header.top {
 .xb-work { fill: var(--h3); } .xb-bonus { fill: var(--h5); } .xb-pen { fill: var(--danger); }
 .xp-legend i.xb-work { background: var(--h3); } .xp-legend i.xb-bonus { background: var(--h5); } .xp-legend i.xb-pen { background: var(--danger); }
 .xb-hit { fill: transparent; }
-g:hover > .xb-hit { fill: var(--bg); }
+.xb-g { cursor: pointer; }
+.xb-g.sel > .xb-hit { fill: var(--bg); }
+@media (hover: hover) { .xb-g:hover > .xb-hit { fill: var(--bg); } }
+.chart-readout { margin: 6px 0 0; min-height: 1.5em; font-size: 14px; font-weight: 600; color: var(--fg); font-variant-numeric: tabular-nums; }
+.w-g { cursor: pointer; } .w-hit { fill: transparent; }
+.w-g.sel .w-pt { stroke: var(--fg); stroke-width: 3; }
 .w-zero { stroke: var(--muted); stroke-width: 1; }
 .xp-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin: 6px 0 0; font-size: 12px; color: var(--muted); }
 .xp-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
@@ -1135,14 +1140,16 @@ function renderXpChart(r) {
   const ticks = []; for (let v = bottom; v <= top + 1e-9; v += step) ticks.push(v);
   const every = Math.ceil(buckets.length / (by === "day" && buckets.length <= 7 ? 7 : 6));
   const xLabel = (b, i) => by === "day" ? (buckets.length <= 7 ? DOW[b.d.getDay()].slice(0, 1) : String(b.d.getDate())) : by === "week" ? MON[addDays(b.d, 3).getMonth()] : MON[b.d.getMonth()] + (b.d.getMonth() === 0 || i === 0 ? ` ${String(b.d.getFullYear()).slice(2)}` : "");
+  const tipOf = b => `${labelOf(b)}: ${b.work + b.bonus + b.pen} XP` + (b.bonus || b.pen ? ` (${b.work} from workouts${b.bonus ? `, +${b.bonus} bonus` : ""}${b.pen ? `, −${-b.pen} penalty` : ""})` : "");
+  const selB = buckets.find(b => b.k === S.xpSel);
   const bars = buckets.map((b, i) => {
     const x = (L + slot * i + (slot - bw) / 2).toFixed(1), parts = [];
     if (b.work) parts.push(`<rect class="xb-work" x="${x}" y="${Y(b.work).toFixed(1)}" width="${bw.toFixed(1)}" height="${(Y(0) - Y(b.work)).toFixed(1)}" rx="2"/>`);
     if (b.bonus) parts.push(`<rect class="xb-bonus" x="${x}" y="${Y(b.work + b.bonus).toFixed(1)}" width="${bw.toFixed(1)}" height="${(Y(b.work) - Y(b.work + b.bonus)).toFixed(1)}" rx="2"/>`);
     if (b.pen) parts.push(`<rect class="xb-pen" x="${x}" y="${Y(0).toFixed(1)}" width="${bw.toFixed(1)}" height="${(Y(b.pen) - Y(0)).toFixed(1)}" rx="2"/>`);
-    const tip = `${labelOf(b)}: ${b.work + b.bonus + b.pen} XP` + (b.bonus || b.pen ? ` (${b.work} from workouts${b.bonus ? `, +${b.bonus} bonus` : ""}${b.pen ? `, −${-b.pen} penalty` : ""})` : "");
+    const tip = tipOf(b);
     const lab = i % every === 0 ? `<text class="w-tick" x="${(L + slot * i + slot / 2).toFixed(1)}" y="${H - 8}" text-anchor="middle">${esc(xLabel(b, i))}</text>` : "";
-    return `<g><title>${esc(tip)}</title><rect class="xb-hit" x="${(L + slot * i).toFixed(1)}" y="${T}" width="${slot.toFixed(1)}" height="${ih}"/>${parts.join("")}</g>${lab}`;
+    return `<g class="xb-g${S.xpSel === b.k ? " sel" : ""}" data-k="${b.k}" data-tip="${esc(tip)}"><title>${esc(tip)}</title><rect class="xb-hit" x="${(L + slot * i).toFixed(1)}" y="${T}" width="${slot.toFixed(1)}" height="${ih}"/>${parts.join("")}</g>${lab}`;
   }).join("");
   const has = k => buckets.some(b => b[k]);
   $("xpChart").innerHTML = `<p class="xp-sum num"><b>${total.toLocaleString()} XP</b> ${esc(S.period === "all" ? "in total" : S.period === "day" ? "on this day" : `in this ${S.period}`)} · best ${unitWord}: ${esc(labelOf(best).replace(/^Week of /, ""))} (${(best.work + best.bonus + best.pen).toLocaleString()} XP)</p>
@@ -1150,8 +1157,19 @@ function renderXpChart(r) {
       ${ticks.map(v => `<line class="${v === 0 ? "w-zero" : "w-grid"}" x1="${L}" x2="${W - R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}"/><text class="w-tick" x="${L - 8}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end">${v < 0 ? "−" + (-v) : v}</text>`).join("")}
       ${bars}
     </svg></div>
-    <p class="xp-legend"><span><i class="xb-work"></i>Workouts</span>${has("bonus") ? `<span><i class="xb-bonus"></i>Weekly bonuses</span>` : ""}${has("pen") ? `<span><i class="xb-pen"></i>Penalties</span>` : ""}<span class="note" style="margin:0">One bar per ${unitWord}. Tap a bar for details.</span></p>`;
+    <p class="chart-readout" id="xpReadout" aria-live="polite">${esc(selB ? tipOf(selB) : "Tap a bar to see its details.")}</p>
+    <p class="xp-legend"><span><i class="xb-work"></i>Workouts</span>${has("bonus") ? `<span><i class="xb-bonus"></i>Weekly bonuses</span>` : ""}${has("pen") ? `<span><i class="xb-pen"></i>Penalties</span>` : ""}<span class="note" style="margin:0">One bar per ${unitWord}.</span></p>`;
 }
+function chartTap(containerId, selector, readoutId, remember) {
+  $(containerId).addEventListener("click", e => {
+    const g = e.target.closest(selector); if (!g) return;
+    remember(g);
+    $(containerId).querySelectorAll(selector).forEach(x => x.classList.toggle("sel", x === g));
+    $(readoutId).textContent = g.dataset.tip;
+  });
+}
+chartTap("xpChart", "[data-k]", "xpReadout", g => { S.xpSel = g.dataset.k; });
+chartTap("weightTrend", "[data-date]", "wReadout", g => { S.wSel = g.dataset.date; });
 function niceStep(max) { const raw = max / 4, mag = 10 ** Math.floor(Math.log10(raw)), n = raw / mag; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * mag; }
 
 /* Body weight: latest value, recent change, and a line chart of every weigh-in (dates to scale). */
@@ -1179,9 +1197,11 @@ function renderWeight() {
       <text class="w-tick" x="${L}" y="${H - 8}">${esc(shortDate(first.date))}</text>
       <text class="w-tick" x="${W - R}" y="${H - 8}" text-anchor="end">${esc(shortDate(last.date))}</text>
       <path class="w-area" d="${area}"/><path class="w-line" d="${line}"/>
-      ${all.map((e, i) => `<circle class="w-pt${i === all.length - 1 ? " last" : ""}" cx="${X(e).toFixed(1)}" cy="${Y(conv(e.lb)).toFixed(1)}" r="${i === all.length - 1 ? 6 : 4}"><title>${esc(shortDate(e.date))}: ${esc(showWt(e.lb))}</title></circle>`).join("")}
+      ${all.map((e, i) => { const tip = `${shortDate(e.date)}: ${showWt(e.lb)}`, cx = X(e).toFixed(1), cy = Y(conv(e.lb)).toFixed(1);
+        return `<g class="w-g${S.wSel === e.date ? " sel" : ""}" data-date="${e.date}" data-tip="${esc(tip)}"><title>${esc(tip)}</title><circle class="w-hit" cx="${cx}" cy="${cy}" r="16"/><circle class="w-pt${i === all.length - 1 ? " last" : ""}" cx="${cx}" cy="${cy}" r="${i === all.length - 1 ? 6 : 4}"/></g>`; }).join("")}
     </svg></div>
-    <p class="note" style="margin-top:4px">${all.length} weigh-ins. Tap a point to see its date and weight.</p>`;
+    <p class="chart-readout" id="wReadout" aria-live="polite">${esc(((e => e ? `${shortDate(e.date)}: ${showWt(e.lb)}` : "")(all.find(e => e.date === S.wSel))) || "Tap a point to see its date and weight.")}</p>
+    <p class="note" style="margin-top:2px">${all.length} weigh-ins.</p>`;
   }
   $("weightTrend").innerHTML = `<div class="stats g-stats" style="margin:0 0 10px;padding:0;border:0">${tiles.map(([k, v]) => `<div class="stat"><b>${esc(v)}</b><span>${esc(k)}</span></div>`).join("")}</div>
     ${chart}<div style="margin-top:10px">${btn}</div>`;
