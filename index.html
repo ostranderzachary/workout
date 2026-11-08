@@ -161,6 +161,11 @@ header.top {
 .share-wait { max-width: 420px; aspect-ratio: 4 / 5; margin: 0 auto; display: grid; place-items: center; border-radius: 14px; background: var(--bg); color: var(--muted); }
 .share-text { margin: 6px 0 0; white-space: pre-wrap; word-break: break-word; font-family: var(--font-body); font-size: 13px; line-height: 1.5; color: var(--muted); background: var(--bg); border-radius: 10px; padding: 10px 12px; user-select: text; -webkit-user-select: text; }
 .btn:disabled { opacity: .45; cursor: default; }
+.best-line { margin: 0; font-size: 13px; color: var(--muted); }
+.best-line b { color: var(--h5); }
+.records li { align-items: baseline; }
+.records b { color: var(--fg); }
+.records small { color: var(--muted); margin-left: 6px; }
 .xp-tag { display: inline-block; font-size: 11px; font-weight: 700; color: var(--h5); }
 .titles { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; }
 .titles li { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px 10px; border-radius: 10px; color: var(--muted); font-size: 14px; }
@@ -409,6 +414,10 @@ button.tag { cursor: pointer; }
         <h2 id="barsTitle">Lifting goals</h2>
         <ul class="bars" id="bars"></ul>
         <p class="note" id="barsNote"></p>
+      </section>
+      <section class="panel" data-tab="stats">
+        <h2>Personal records</h2>
+        <div id="records"></div>
       </section>
       <section class="panel" data-tab="stats">
         <h2 id="breakdownTitle">Cardio breakdown</h2>
@@ -702,11 +711,16 @@ function liftTitle(w) {
 
 /* ---------- XP, levels and titles ---------- */
 // Lifting: 25 XP per workout + 10 per set (up to 40 sets). Cardio: 25 XP per session + 2 per minute (up to 180 min).
-const XP = { workout: 25, perSet: 10, maxSets: 40, session: 25, perMin: 2, maxMin: 180 };
+const XP = { workout: 25, perSet: 10, maxSets: 40, session: 25, perMin: 2, maxMin: 180, weightBonus: 0.5, fullAt: 400 };
+const LB_PER_KG = 2.20462;
+const toLb = (wt, unit) => (Number(wt) || 0) * (unit === "kg" ? LB_PER_KG : 1);
+/* Set XP grows with the weight lifted, but gently: a square-root curve up to +50% (15 XP) at 400 lb,
+   so lighter lifters earn nearly as much: 45 lb = 12, 135 lb = 13, 225 lb = 14. Bodyweight (0) = 10. */
+const setXP = (wt, unit) => Math.round(XP.perSet * (1 + XP.weightBonus * Math.sqrt(Math.min(toLb(wt, unit), XP.fullAt) / XP.fullAt)));
 const setsIn = w => (w.exercises || []).reduce((a, x) => a + (x.sets || []).length, 0);
 const xpFor = w => isCardio(w)
   ? XP.session + Math.round(Math.min(XP.maxMin, Number(w.minutes) || 0) * XP.perMin)
-  : XP.workout + Math.min(XP.maxSets, setsIn(w)) * XP.perSet;
+  : XP.workout + (w.exercises || []).flatMap(x => x.sets || []).slice(0, XP.maxSets).reduce((a, st) => a + setXP(st.weight, w.unit), 0);
 /* Weekly bonuses and penalties (Monday–Sunday weeks), judged with the goals in effect that week. */
 const BONUS = { muscle: 20, allMuscles: 100, cardio: 75, distance: 75, days: 50, streakStep: 20, streakMax: 200, missedDay: 40 };
 function xpLedger(list) {
@@ -917,8 +931,9 @@ function render() {
     ${c.cardioCount ? "" : `<p class="note">No cardio in this range yet.</p>`}
     <p class="note">Goals: ${hm(g.cardio)} and ${showDist(Math.round(toUnit(Number(g.distance) || 0, "mi") * 10) / 10)} a week${days === 7 ? "" : `, scaled to ${days} day${days === 1 ? "" : "s"} (weekly goal ÷ 7 × ${days})`}.${tick != null ? " The white dot on each ring is where you'd be today at an even pace." : ""}</p>`;
 
-  // Cardio breakdown
+  // Cardio breakdown and personal records
   renderBreakdown(c, r);
+  renderRecords();
 
   // History
   $("history").innerHTML = c.ws.length ? c.ws.slice(0, 60).map(w => {
@@ -1029,7 +1044,7 @@ function levelSheet() {
     <div class="xpbar big"><span style="width:${(info.into / info.need) * 100}%"></span></div>
     <p class="num" style="margin:6px 0 14px">${info.into.toLocaleString()} of ${info.need.toLocaleString()} XP to level ${info.level + 1} · ${info.total.toLocaleString()} XP in total</p>
     <div class="explain"><p><b>How to earn XP</b></p>
-      <p>Lifting workout: <b>${XP.workout} XP</b> + <b>${XP.perSet} XP per set</b> (up to ${XP.maxSets} sets).<br>Cardio session: <b>${XP.session} XP</b> + <b>${XP.perMin} XP per minute</b> (up to ${XP.maxMin} minutes).</p>
+      <p>Lifting workout: <b>${XP.workout} XP</b> + <b>${XP.perSet}–${XP.perSet * (1 + XP.weightBonus)} XP per set</b> (up to ${XP.maxSets} sets). Heavier sets earn a little more: 45 lb is ${setXP(45, "lb")} XP, 135 lb is ${setXP(135, "lb")}, 225 lb is ${setXP(225, "lb")}, and ${XP.fullAt} lb or more is ${setXP(XP.fullAt, "lb")}.<br>Cardio session: <b>${XP.session} XP</b> + <b>${XP.perMin} XP per minute</b> (up to ${XP.maxMin} minutes).</p>
       <p><b>Weekly bonuses</b> (Monday–Sunday): +${BONUS.muscle} XP per muscle goal met, +${BONUS.allMuscles} XP if every muscle goal is met, +${BONUS.cardio} XP for your cardio time goal, +${BONUS.distance} XP for your distance goal, +${BONUS.days} XP for training on your goal number of days. Hitting your days goal week after week adds a streak bonus of +${BONUS.streakStep} XP for each week in a row (up to +${BONUS.streakMax}).</p>
       <p><b>Missed days:</b> when a week ends short of your workout-days goal, you lose ${BONUS.missedDay} XP per missed day and your streak resets. Your first week is never penalised, and XP never drops below 0, though it can drop you a level.</p>
       <p>Each level needs 100 XP more than the one before. You earn a new title every 10 levels.</p></div>
@@ -1043,18 +1058,49 @@ function toast(msg) {
   const t = $("toast"); t.textContent = msg; t.hidden = false;
   clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 3500);
 }
+/* Heaviest set ever logged for each exercise (real workouts only), keyed by lower-case name. */
+function personalRecords(list) {
+  const best = {};
+  for (const w of list) {
+    if (w.sample || isCardio(w)) continue;
+    for (const x of w.exercises || []) for (const st of x.sets || []) {
+      const lb = toLb(st.weight, w.unit), key = (x.name || "").trim().toLowerCase();
+      if (!key || lb <= 0) continue;
+      const cur = best[key];
+      if (!cur || lb > cur.lb + 1e-6 || (Math.abs(lb - cur.lb) < 1e-6 && (Number(st.reps) || 0) > cur.reps))
+        best[key] = { name: x.name.trim(), lb, reps: Number(st.reps) || 0, date: w.date, id: w.id };
+    }
+  }
+  return best;
+}
+const wtUnit = () => prefs.unit || "lb";
+const showWt = lb => `${fmt(wtUnit() === "kg" ? lb / LB_PER_KG : lb)} ${wtUnit()}`;
+const shortDate = ds => { const d = parse(ds); return `${MON[d.getMonth()]} ${d.getDate()}`; };
+function bestLine(name) {
+  const r = personalRecords(S.workouts)[(name || "").trim().toLowerCase()];
+  return r ? `<p class="best-line">Your best: <b>${esc(showWt(r.lb))}</b> × ${r.reps} · ${esc(shortDate(r.date))}</p>` : "";
+}
+function renderRecords() {
+  const rows = Object.values(personalRecords(S.workouts)).sort((a, b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name));
+  $("records").innerHTML = rows.length
+    ? `<ul class="acts records">${rows.map(r => `<li><span>${esc(r.name)}</span><span class="num"><b>${esc(showWt(r.lb))}</b> × ${r.reps} <small>${esc(shortDate(r.date))}</small></span></li>`).join("")}</ul>
+       <p class="note">Your heaviest set for each exercise, newest records first.</p>`
+    : `<p class="note" style="margin:0">Log a lift with a weight and your best for that exercise shows up here.</p>`;
+}
+
 /* Called after a save: XP toast, plus a celebration when a level (and maybe a title) is reached. */
-function rewardXP(beforeL, afterL) {
+function rewardXP(beforeL, afterL, records = []) {
   const before = beforeL.total, after = afterL.total, gained = after - before;
-  if (gained <= 0) return;
+  const prNote = records.length ? ` · New record${records.length > 1 ? "s" : ""}: ${records.join(", ")}` : "";
+  if (gained <= 0) { if (prNote) toast(prNote.slice(3)); return; }
   const seen = new Set(beforeL.entries.map(e => e.label + e.text));
   const fresh = afterL.entries.filter(e => e.xp > 0 && !seen.has(e.label + e.text));
   const extra = fresh.length ? ` · ${fresh.map(e => `${e.text} +${e.xp}`).join(", ")}` : "";
   const a = levelInfo(before).level, b = levelInfo(after).level;
-  if (b <= a) return toast(`+${gained} XP${extra || ` · ${(levelInfo(after).need - levelInfo(after).into).toLocaleString()} XP to level ${b + 1}`}`);
+  if (b <= a) return toast(`+${gained} XP${extra || (prNote ? "" : ` · ${(levelInfo(after).need - levelInfo(after).into).toLocaleString()} XP to level ${b + 1}`)}${prNote}`);
   const newTitle = titleFor(b) !== titleFor(a) ? titleFor(b) : null;
   $("celebrate").innerHTML = `<div class="overlay celebrate" data-act="cel-close"><div class="cel-card" role="dialog" aria-modal="true" aria-labelledby="celH">
-    <p class="cel-xp num">+${gained} XP${esc(extra)}</p>
+    <p class="cel-xp num">+${gained} XP${esc(extra)}${esc(prNote)}</p>
     <h3 id="celH">Level ${b}!</h3>
     ${newTitle ? `<p class="cel-title">New title unlocked<b>${esc(newTitle)}</b></p><p class="cel-sub">${esc(blurbFor(newTitle))}</p>` : `<p class="cel-sub">Your title is still <b>${esc(titleFor(b))}</b>. ${nextTitle(b) ? `Next up: <b>${esc(nextTitle(b)[1])}</b> at level ${nextTitle(b)[0]}.` : ""}</p>`}
     <button class="btn primary" type="button" data-act="cel-close" id="celOk">Keep going</button></div></div>`;
@@ -1356,9 +1402,9 @@ function delActions(saveLabel) {
 }
 
 function musclesHTML(x, i) {
-  if (LIB[x.name] || !x.name.trim()) return x.p.length || x.s.length
-    ? `<div class="tags">${x.p.map(m => `<span class="tag p">${esc(MUSCLES[m])}</span>`).join("")}${x.s.map(m => `<span class="tag s">${esc(MUSCLES[m])}</span>`).join("")}</div>` : "";
-  return `<div class="field"><span class="lbl">New exercise · tap the muscles it works (tap again for secondary)</span><div class="tags">${M_IDS.map(m => {
+  if (LIB[x.name] || !x.name.trim()) return (x.p.length || x.s.length
+    ? `<div class="tags">${x.p.map(m => `<span class="tag p">${esc(MUSCLES[m])}</span>`).join("")}${x.s.map(m => `<span class="tag s">${esc(MUSCLES[m])}</span>`).join("")}</div>` : "") + bestLine(x.name);
+  return bestLine(x.name) + `<div class="field"><span class="lbl">New exercise · tap the muscles it works (tap again for secondary)</span><div class="tags">${M_IDS.map(m => {
     const st = x.p.includes(m) ? "p" : x.s.includes(m) ? "s" : "";
     return `<button type="button" class="tag ${st}" data-tog="${i}:${m}" aria-pressed="${!!st}">${esc(MUSCLES[m])}</button>`; }).join("")}</div></div>`;
 }
@@ -1566,11 +1612,17 @@ async function saveDraft() {
   }
   try {
     const before = xpLedger(S.workouts);
+    const prevBest = personalRecords(S.workouts.filter(x => x.id !== w.id));
+    const records = isCardio(w) ? [] : (w.exercises || []).map(x => {
+      const top = Math.max(0, ...(x.sets || []).map(st => toLb(st.weight, w.unit)));
+      const prev = prevBest[x.name.trim().toLowerCase()];
+      return prev && top > prev.lb + 1e-6 ? `${x.name} ${showWt(top)}` : null;
+    }).filter(Boolean);
     const r = await Store.save(w, S.workouts);
     if (Array.isArray(r)) S.workouts = r;
     else S.workouts = S.workouts.filter(x => x.id !== w.id).concat([w]);
     S.anchor = parse(w.date); closeSheet(); render();
-    rewardXP(before, xpLedger(S.workouts));
+    rewardXP(before, xpLedger(S.workouts), records);
   } catch (ex) { S.error = ex && ex.message && Store.mode === "local" ? ex.message : "Couldn't save the workout. Check your connection and try again."; renderSheet(); }
 }
 

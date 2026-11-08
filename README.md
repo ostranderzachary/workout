@@ -37,7 +37,7 @@ Each muscle is coloured by how close it is to its target: four shades for each q
 
 Every workout earns XP:
 
-- **Lifting:** 25 XP per workout plus 10 XP per set, counting up to 40 sets.
+- **Lifting:** 25 XP per workout plus 10–15 XP per set, counting up to 40 sets. Heavier sets earn a little more on a gentle curve: bodyweight is 10, 45 lb is 12, 135 lb is 13, 225 lb is 14, and 400 lb or more is 15. A 15-set workout at 135 lb earns 220 XP and one at 315 lb earns 235, so lighter lifters aren't left far behind.
 - **Cardio:** 25 XP per session plus 2 XP per minute, counting up to 180 minutes.
 
 Each level needs 100 XP more than the one before. Level 1 to 2 takes 100 XP, 9 to 10 takes 900 XP, and level 10 is 4,500 XP in total.
@@ -65,6 +65,14 @@ The level card shows this week's workout days, what you'll earn by hitting your 
 Saving a workout shows the XP earned. Reaching a new level or title brings up a celebration. Tap the level card to see the title ladder and recent XP.
 
 XP is worked out from your logged workouts, so editing or deleting a workout updates it. Example workouts don't earn XP.
+
+## Personal records
+
+Forged keeps the heaviest set you've logged for each exercise. kg and lb are compared correctly.
+
+- **While logging:** your best shows under the exercise name, for example "Your best: 185 lb × 5 · Oct 20".
+- **When you beat it:** the save message says so, for example "New record: Bench Press 190 lb". The first time you log an exercise sets its record without announcing one.
+- **On the Stats tab:** all your records are listed, newest first.
 
 ## Sharing your progress
 
