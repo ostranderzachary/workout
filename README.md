@@ -62,6 +62,14 @@ Your first week is never penalised. Total XP never goes below 0, but penalties c
 
 The level card shows this week's workout days, what you'll earn by hitting your goal, what you'll lose if you fall short, and last week's result.
 
+The **History** tab has an XP chart for the selected range:
+
+- one bar per day for a week or month, per week for a year, and per month beyond that
+- workout XP in green, weekly bonuses stacked on top, and missed-day penalties below the zero line
+- your total for the range and your best day or week
+
+Tap a bar for its breakdown.
+
 Saving a workout shows the XP earned. Reaching a new level or title brings up a celebration. Tap the level card to see the title ladder and recent XP.
 
 XP is worked out from your logged workouts, so editing or deleting a workout updates it. Example workouts don't earn XP.
