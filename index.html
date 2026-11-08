@@ -161,6 +161,7 @@ header.top {
 .share-wait { max-width: 420px; aspect-ratio: 4 / 5; margin: 0 auto; display: grid; place-items: center; border-radius: 14px; background: var(--bg); color: var(--muted); }
 .share-text { margin: 6px 0 0; white-space: pre-wrap; word-break: break-word; font-family: var(--font-body); font-size: 13px; line-height: 1.5; color: var(--muted); background: var(--bg); border-radius: 10px; padding: 10px 12px; user-select: text; -webkit-user-select: text; }
 .btn:disabled { opacity: .45; cursor: default; }
+.bw-row { max-width: 260px; margin-top: 6px; }
 .best-line { margin: 0; font-size: 13px; color: var(--muted); }
 .best-line b { color: var(--h5); }
 .records li { align-items: baseline; }
@@ -609,7 +610,8 @@ const normGoals = g => {
   return { per: "week", sets, cardio: g && g.cardio != null ? (Number(g.cardio) || 0) * f : DEFAULT_GOALS.cardio,
     distance: g && g.distance != null ? Math.max(0, Number(g.distance) || 0) : DEFAULT_GOALS.distance,
     days: g && g.days != null ? Math.min(7, Math.max(0, Math.round(Number(g.days) || 0))) : DEFAULT_GOALS.days,
-    history: g && Array.isArray(g.history) ? g.history : [] };
+    history: g && Array.isArray(g.history) ? g.history : [],
+    bodyweight: g && Array.isArray(g.bodyweight) ? g.bodyweight : [] }; // [{ date, lb }], oldest first
 };
 /* The goals that applied on a date, so changing goals later doesn't rewrite past weeks' bonuses. */
 function goalsAt(date) {
@@ -1321,6 +1323,7 @@ function renderOnboard() {
   const real = S.workouts.filter(w => !w.sample);
   const steps = [
     ["goals", "Set your weekly goals", "Choose how many sets each muscle should get per week, and your weekly cardio minutes. Defaults are filled in to start from.", S.goalsSaved, "Set goals"],
+    ["weight", "Record your body weight", "Enter it in Goals. It's saved with the date so you can track it over time.", S.goals.bodyweight.length > 0, "Add weight"],
     ["log", "Log a lifting workout", "Add exercises with their sets and reps. Each set counts toward the muscles that exercise works.", real.some(w => !isCardio(w)), "Log lifts"],
     ["cardio", "Log some cardio", "Add a run, ride, swim or other session with its minutes. It fills your cardio gauges.", real.some(isCardio), "Log cardio"]
   ];
@@ -1484,6 +1487,16 @@ function presetGoals(k) {
   const [, big, mid, small, cardio, days, distance] = PRESETS[k];
   return { per: "week", cardio, distance, days, history: S.draft ? S.draft.history : [], sets: Object.fromEntries(M_IDS.map(m => [m, BIG.includes(m) ? big : MID.includes(m) ? mid : small])) };
 }
+function latestWeight() { const b = S.goals.bodyweight; return b.length ? b[b.length - 1] : null; }
+const bwStep = () => (wtUnit() === "kg" ? 0.2 : 0.5);
+function bodyWeightField(d) {
+  const last = latestWeight();
+  const shown = d.bwInput !== undefined ? d.bwInput : last ? Math.round((wtUnit() === "kg" ? last.lb / LB_PER_KG : last.lb) * 10) / 10 : "";
+  return `<div class="lbl" id="bwLbl">Body weight (${wtUnit()})</div>
+    <div class="bw-row">${stepper(`<input class="inp num" id="g-bw" type="number" inputmode="decimal" min="0" step="any" placeholder="${wtUnit()}" value="${esc(shown)}" data-goal="bw">`, bwStep(), `body weight by ${bwStep()} ${wtUnit()}`)}</div>
+    <p class="note" style="margin:4px 0 14px">${last ? `Last recorded: ${esc(showWt(last.lb))} on ${esc(shortDate(last.date))}. Change it to record today's weight.` : "Not recorded yet."} Saved with a date when you tap Save goals.</p>`;
+}
+
 function goalsSheet(d) {
   const row = m => `<label class="goal" for="g-${m}"><span>${esc(MUSCLES[m])}</span>
       <input class="inp num" id="g-${m}" type="number" inputmode="numeric" min="0" step="1" value="${esc(d.sets[m])}" data-goal="${m}">
@@ -1493,6 +1506,7 @@ function goalsSheet(d) {
       <p><b>How many sets should each muscle get per week?</b> A set is one round of an exercise, such as 8 reps of bench press. Exercises also give half a set to the muscles that help, so the total adds up across your workouts.</p>
       <p>About <b>10 sets a week</b> for a big muscle is enough for steady progress for most people; experienced lifters often go higher. Start with a preset and adjust any muscle. Day, month and year targets are worked out from these weekly numbers.</p>
     </div>
+    ${bodyWeightField(d)}
     <div class="lbl">Start from a preset</div>
     <div class="chips" style="margin:6px 0 14px">${Object.entries(PRESETS).map(([k, [n, big, , small, cm, days]]) =>
       `<button type="button" class="chip" data-preset="${k}">${n} <small>${days} days · ${small}–${big} sets · ${cm} min</small></button>`).join("")}</div>
@@ -1519,7 +1533,8 @@ $("sheetRoot").addEventListener("input", e => {
   if (t.dataset.f) d[t.dataset.f] = t.value;
   if (t.dataset.goal) {
     const k = t.dataset.goal;
-    if (k === "days") d.days = t.value;
+    if (k === "bw") d.bwInput = t.value;
+    else if (k === "days") d.days = t.value;
     else if (k === "distance") { d.distance = distUnit() === "km" ? (Number(t.value) || 0) / 1.609344 : Number(t.value) || 0; $("gw-distance").textContent = `${fmt(perDay(Number(t.value) || 0))}/day`; }
     else if (k === "cardio") { d.cardio = t.value; $("gw-cardio").textContent = `${hm(perDay(t.value))}/day`; }
     else { d.sets[k] = t.value; $(`gw-${k}`).textContent = `${fmt(perDay(t.value))}/day`; }
@@ -1551,6 +1566,7 @@ function stepStart(input) {
     return k === "reps" ? 8 : null;
   }
   if (input.dataset.f === "minutes") return 30;
+  if (input.dataset.goal === "bw") return wtUnit() === "kg" ? 70 : 160;
   return null;
 }
 function stepInput(btn) {
@@ -1587,6 +1603,15 @@ async function saveDraft() {
     // The goals in effect until now (defaults if never saved) still apply to earlier weeks.
     if (!hist.length) hist.push({ from: "0000-01-01", sets: prev.sets, cardio: prev.cardio, distance: prev.distance, days: prev.days });
     g.history = hist.filter(h => h.from !== entry.from).concat([entry]).slice(-100);
+    let bodyweight = S.goals.bodyweight.slice();
+    const bw = Number(d.bwInput);
+    if (d.bwInput !== undefined && String(d.bwInput).trim() !== "" && bw > 0) {
+      const lb = Math.round(toLb(bw, wtUnit()) * 100) / 100, last = bodyweight[bodyweight.length - 1];
+      if (!last || Math.abs(last.lb - lb) > 0.05) bodyweight = bodyweight.filter(e => e.date !== ymd(today())).concat([{ date: ymd(today()), lb }]);
+    } else if (d.bwInput !== undefined && String(d.bwInput).trim() !== "" && !(bw > 0)) {
+      S.error = "Enter your body weight as a number above 0, or leave it as it was."; return renderSheet();
+    }
+    g.bodyweight = bodyweight.slice(-1000);
     try { await Store.saveGoals(g); S.goals = normGoals(g); S.goalsSaved = true; closeSheet(); render(); }
     catch (ex) { S.error = ex && ex.message ? ex.message : "Couldn't save your goals. Try again."; renderSheet(); }
     return;
@@ -1639,8 +1664,8 @@ $("sheetRoot").addEventListener("click", async e => {
   if (a.act === "share-copy") { const ok = await copyShareText(); S.shareMsg = ok ? "Text copied." : "Couldn't copy automatically. Press and hold the text to copy it."; return renderSheet(); }
   if (a.act === "pick-cardio") return openSheet("cardio", null);
   if (a.act === "save") return saveDraft();
-  if (a.act === "goals-reset") { S.draft = JSON.parse(JSON.stringify(DEFAULT_GOALS)); return renderSheet(); }
-  if (a.preset) { S.draft = presetGoals(a.preset); return renderSheet(); }
+  if (a.act === "goals-reset") { S.draft = { ...JSON.parse(JSON.stringify(DEFAULT_GOALS)), bwInput: d.bwInput }; return renderSheet(); }
+  if (a.preset) { S.draft = { ...presetGoals(a.preset), bwInput: d.bwInput }; return renderSheet(); }
   if (a.unit) { d.unit = a.unit; prefs.unit = a.unit; savePrefs(); return renderSheet(); }
   if (a.dunit) { d.distUnit = a.dunit; prefs.dist = a.dunit; savePrefs(); return renderSheet(); }
   if (a.activity) { d.activity = a.activity; return renderSheet(); }
@@ -1701,6 +1726,7 @@ document.addEventListener("click", e => {
   if (k === "log") openSheet("lift", null);
   if (k === "cardio") openSheet("cardio", null);
   if (k === "goals") openSheet("goals", null);
+  if (k === "weight") { openSheet("goals", null); setTimeout(() => { const el = $("bwLbl"); if (el) el.scrollIntoView({ block: "start", behavior: "smooth" }); }, 60); }
   if (k === "level") openSheet("level", null);
   if (k === "share") openShare();
   if (k === "add") openSheet("add", null);

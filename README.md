@@ -66,6 +66,15 @@ Saving a workout shows the XP earned. Reaching a new level or title brings up a 
 
 XP is worked out from your logged workouts, so editing or deleting a workout updates it. Example workouts don't earn XP.
 
+## Body weight
+
+Record your body weight at the top of **Goals**: type it in or use the − / + buttons (0.5 lb or 0.2 kg per tap). Tapping **Save goals** saves it with today's date.
+
+- Changing it on a later day adds a new dated entry, so you build a history. Changing it again the same day updates that day's entry.
+- Saving other goals without touching the weight doesn't add an entry.
+- It isn't used for XP or goals.
+- "Record your body weight" is a step in the Get started checklist.
+
 ## Personal records
 
 Forged keeps the heaviest set you've logged for each exercise. kg and lb are compared correctly.
