@@ -73,6 +73,7 @@ Record your body weight at the top of **Goals**: type it in or use the − / + b
 - Changing it on a later day adds a new dated entry, so you build a history. Changing it again the same day updates that day's entry.
 - Saving other goals without touching the weight doesn't add an entry.
 - It isn't used for XP or goals.
+- The **Stats** tab shows your current weight, the change over the last 30 days and since your first entry, and a line chart of every weigh-in. Tap a point to see its date and weight.
 - "Record your body weight" is a step in the Get started checklist.
 
 ## Personal records

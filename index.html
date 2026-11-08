@@ -162,6 +162,13 @@ header.top {
 .share-text { margin: 6px 0 0; white-space: pre-wrap; word-break: break-word; font-family: var(--font-body); font-size: 13px; line-height: 1.5; color: var(--muted); background: var(--bg); border-radius: 10px; padding: 10px 12px; user-select: text; -webkit-user-select: text; }
 .btn:disabled { opacity: .45; cursor: default; }
 .bw-row { max-width: 260px; margin-top: 6px; }
+.wchart svg { width: 100%; height: auto; display: block; }
+.w-grid { stroke: var(--line); stroke-width: 1; }
+.w-tick { fill: var(--muted); font-size: 12px; font-family: var(--font-body); font-variant-numeric: tabular-nums; }
+.w-area { fill: var(--h3); opacity: .14; }
+.w-line { fill: none; stroke: var(--h4); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.w-pt { fill: var(--h4); stroke: var(--surface); stroke-width: 2; }
+.w-pt.last { fill: var(--h5); }
 .best-line { margin: 0; font-size: 13px; color: var(--muted); }
 .best-line b { color: var(--h5); }
 .records li { align-items: baseline; }
@@ -415,6 +422,10 @@ button.tag { cursor: pointer; }
         <h2 id="barsTitle">Lifting goals</h2>
         <ul class="bars" id="bars"></ul>
         <p class="note" id="barsNote"></p>
+      </section>
+      <section class="panel" data-tab="stats">
+        <h2>Body weight</h2>
+        <div id="weightTrend"></div>
       </section>
       <section class="panel" data-tab="stats">
         <h2>Personal records</h2>
@@ -936,6 +947,7 @@ function render() {
   // Cardio breakdown and personal records
   renderBreakdown(c, r);
   renderRecords();
+  renderWeight();
 
   // History
   $("history").innerHTML = c.ws.length ? c.ws.slice(0, 60).map(w => {
@@ -1082,6 +1094,39 @@ function bestLine(name) {
   const r = personalRecords(S.workouts)[(name || "").trim().toLowerCase()];
   return r ? `<p class="best-line">Your best: <b>${esc(showWt(r.lb))}</b> × ${r.reps} · ${esc(shortDate(r.date))}</p>` : "";
 }
+/* Body weight: latest value, recent change, and a line chart of every weigh-in (dates to scale). */
+function renderWeight() {
+  const all = S.goals.bodyweight, u = wtUnit(), conv = lb => (u === "kg" ? lb / LB_PER_KG : lb);
+  const btn = `<button class="btn small" type="button" data-open="weight">${all.length ? "Update weight" : "Record weight"}</button>`;
+  if (!all.length) { $("weightTrend").innerHTML = `<p class="note" style="margin:0 0 10px">Record your body weight in Goals to start a trend.</p>${btn}`; return; }
+  const last = all[all.length - 1], first = all[0];
+  const t = e => parse(e.date).getTime();
+  const monthAgo = t(last) - 30 * 864e5, base30 = all.filter(e => t(e) <= monthAgo).pop() || first;
+  const signed = d => `${d > 0 ? "+" : d < 0 ? "−" : "±"}${fmt(Math.abs(conv(d)))} ${u}`;
+  const tiles = [["Current", showWt(last.lb)], ["Last 30 days", all.length > 1 && base30 !== last ? signed(last.lb - base30.lb) : "–"], [`Since ${shortDate(first.date)}`, all.length > 1 ? signed(last.lb - first.lb) : "–"]];
+  let chart = `<p class="note">Record your weight again on another day to see a trend.</p>`;
+  if (all.length > 1) {
+    const W = 600, H = 210, L = 46, R = 14, T = 12, B = 30, iw = W - L - R, ih = H - T - B;
+    const vals = all.map(e => conv(e.lb)), lo0 = Math.min(...vals), hi0 = Math.max(...vals);
+    const padV = Math.max(1, (hi0 - lo0) * 0.15), lo = Math.floor(lo0 - padV), hi = Math.ceil(hi0 + padV);
+    const t0 = t(first), t1 = Math.max(t(last), t0 + 864e5);
+    const X = e => L + ((t(e) - t0) / (t1 - t0)) * iw, Y = v => T + ih - ((v - lo) / (hi - lo)) * ih;
+    const line = all.map((e, i) => `${i ? "L" : "M"}${X(e).toFixed(1)} ${Y(conv(e.lb)).toFixed(1)}`).join("");
+    const area = `${line}L${X(last).toFixed(1)} ${T + ih}L${X(first).toFixed(1)} ${T + ih}Z`;
+    const ticks = [lo, Math.round((lo + hi) / 2), hi];
+    chart = `<div class="wchart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Body weight from ${esc(shortDate(first.date))} to ${esc(shortDate(last.date))}: ${esc(showWt(first.lb))} to ${esc(showWt(last.lb))}">
+      ${ticks.map(v => `<line class="w-grid" x1="${L}" x2="${W - R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}"/><text class="w-tick" x="${L - 8}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end">${fmt(v)}</text>`).join("")}
+      <text class="w-tick" x="${L}" y="${H - 8}">${esc(shortDate(first.date))}</text>
+      <text class="w-tick" x="${W - R}" y="${H - 8}" text-anchor="end">${esc(shortDate(last.date))}</text>
+      <path class="w-area" d="${area}"/><path class="w-line" d="${line}"/>
+      ${all.map((e, i) => `<circle class="w-pt${i === all.length - 1 ? " last" : ""}" cx="${X(e).toFixed(1)}" cy="${Y(conv(e.lb)).toFixed(1)}" r="${i === all.length - 1 ? 6 : 4}"><title>${esc(shortDate(e.date))}: ${esc(showWt(e.lb))}</title></circle>`).join("")}
+    </svg></div>
+    <p class="note" style="margin-top:4px">${all.length} weigh-ins. Tap a point to see its date and weight.</p>`;
+  }
+  $("weightTrend").innerHTML = `<div class="stats g-stats" style="margin:0 0 10px;padding:0;border:0">${tiles.map(([k, v]) => `<div class="stat"><b>${esc(v)}</b><span>${esc(k)}</span></div>`).join("")}</div>
+    ${chart}<div style="margin-top:10px">${btn}</div>`;
+}
+
 function renderRecords() {
   const rows = Object.values(personalRecords(S.workouts)).sort((a, b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name));
   $("records").innerHTML = rows.length
