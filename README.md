@@ -117,7 +117,9 @@ Everything is generated on your device; nothing is uploaded.
 
 ## Cardio
 
-Tap **Log cardio** to add a session: activity type, minutes, optional distance (mi or km), date and name. Each activity maps to the muscles it works. For example, a cycle works quads fully and calves, hamstrings and glutes partly. Cardio progress shows as two doughnut gauges, **Time** and **Distance**, each filling toward your weekly goal for the selected range (default 150 minutes and 10 miles a week, set in Goals). A white dot on each ring marks where you'd be today at an even pace.
+**Stairs** sessions are logged in stories climbed (− / + in steps of 5) instead of distance.
+
+Tap **Log cardio** to add a session: activity type, minutes, optional distance (mi or km), date and name. Each activity maps to the muscles it works. For example, a cycle works quads fully and calves, hamstrings and glutes partly. Cardio progress shows as three doughnut gauges, **Time**, **Distance** and **Stairs**, each filling toward your weekly goal for the selected range (default 150 minutes, 10 miles and 50 stories a week, set in Goals). A white dot on each ring marks where you'd be today at an even pace.
 
 ## Running it
 

@@ -274,7 +274,7 @@ header.top {
 .goal small { color: var(--muted); font-size: 12px; text-align: right; }
 .goalline { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 14px; color: var(--muted); margin-bottom: 6px; }
 .goalline b { font-family: var(--font-display); font-size: 26px; color: var(--fg); font-weight: 700; }
-.gauges { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.gauges { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .gauge { margin: 0; display: grid; justify-items: center; gap: 6px; min-width: 0; }
 .gauge svg { width: 100%; max-width: 170px; height: auto; display: block; }
 .g-track { fill: none; stroke: var(--bg); stroke-width: 13; }
@@ -615,7 +615,7 @@ const CARDIO = {
   swim: ["Swim", ["lats", "shoulders"], ["triceps", "chest", "abs"]],
   row: ["Row", ["lats", "quads"], ["biceps", "hamstrings", "glutes", "traps"]],
   elliptical: ["Elliptical", ["quads", "glutes"], ["hamstrings", "calves", "shoulders"]],
-  stairs: ["Stair climber", ["glutes", "quads"], ["calves", "hamstrings"]],
+  stairs: ["Stairs", ["glutes", "quads"], ["calves", "hamstrings"]], // logged in stories (floors), not distance
   hiit: ["HIIT", ["quads", "abs"], ["glutes", "shoulders", "calves"]],
   jumprope: ["Jump rope", ["calves"], ["quads", "shoulders", "forearms"]]
 };
@@ -629,6 +629,7 @@ const DEFAULT_GOALS = {
   sets: { chest: 10, shoulders: 10, biceps: 8, triceps: 8, forearms: 5, traps: 5, lats: 10, lowerback: 5, abs: 8, obliques: 5, glutes: 8, quads: 10, hamstrings: 8, adductors: 5, calves: 8 },
   cardio: 150,
   distance: 10, // miles per week, shown in km when that unit is chosen
+  stairs: 50, // stories (floors) climbed per week
   days: 4 // workout days per week, for consistency bonuses and missed-day penalties
 };
 /* Goals saved before weekly goals existed were per day; scale those by 7. */
@@ -638,6 +639,7 @@ const normGoals = g => {
   if (g && g.sets) for (const [m, v] of Object.entries(g.sets)) sets[m] = Math.round((Number(v) || 0) * f * 10) / 10;
   return { per: "week", sets, cardio: g && g.cardio != null ? (Number(g.cardio) || 0) * f : DEFAULT_GOALS.cardio,
     distance: g && g.distance != null ? Math.max(0, Number(g.distance) || 0) : DEFAULT_GOALS.distance,
+    stairs: g && g.stairs != null ? Math.max(0, Math.round(Number(g.stairs) || 0)) : DEFAULT_GOALS.stairs,
     days: g && g.days != null ? Math.min(7, Math.max(0, Math.round(Number(g.days) || 0))) : DEFAULT_GOALS.days,
     history: g && Array.isArray(g.history) ? g.history : [],
     bodyweight: g && Array.isArray(g.bodyweight) ? g.bodyweight : [] }; // [{ date, lb }], oldest first
@@ -647,7 +649,7 @@ function goalsAt(date) {
   const h = S.goals.history;
   if (!h.length) return S.goals;
   const e = h.filter(x => x.from <= date).pop() || h[0];
-  return normGoals({ per: "week", sets: e.sets, cardio: e.cardio, distance: e.distance, days: e.days });
+  return normGoals({ per: "week", sets: e.sets, cardio: e.cardio, distance: e.distance, stairs: e.stairs, days: e.days });
 }
 const perDay = w => (Number(w) || 0) / 7;
 
@@ -980,15 +982,15 @@ function compute(list, r) {
   const lift = Object.fromEntries(M_IDS.map(m => [m, { v: 0, ex: {} }]));
   const card = Object.fromEntries(M_IDS.map(m => [m, { v: 0, ex: {} }]));
   const add = (map, arr, n, f, label) => { for (const m of arr) { if (!map[m]) continue; map[m].v += n * f; map[m].ex[label] = (map[m].ex[label] || 0) + n * f; } };
-  let liftCount = 0, sets = 0, volume = 0, cardioCount = 0, minutes = 0, distance = 0;
+  let liftCount = 0, sets = 0, volume = 0, cardioCount = 0, minutes = 0, distance = 0, stories = 0;
   const byActivity = {};
   for (const w of ws) {
     if (isCardio(w)) {
       const c = CARDIO[w.activity] || CARDIO.run, n = Number(w.minutes) || 0;
-      cardioCount++; minutes += n; distance += toUnit(Number(w.distance) || 0, w.distUnit || "mi");
+      cardioCount++; minutes += n; distance += toUnit(Number(w.distance) || 0, w.distUnit || "mi"); stories += Number(w.stories) || 0;
       const d = toUnit(Number(w.distance) || 0, w.distUnit || "mi");
-      const A = byActivity[w.activity] = byActivity[w.activity] || { sessions: 0, minutes: 0, distance: 0, pacedMin: 0, longest: null, best: null };
-      A.sessions++; A.minutes += n; A.distance += d;
+      const A = byActivity[w.activity] = byActivity[w.activity] || { sessions: 0, minutes: 0, distance: 0, stories: 0, pacedMin: 0, longest: null, best: null };
+      A.sessions++; A.minutes += n; A.distance += d; A.stories += Number(w.stories) || 0;
       if (d > 0) A.pacedMin += n; // pace and speed use only sessions with a distance
       if (!A.longest || (d || 0) > (A.longest.d || 0) || (!d && !A.longest.d && n > A.longest.n)) A.longest = { d, n, date: w.date };
       if (RATE[w.activity] && d > 0 && n > 0) {
@@ -1006,7 +1008,7 @@ function compute(list, r) {
       add(lift, x.p || [], n, 1, x.name); add(lift, x.s || [], n, 0.5, x.name);
     }
   }
-  return { ws, lift, card, liftCount, sets, volume, cardioCount, minutes, distance, byActivity };
+  return { ws, lift, card, liftCount, sets, volume, cardioCount, minutes, distance, stories, byActivity };
 }
 
 /* ---------- Render ---------- */
@@ -1017,7 +1019,7 @@ const plural = (n, w) => `${fmt(n)} ${w}${Math.abs(n - 1) < 1e-9 ? "" : "s"}`;
 function status(v, t, pace, unitWord) {
   if (!t) return { k: "none", txt: "No goal set" };
   if (v >= t) return { k: "met", txt: "Goal met" };
-  const left = t - v, togo = unitWord === "min" ? `${hm(left)} to go` : unitWord === "dist" ? `${fmt(left)} ${distUnit()} to go` : `${plural(Math.round(left * 10) / 10, "set")} to go`;
+  const left = t - v, togo = unitWord === "min" ? `${hm(left)} to go` : unitWord === "dist" ? `${fmt(left)} ${distUnit()} to go` : unitWord === "stories" ? `${Math.ceil(left)} ${Math.ceil(left) === 1 ? "story" : "stories"} to go` : `${plural(Math.round(left * 10) / 10, "set")} to go`;
   if (!pace.current) return { k: "missed", txt: `Missed · ${togo.replace(" to go", " short")}` };
   if (pace.days > 1 && v >= (t * pace.elapsed) / pace.days) return { k: "on", txt: `On pace · ${togo}` };
   if (pace.days > 1) return { k: "behind", txt: `Behind pace · ${togo}` };
@@ -1087,16 +1089,20 @@ function render() {
   // Cardio gauges: time and distance against their goals for this range
   const tick = isCurrent && pace.days > 1 && elapsed < days ? elapsed / days : null;
   const distSt = status(c.distance, distTarget, pace, "dist");
+  const stairsTarget = Math.round(perDay(Number(g.stairs) || 0) * days);
+  const stairsSt = status(c.stories, stairsTarget, pace, "stories");
+  const showStories = v => `${Math.round(v)} st`;
   const showDist = v => `${fmt(v)} ${distUnit()}`;
   $("cardioGoal").innerHTML = `<div class="gauges">
       ${gauge({ value: c.minutes, target: cardioTarget, label: "Time", show: hm, tick })}
       ${gauge({ value: c.distance, target: distTarget, label: "Distance", show: showDist, tick })}
+      ${gauge({ value: c.stories, target: stairsTarget, label: "Stairs", show: showStories, tick })}
     </div>
-    <div class="gauges" style="margin-top:6px"><div style="text-align:center">${pill(cardioSt)}</div><div style="text-align:center">${pill(distSt)}</div></div>
+    <div class="gauges" style="margin-top:6px">${[cardioSt, distSt, stairsSt].map(st => `<div style="text-align:center">${pill(st)}</div>`).join("")}</div>
     <div class="stats g-stats">${[["Sessions", c.cardioCount], ["Avg session", c.cardioCount ? hm(c.minutes / c.cardioCount) : "–"], ["Active days", new Set(c.ws.filter(isCardio).map(w => w.date)).size]]
       .map(([k, v]) => `<div class="stat"><b>${v}</b><span>${esc(k)}</span></div>`).join("")}</div>
     ${c.cardioCount ? "" : `<p class="note">No cardio in this range yet.</p>`}
-    <p class="note">Goals: ${hm(g.cardio)} and ${showDist(Math.round(toUnit(Number(g.distance) || 0, "mi") * 10) / 10)} a week${days === 7 ? "" : `, scaled to ${days} day${days === 1 ? "" : "s"} (weekly goal ÷ 7 × ${days})`}.${tick != null ? " The white dot on each ring is where you'd be today at an even pace." : ""}</p>`;
+    <p class="note">Goals: ${hm(g.cardio)}, ${showDist(Math.round(toUnit(Number(g.distance) || 0, "mi") * 10) / 10)} and ${Number(g.stairs) || 0} stories (st) a week${days === 7 ? "" : `, scaled to ${days} day${days === 1 ? "" : "s"} (weekly goal ÷ 7 × ${days})`}.${tick != null ? " The white dot on each ring is where you'd be today at an even pace." : ""}</p>`;
 
   // Cardio breakdown and personal records
   renderBreakdown(c, r);
@@ -1111,7 +1117,8 @@ function render() {
     if (isCardio(w)) {
       const a = CARDIO[w.activity] || CARDIO.run;
       const wd = toUnit(Number(w.distance) || 0, w.distUnit || "mi");
-      const bits = [`${fmt(Number(w.minutes) || 0)} min`, wd ? `${fmt(wd)} ${distUnit()}` : null, rateText(w.activity, Number(w.minutes) || 0, wd)].filter(Boolean);
+      const st = Number(w.stories) || 0;
+      const bits = [`${fmt(Number(w.minutes) || 0)} min`, st ? `${st} ${st === 1 ? "story" : "stories"}` : null, wd ? `${fmt(wd)} ${distUnit()}` : null, rateText(w.activity, Number(w.minutes) || 0, wd)].filter(Boolean);
       return `<li><button type="button" data-w="${esc(w.id)}">${chip}<span style="min-width:0"><div class="t"><span class="badge cardio">${esc(a[0])}</span>${esc(w.name || a[0])}</div><div class="s num">${w.sample ? "" : `<span class="xp-tag">+${xpFor(w)} XP</span> `}${esc(bits.join(" · "))}</div></span></button></li>`;
     }
     const n = (w.exercises || []).reduce((a, x) => a + (x.sets || []).length, 0);
@@ -1135,7 +1142,7 @@ function renderBreakdown(c, r) {
   $("breakdown").innerHTML = `<div class="table-scroll"><table class="breakdown">
     <thead><tr><th scope="col">Activity</th><th scope="col"><abbr title="Sessions">#</abbr></th><th scope="col">Time</th><th scope="col">Dist.</th><th scope="col">Avg pace</th></tr></thead>
     <tbody>${rows.map(([k, A]) => `<tr><th scope="row">${esc(CARDIO[k] ? CARDIO[k][0] : k)}</th><td class="num">${A.sessions}</td><td class="num">${hm(A.minutes)}</td>
-      <td class="num">${A.distance > 0 ? `${fmt(A.distance)} ${u}` : "–"}</td><td class="num">${rateText(k, A.pacedMin, A.distance) || "–"}</td></tr>`).join("")}</tbody>
+      <td class="num">${A.stories > 0 ? `${A.stories} st` : A.distance > 0 ? `${fmt(A.distance)} ${u}` : "–"}</td><td class="num">${rateText(k, A.pacedMin, A.distance) || "–"}</td></tr>`).join("")}</tbody>
   </table></div>
   ${highlights.length ? `<ul class="highlights">${highlights.join("")}</ul>` : ""}
   <p class="note"># is sessions. Avg pace is minutes per ${u} for runs, walks and hikes, and speed for rides. Both use only sessions where you entered a distance.</p>`;
@@ -1395,7 +1402,7 @@ function shareText(x) {
   lines.push("", `This week, ${x.r.label}`);
   lines.push(`- ${c.ws.length} workout${c.ws.length === 1 ? "" : "s"} on ${days} day${days === 1 ? "" : "s"}${wk && wk.streak > 1 ? `, ${wk.streak}-week streak` : ""}`);
   lines.push(`- Lifting: ${c.sets} sets, ${x.met}/${x.withGoal.length} muscle goals`);
-  lines.push(`- Cardio: ${hm(c.minutes)} (${pctOf(c.minutes, g.cardio)}%), ${fmt(c.distance)} ${u} (${pctOf(c.distance, x.distGoal)}%)`);
+  lines.push(`- Cardio: ${hm(c.minutes)} (${pctOf(c.minutes, g.cardio)}%), ${fmt(c.distance)} ${u} (${pctOf(c.distance, x.distGoal)}%)${c.stories || g.stairs ? `, ${c.stories} stories (${pctOf(c.stories, g.stairs)}%)` : ""}`);
   return lines.join("\n");
 }
 
@@ -1462,7 +1469,7 @@ async function drawCard(x) {
   };
   ring(190, 770, c.minutes, Number(g.cardio) || 0, hm, "TIME");
   ring(420, 770, c.distance, x.distGoal, v => `${fmt(v)} ${distUnit()}`, "DISTANCE");
-  text(`${c.cardioCount} session${c.cardioCount === 1 ? "" : "s"} this week`, 305, 1010, `500 24px ${BODY}`, C.muted, "center");
+  text(`${c.cardioCount} session${c.cardioCount === 1 ? "" : "s"} this week${c.stories ? ` · ${c.stories} stories` : ""}`, 305, 1010, `500 24px ${BODY}`, C.muted, "center");
 
   const drawFig = (shapes, ox, oy, sc) => {
     ctx.save(); ctx.translate(ox, oy); ctx.scale(sc, sc);
@@ -1726,8 +1733,10 @@ function cardioSheet(d) {
     <div class="tags" style="margin-top:8px">${a[1].map(m => `<span class="tag p">${esc(MUSCLES[m])}</span>`).join("")}${a[2].map(m => `<span class="tag s">${esc(MUSCLES[m])}</span>`).join("")}</div>
     <div class="row2" style="margin-top:12px">
       <div class="field"><label for="c-min">Minutes <small>±5</small></label>${stepper(`<input class="inp num" id="c-min" type="number" inputmode="numeric" min="0" placeholder="30" value="${esc(d.minutes)}" data-f="minutes">`, 5, "minutes by 5")}</div>
-      <div class="field"><label for="c-dist">Distance · optional <small>±0.5</small></label><div class="withunit">${stepper(`<input class="inp num" id="c-dist" type="number" inputmode="decimal" min="0" step="any" placeholder="0" value="${esc(d.distance)}" data-f="distance">`, 0.5, "distance by 0.5")}
-        ${["mi", "km"].map(u => `<button type="button" class="tag ${d.distUnit === u ? "p" : ""}" data-dunit="${u}">${u}</button>`).join("")}</div></div>
+      ${d.activity === "stairs"
+        ? `<div class="field"><label for="c-stories">Stories climbed <small>±5</small></label>${stepper(`<input class="inp num" id="c-stories" type="number" inputmode="numeric" min="0" step="1" placeholder="0" value="${esc(d.stories ?? "")}" data-f="stories">`, 5, "stories by 5")}</div>`
+        : `<div class="field"><label for="c-dist">Distance · optional <small>±0.5</small></label><div class="withunit">${stepper(`<input class="inp num" id="c-dist" type="number" inputmode="decimal" min="0" step="any" placeholder="0" value="${esc(d.distance)}" data-f="distance">`, 0.5, "distance by 0.5")}
+        ${["mi", "km"].map(u => `<button type="button" class="tag ${d.distUnit === u ? "p" : ""}" data-dunit="${u}">${u}</button>`).join("")}</div></div>`}
     </div>
     <div class="row2" style="margin-top:10px">
       <div class="field"><label for="c-date">Date</label><input class="inp" id="c-date" type="date" value="${esc(d.date)}" max="${ymd(today())}" data-f="date"></div>
@@ -1746,10 +1755,10 @@ const GOAL_GROUPS = [
 const BIG = ["chest", "shoulders", "lats", "quads"];
 const MID = ["biceps", "triceps", "abs", "glutes", "hamstrings", "calves"];
 // [name, big, medium, small sets per week, cardio minutes, workout days, distance in miles]
-const PRESETS = { light: ["Light", 6, 5, 3, 90, 3, 5], standard: ["Standard", 10, 8, 5, 150, 4, 10], high: ["High volume", 16, 12, 8, 300, 5, 20] };
+const PRESETS = { light: ["Light", 6, 5, 3, 90, 3, 5, 20], standard: ["Standard", 10, 8, 5, 150, 4, 10, 50], high: ["High volume", 16, 12, 8, 300, 5, 20, 100] };
 function presetGoals(k) {
-  const [, big, mid, small, cardio, days, distance] = PRESETS[k];
-  return { per: "week", cardio, distance, days, history: S.draft ? S.draft.history : [], sets: Object.fromEntries(M_IDS.map(m => [m, BIG.includes(m) ? big : MID.includes(m) ? mid : small])) };
+  const [, big, mid, small, cardio, days, distance, stairs] = PRESETS[k];
+  return { per: "week", cardio, distance, stairs, days, history: S.draft ? S.draft.history : [], sets: Object.fromEntries(M_IDS.map(m => [m, BIG.includes(m) ? big : MID.includes(m) ? mid : small])) };
 }
 function latestWeight() { const b = S.goals.bodyweight; return b.length ? b[b.length - 1] : null; }
 const bwStep = () => (wtUnit() === "kg" ? 0.5 : 1);
@@ -1786,7 +1795,10 @@ function goalsSheet(d) {
       <small class="num" id="gw-cardio">${hm(perDay(d.cardio))}/day</small></label>
     <label class="goal" for="g-distance"><span>Distance (${distUnit()})</span>
       <input class="inp num" id="g-distance" type="number" inputmode="decimal" min="0" step="0.5" value="${esc(Math.round(toUnit(Number(d.distance) || 0, "mi") * 10) / 10)}" data-goal="distance">
-      <small class="num" id="gw-distance">${fmt(perDay(toUnit(Number(d.distance) || 0, "mi")))}/day</small></label></div>
+      <small class="num" id="gw-distance">${fmt(perDay(toUnit(Number(d.distance) || 0, "mi")))}/day</small></label>
+    <label class="goal" for="g-stairs"><span>Stairs (stories)</span>
+      <input class="inp num" id="g-stairs" type="number" inputmode="numeric" min="0" step="5" value="${esc(d.stairs ?? DEFAULT_GOALS.stairs)}" data-goal="stairs">
+      <small class="num" id="gw-stairs">${fmt(perDay(d.stairs ?? DEFAULT_GOALS.stairs))}/day</small></label></div>
     <p class="note">150 minutes a week is the usual health guideline. Distance counts every cardio session you log with one. Set any goal to 0 to leave it off.</p>`,
     `<button class="btn ghost" type="button" data-act="goals-reset">Reset to defaults</button>
      <div class="right"><button class="btn ghost" type="button" data-act="close">Cancel</button><button class="btn primary" type="button" data-act="save">Save goals</button></div>`);
@@ -1799,6 +1811,7 @@ $("sheetRoot").addEventListener("input", e => {
     const k = t.dataset.goal;
     if (k === "bw") d.bwInput = t.value;
     else if (k === "days") d.days = t.value;
+    else if (k === "stairs") { d.stairs = t.value; $("gw-stairs").textContent = `${fmt(perDay(t.value))}/day`; }
     else if (k === "distance") { d.distance = distUnit() === "km" ? (Number(t.value) || 0) / 1.609344 : Number(t.value) || 0; $("gw-distance").textContent = `${fmt(perDay(Number(t.value) || 0))}/day`; }
     else if (k === "cardio") { d.cardio = t.value; $("gw-cardio").textContent = `${hm(perDay(t.value))}/day`; }
     else { d.sets[k] = t.value; $(`gw-${k}`).textContent = `${fmt(perDay(t.value))}/day`; }
@@ -1860,12 +1873,12 @@ async function saveDraft() {
   let w;
   if (S.sheet === "goals") {
     const g = { per: "week", sets: Object.fromEntries(M_IDS.map(m => [m, Math.max(0, Number(d.sets[m]) || 0)])), cardio: Math.max(0, Number(d.cardio) || 0),
-      distance: Math.max(0, Number(d.distance) || 0), days: Math.min(7, Math.max(0, Math.round(Number(d.days) || 0))) };
+      distance: Math.max(0, Number(d.distance) || 0), stairs: Math.max(0, Math.round(Number(d.stairs) || 0)), days: Math.min(7, Math.max(0, Math.round(Number(d.days) || 0))) };
     // Keep a dated history so past weeks are still judged by the goals that applied then.
-    const prev = S.goals, entry = { from: ymd(today()), sets: g.sets, cardio: g.cardio, distance: g.distance, days: g.days };
+    const prev = S.goals, entry = { from: ymd(today()), sets: g.sets, cardio: g.cardio, distance: g.distance, stairs: g.stairs, days: g.days };
     let hist = prev.history.slice();
     // The goals in effect until now (defaults if never saved) still apply to earlier weeks.
-    if (!hist.length) hist.push({ from: "0000-01-01", sets: prev.sets, cardio: prev.cardio, distance: prev.distance, days: prev.days });
+    if (!hist.length) hist.push({ from: "0000-01-01", sets: prev.sets, cardio: prev.cardio, distance: prev.distance, stairs: prev.stairs, days: prev.days });
     g.history = hist.filter(h => h.from !== entry.from).concat([entry]).slice(-100);
     let bodyweight = S.goals.bodyweight.slice();
     const bw = Number(d.bwInput);
@@ -1886,7 +1899,8 @@ async function saveDraft() {
     if (minutes <= 0) { S.error = "Enter how many minutes the session took."; return renderSheet(); }
     prefs.activity = d.activity; savePrefs();
     w = { id: d.id || `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, kind: "cardio", date: d.date, name: d.name.trim(), activity: d.activity,
-      minutes, distance: Number(d.distance) || 0, distUnit: d.distUnit, createdAt: d.createdAt || Date.now() };
+      minutes, distance: d.activity === "stairs" ? 0 : Number(d.distance) || 0, distUnit: d.distUnit,
+      stories: d.activity === "stairs" ? Math.max(0, Math.round(Number(d.stories) || 0)) : 0, createdAt: d.createdAt || Date.now() };
   } else {
     const exercises = d.exercises.map(x => ({
       name: x.name.trim(), p: x.p, s: x.s,
