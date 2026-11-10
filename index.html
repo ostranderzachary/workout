@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Figtree:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: tabs on phones (Today, Maps, Stats, History); two columns from 900px with the lifting map and cardio gauges on the left. */
+/* Layout: four tabs (Today, Maps, Stats, History) at every width: a bottom tab bar on phones, a left sidebar from 900px with panels in two columns. */
 :root {
   /* Dark theme only. */
   --bg: #111418;
@@ -70,9 +70,6 @@ header.top {
 .iconbtn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 
 .grid { display: grid; gap: 16px; margin-top: 14px; }
-@media (min-width: 900px) {
-  .grid { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: start; }
-}
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; min-width: 0; }
 .panel h2 { margin: 0 0 10px; font-family: var(--font-display); font-weight: 600; font-size: 15px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
 
@@ -245,14 +242,13 @@ label.btn { cursor: pointer; display: inline-block; }
 .empty { color: var(--muted); font-size: 14px; padding: 8px 0; }
 
 .top-actions { display: flex; gap: 8px; flex: none; }
-.tabbar { display: none; }
-/* Phones and small tablets: one section at a time, switched from a bottom tab bar. */
+/* One section at a time at every width: a bottom tab bar on phones, a left sidebar on wider screens. */
+body:not([data-tab="today"]) [data-tab="today"], body:not([data-tab="maps"]) [data-tab="maps"],
+body:not([data-tab="stats"]) [data-tab="stats"], body:not([data-tab="history"]) [data-tab="history"] { display: none !important; }
+.grid { margin-top: 12px; }
+.tab-add-label { display: none; }
 @media (max-width: 899px) {
-  .desk-only { display: none; }
   body { padding-block: 0 calc(96px + env(safe-area-inset-bottom, 0px)); }
-  body:not([data-tab="today"]) [data-tab="today"], body:not([data-tab="maps"]) [data-tab="maps"],
-  body:not([data-tab="stats"]) [data-tab="stats"], body:not([data-tab="history"]) [data-tab="history"] { display: none !important; }
-  .grid { margin-top: 12px; }
   .tabbar { display: grid; grid-template-columns: repeat(5, 1fr); align-items: end; position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--surface); border-top: 1px solid var(--line);
     padding: 4px max(8px, env(safe-area-inset-right, 0px)) calc(4px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
   .tabbar button { border: 0; background: transparent; color: var(--muted); display: grid; justify-items: center; gap: 2px; font-size: 11px; font-weight: 600; padding: 6px 0; min-height: 54px; align-content: center; }
@@ -261,6 +257,25 @@ label.btn { cursor: pointer; display: inline-block; }
   .tabbar .tab-add { justify-self: center; width: 58px; height: 58px; min-height: 0; padding: 0; border-radius: 50%; background: var(--h4); color: #0b1a0f; margin-bottom: 6px; place-items: center; box-shadow: 0 6px 18px rgba(0,0,0,.5); }
   .tabbar .tab-add svg { width: 28px; height: 28px; stroke-width: 2.6; }
   .toast { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
+}
+/* Wider screens: the same tabs as a sidebar, and each tab's panels flow into two balanced columns. */
+@media (min-width: 900px) {
+  body { padding-left: calc(232px + 32px); padding-right: 32px; padding-block: 0 48px; }
+  .wrap { max-width: 1040px; }
+  .tabbar { display: flex; flex-direction: column; gap: 4px; position: fixed; top: 0; bottom: 0; left: 0; width: 232px; z-index: 6;
+    padding: 84px 16px 24px; background: var(--surface); border-right: 1px solid var(--line); }
+  .tabbar button { display: flex; align-items: center; gap: 12px; border: 0; background: transparent; color: var(--muted); font-size: 15px; font-weight: 600; padding: 12px 14px; border-radius: 12px; text-align: left; }
+  .tabbar button:hover { background: var(--bg); color: var(--fg); }
+  .tabbar button svg { width: 22px; height: 22px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .tabbar button[aria-current="page"] { background: var(--bg); color: var(--h5); }
+  .tabbar .tab-add { order: -1; justify-content: center; margin-bottom: 14px; background: var(--h4); color: #0b1a0f; font-size: 16px; padding: 13px 14px; }
+  .tabbar .tab-add:hover { background: var(--h5); color: #0b1a0f; }
+  .tabbar .tab-add svg { width: 20px; height: 20px; stroke-width: 2.6; }
+  .tab-add-label { display: inline; }
+  .grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+  /* Maps holds one big panel: give it the full width and larger figures */
+  body[data-tab="maps"] .grid { grid-template-columns: minmax(0, 1fr); }
+  body[data-tab="maps"] .fig svg { max-width: 300px; }
 }
 .col { display: grid; gap: 16px; min-width: 0; }
 .banner-actions { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -392,8 +407,6 @@ button.tag { cursor: pointer; }
     <div class="top-actions">
       <button class="lvl-chip" type="button" data-open="level" id="lvlChip" aria-label="Your level"></button>
       <button class="btn" type="button" data-open="goals">Goals</button>
-      <button class="btn desk-only" type="button" data-open="cardio">Log cardio</button>
-      <button class="btn primary desk-only" type="button" data-open="log">Log lifts</button>
     </div>
   </header>
 
@@ -433,13 +446,6 @@ button.tag { cursor: pointer; }
         <h2 id="cardioH">Cardio</h2>
         <div id="cardioGoal"></div>
       </section>
-    </div>
-    <div class="col">
-      <section class="panel" data-tab="stats">
-        <h2 id="barsTitle">Lifting goals</h2>
-        <ul class="bars" id="bars"></ul>
-        <p class="note" id="barsNote"></p>
-      </section>
       <section class="panel" data-tab="stats">
         <h2>Body weight</h2>
         <div id="weightTrend"></div>
@@ -448,13 +454,20 @@ button.tag { cursor: pointer; }
         <h2>Personal records</h2>
         <div id="records"></div>
       </section>
-      <section class="panel" data-tab="stats">
-        <h2 id="breakdownTitle">Cardio breakdown</h2>
-        <div id="breakdown"></div>
-      </section>
       <section class="panel" data-tab="history">
         <h2 id="xpTitle">XP</h2>
         <div id="xpChart"></div>
+      </section>
+    </div>
+    <div class="col">
+      <section class="panel" data-tab="stats">
+        <h2 id="barsTitle">Lifting goals</h2>
+        <ul class="bars" id="bars"></ul>
+        <p class="note" id="barsNote"></p>
+      </section>
+      <section class="panel" data-tab="stats">
+        <h2 id="breakdownTitle">Cardio breakdown</h2>
+        <div id="breakdown"></div>
       </section>
       <section class="panel" data-tab="history">
         <h2>Workouts</h2>
@@ -466,7 +479,7 @@ button.tag { cursor: pointer; }
 <nav class="tabbar" aria-label="Sections">
   <button type="button" data-tabbtn="today"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span>Today</span></button>
   <button type="button" data-tabbtn="maps"><svg viewBox="0 0 24 24"><circle cx="12" cy="4.5" r="2.5"/><path d="M7 9h10l-1.5 6h-2l-.5 7h-2l-.5-7h-2z"/></svg><span>Maps</span></button>
-  <button type="button" class="tab-add" data-open="add" aria-label="Log a workout"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+  <button type="button" class="tab-add" data-open="add" aria-label="Log a workout"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span class="tab-add-label">Log workout</span></button>
   <button type="button" data-tabbtn="stats"><svg viewBox="0 0 24 24"><path d="M5 20V11M12 20V4M19 20v-6"/></svg><span>Stats</span></button>
   <button type="button" data-tabbtn="history"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>History</span></button>
 </nav>
@@ -2130,7 +2143,7 @@ document.addEventListener("click", e => {
 });
 
 /* ---------- Phone layout: tabs, map switch, keyboard ---------- */
-const tabMode = matchMedia("(max-width: 899px)");
+const tabMode = { matches: true }; // tabs are used at every width
 function setTab(t, scroll = true) {
   prefs.tab = t; savePrefs();
   document.body.dataset.tab = t;

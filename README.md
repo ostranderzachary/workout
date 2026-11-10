@@ -12,7 +12,7 @@ A mobile-friendly workout tracker. Log lifts and cardio, set daily goals, and se
 
 ## On your phone
 
-On screens narrower than 900px, the app splits into four tabs on a bottom bar:
+The app is split into four tabs: on a bar at the bottom on phones, and in a sidebar on wider screens.
 
 - **Today:** your level, the get-started checklist and your progress summary.
 - **Maps:** the lifting heat map.
@@ -21,7 +21,7 @@ On screens narrower than 900px, the app splits into four tabs on a bottom bar:
 
 The **+** button in the middle logs lifts or cardio. On phones, forms open full screen and fit the space above the keyboard. The Save button stays pinned at the bottom, and the field you're typing in scrolls into view. Number fields have **− / +** buttons, so you rarely need the keyboard. Each tap changes reps by 1, weight by 5 lb (2.5 kg), cardio minutes by 5 and distance by 0.5. Tapping + on an empty set starts from the set above, or from what you did last time for that exercise. New sets copy the set above.
 
-Wider screens show everything on one page.
+Wider screens use the same four tabs in a left sidebar, with a **Log workout** button at the top. Each tab lays its panels out in two columns, and the Maps tab uses the full width.
 
 ## Goals
 
