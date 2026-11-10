@@ -126,3 +126,14 @@ Tap **Log cardio** to add a session: activity type, minutes, optional distance (
 It's a single static file with no build step. Open `index.html` in a browser, or host it on any static host. For GitHub Pages: **Settings → Pages → Deploy from a branch → `main` / root**.
 
 Workouts are saved in the browser's `localStorage`, so they stay on that device and browser only.
+
+## Backup and restore
+
+At the bottom of **Goals**, **Export backup** saves a single `.json` file with your workouts, goals (including their history), body weight entries and settings (title theme, weight and distance units).
+
+On another phone or browser, choose **Import backup** and pick that file. Forged shows what's in it, then lets you choose:
+
+- **Merge into this device:** adds the backup's workouts and weigh-ins and keeps what's already there. The same workout is never added twice, and this device's goals and settings stay as they are.
+- **Replace everything:** makes this device match the backup exactly, including goals and settings.
+
+Nothing changes until you pick one.

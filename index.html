@@ -161,6 +161,9 @@ header.top {
 .share-wait { max-width: 420px; aspect-ratio: 4 / 5; margin: 0 auto; display: grid; place-items: center; border-radius: 14px; background: var(--bg); color: var(--muted); }
 .share-text { margin: 6px 0 0; white-space: pre-wrap; word-break: break-word; font-family: var(--font-body); font-size: 13px; line-height: 1.5; color: var(--muted); background: var(--bg); border-radius: 10px; padding: 10px 12px; user-select: text; -webkit-user-select: text; }
 .btn:disabled { opacity: .45; cursor: default; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.import-box { border: 1px solid var(--h3); border-radius: 12px; padding: 12px 14px; margin-top: 6px; background: var(--bg); }
+label.btn { cursor: pointer; display: inline-block; }
 .bw-row { max-width: 260px; margin-top: 6px; }
 .xp-sum { margin: 0 0 8px; font-size: 14px; color: var(--muted); }
 .xp-sum b { color: var(--fg); font-family: var(--font-display); font-size: 22px; }
@@ -1647,7 +1650,7 @@ function openSheet(kind, w) {
   // On touch screens, don't pop the keyboard straight away; let people see the whole form first.
   if (!matchMedia("(pointer: coarse)").matches) setTimeout(() => { const f = document.querySelector(kind === "lift" ? "#sheetRoot .ex input" : kind === "cardio" ? "#c-min" : null); if (f && !S.draft.id) f.focus(); }, 30);
 }
-function closeSheet() { S.sheet = null; S.draft = null; renderSheet(); }
+function closeSheet() { S.sheet = null; S.draft = null; S.importPending = null; renderSheet(); }
 
 /* An input with − and + buttons either side, so numbers can be set without the keyboard.
    `step` is the amount per tap. */
@@ -1770,6 +1773,112 @@ function bodyWeightField(d) {
     <p class="note" style="margin:4px 0 14px">${last ? `Last recorded: ${esc(showWt(last.lb))} on ${esc(shortDate(last.date))}. Change it to record today's weight.` : "Not recorded yet."} Saved with a date when you tap Save goals.</p>`;
 }
 
+/* ---------- Backup and restore: one JSON file with workouts, goals, body weight and settings ---------- */
+const BACKUP_PREFS = ["theme", "unit", "dist", "activity"];
+function backupSection() {
+  const real = S.workouts.filter(w => !w.sample), imp = S.importPending;
+  if (imp) {
+    const { data, summary } = imp;
+    return `<div class="lbl" style="margin-top:18px" id="backupLbl">Backup and restore</div>
+      <div class="import-box" role="region" aria-label="Backup to import">
+        <p style="margin:0 0 6px"><b>${esc(imp.name)}</b></p>
+        <p class="note" style="margin:0 0 10px">${esc(summary)}</p>
+        <div class="btn-row">
+          <button class="btn primary small" type="button" data-act="import-merge">Merge into this device</button>
+          <button class="btn small danger" type="button" data-act="import-replace">Replace everything</button>
+          <button class="btn small ghost" type="button" data-act="import-cancel">Cancel</button>
+        </div>
+        <p class="note" style="margin:10px 0 0"><b>Merge</b> adds the backup's workouts and weigh-ins and keeps everything already here (the same workout is never added twice). <b>Replace everything</b> makes this device match the backup exactly, including goals and settings; workouts that are only on this device are deleted.</p>
+      </div>`;
+  }
+  return `<div class="lbl" style="margin-top:18px" id="backupLbl">Backup and restore</div>
+    <p class="note" style="margin:4px 0 8px">Save a backup file with your ${real.length} workout${real.length === 1 ? "" : "s"}, goals, body weight and settings. Use it to move to a new phone or to keep a copy safe.</p>
+    <div class="btn-row">
+      <button class="btn small" type="button" data-act="export">Export backup</button>
+      <label class="btn small" for="importFile">Import backup</label>
+      <input id="importFile" type="file" accept=".json,application/json" hidden>
+    </div>`;
+}
+
+function backupData() {
+  return {
+    app: "forged", version: 1, exportedAt: new Date().toISOString(),
+    workouts: S.workouts.filter(w => !w.sample),
+    goals: S.goalsSaved || S.goals.bodyweight.length ? S.goals : null,
+    prefs: Object.fromEntries(BACKUP_PREFS.filter(k => prefs[k] != null).map(k => [k, prefs[k]]))
+  };
+}
+async function exportBackup() {
+  const text = JSON.stringify(backupData(), null, 1);
+  const filename = `forged-backup-${ymd(today())}.json`;
+  const blob = new Blob([text], { type: "application/json" });
+  if (window.claude && typeof window.claude.use === "function") {
+    const dl = await window.claude.use("downloads").catch(() => null);
+    if (!dl) return toast("Saving files isn't available here. Open Forged on your GitHub Pages site to export.");
+    try { await dl.save({ filename, data: blob }); toast("Backup saved."); } catch (e) { if (!e || e.code !== "declined") toast("Couldn't save the backup. Try again."); }
+    return;
+  }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast(`Backup saved as ${filename}.`);
+}
+
+/* Reads a chosen file, checks it is a Forged backup and shows what's in it before anything changes. */
+async function readBackupFile(file) {
+  let data;
+  try { data = JSON.parse(await file.text()); } catch { S.error = "That file isn't a Forged backup. Choose the .json file you exported."; return renderSheet(); }
+  if (!data || data.app !== "forged" || !Array.isArray(data.workouts)) { S.error = "That file isn't a Forged backup. Choose the .json file you exported."; return renderSheet(); }
+  const ws = data.workouts.filter(w => w && typeof w.id === "string" && /^\d{4}-\d{2}-\d{2}$/.test(w.date || "") && !w.sample);
+  const dates = ws.map(w => w.date).sort();
+  const lifts = ws.filter(w => !isCardio(w)).length, bw = data.goals && Array.isArray(data.goals.bodyweight) ? data.goals.bodyweight.length : 0;
+  const parts = [`${ws.length} workout${ws.length === 1 ? "" : "s"} (${lifts} lifting, ${ws.length - lifts} cardio)`];
+  if (dates.length) parts.push(`from ${shortDate(dates[0])} ${dates[0].slice(0, 4)} to ${shortDate(dates[dates.length - 1])} ${dates[dates.length - 1].slice(0, 4)}`);
+  parts.push(data.goals ? `goals${bw ? ` and ${bw} weigh-in${bw === 1 ? "" : "s"}` : ""}` : "no goals");
+  const when = data.exportedAt ? new Date(data.exportedAt) : null;
+  S.error = "";
+  S.importPending = { data: { ...data, workouts: ws }, name: `Backup${when && !isNaN(when) ? ` from ${MON[when.getMonth()]} ${when.getDate()}, ${when.getFullYear()}` : ""}`, summary: `Contains ${parts.join(", ")}.` };
+  renderSheet();
+  setTimeout(() => { const el = $("backupLbl"); if (el) el.scrollIntoView({ block: "start", behavior: "smooth" }); }, 60);
+}
+
+async function applyImport(mode) {
+  const { data } = S.importPending, incoming = data.workouts, ids = new Set(incoming.map(w => w.id));
+  const current = S.workouts.filter(w => !w.sample);
+  const list = mode === "replace" ? incoming : current.filter(w => !ids.has(w.id)).concat(incoming);
+  const added = list.length - (mode === "replace" ? 0 : current.length);
+  try {
+    if (Store.mode === "db") {
+      if (mode === "replace") for (const w of current) if (!ids.has(w.id)) await Store.remove(w.id, current);
+      for (const w of incoming) await Store.save(w, list);
+    } else if (!Store.writeLocal(list)) throw new Error("This browser blocked saving. Check that site data is allowed.");
+    S.workouts = list;
+
+    // Goals: replace takes the backup's; merge keeps this device's goals (or takes the backup's if none were set) and combines weigh-ins by date.
+    const bg = data.goals ? normGoals(data.goals) : null;
+    let g = null;
+    if (mode === "replace" && bg) g = bg;
+    else if (bg) {
+      g = S.goalsSaved ? { ...S.goals } : { ...bg };
+      const byDate = new Map(bg.bodyweight.map(e => [e.date, e]));
+      for (const e of S.goals.bodyweight) byDate.set(e.date, e); // this device wins on the same day
+      g.bodyweight = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+    }
+    if (g) { await Store.saveGoals(g); S.goals = normGoals(g); S.goalsSaved = true; }
+
+    if (mode === "replace" && data.prefs) {
+      for (const k of BACKUP_PREFS) if (data.prefs[k] != null) prefs[k] = data.prefs[k];
+      savePrefs(); setTheme(themeKey());
+    }
+    S.importPending = null;
+    closeSheet(); render();
+    toast(mode === "replace" ? `Restored ${list.length} workout${list.length === 1 ? "" : "s"} from the backup.` : `Merged the backup: ${Math.max(0, added)} new workout${added === 1 ? "" : "s"} added.`);
+  } catch (e) {
+    S.error = e && e.message ? e.message : "Couldn't import the backup. Try again."; renderSheet();
+  }
+}
+
 function goalsSheet(d) {
   const row = m => `<label class="goal" for="g-${m}"><span>${esc(MUSCLES[m])}</span>
       <input class="inp num" id="g-${m}" type="number" inputmode="numeric" min="0" step="1" value="${esc(d.sets[m])}" data-goal="${m}">
@@ -1799,11 +1908,15 @@ function goalsSheet(d) {
     <label class="goal" for="g-stairs"><span>Stairs (stories)</span>
       <input class="inp num" id="g-stairs" type="number" inputmode="numeric" min="0" step="5" value="${esc(d.stairs ?? DEFAULT_GOALS.stairs)}" data-goal="stairs">
       <small class="num" id="gw-stairs">${fmt(perDay(d.stairs ?? DEFAULT_GOALS.stairs))}/day</small></label></div>
-    <p class="note">150 minutes a week is the usual health guideline. Distance counts every cardio session you log with one. Set any goal to 0 to leave it off.</p>`,
+    <p class="note">150 minutes a week is the usual health guideline. Distance counts every cardio session you log with one. Set any goal to 0 to leave it off.</p>
+    ${backupSection()}`,
     `<button class="btn ghost" type="button" data-act="goals-reset">Reset to defaults</button>
      <div class="right"><button class="btn ghost" type="button" data-act="close">Cancel</button><button class="btn primary" type="button" data-act="save">Save goals</button></div>`);
 }
 
+$("sheetRoot").addEventListener("change", e => {
+  if (e.target.id === "importFile" && e.target.files && e.target.files[0]) readBackupFile(e.target.files[0]);
+});
 $("sheetRoot").addEventListener("input", e => {
   const d = S.draft, t = e.target; if (!d) return;
   if (t.dataset.f) d[t.dataset.f] = t.value;
@@ -1938,6 +2051,10 @@ $("sheetRoot").addEventListener("click", async e => {
   if (a.act === "close") return closeSheet();
   if (a.act === "pick-lift") return openSheet("lift", null);
   if (a.act === "open-share") return openShare();
+  if (a.act === "export") return exportBackup();
+  if (a.act === "import-merge") return applyImport("merge");
+  if (a.act === "import-replace") return applyImport("replace");
+  if (a.act === "import-cancel") { S.importPending = null; return renderSheet(); }
   if (a.theme) { setTheme(a.theme); render(); return renderSheet(); }
   if (a.act === "share-send") return sendShare();
   if (a.act === "share-copy") { const ok = await copyShareText(); S.shareMsg = ok ? "Text copied." : "Couldn't copy automatically. Press and hold the text to copy it."; return renderSheet(); }
