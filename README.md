@@ -117,6 +117,13 @@ Everything is generated on your device; nothing is uploaded.
 
 ## Cardio
 
+The **Stats** tab also has a **Lifting** panel with four gauges:
+
+- **Sets:** sets counted toward your muscle goals, out of your total weekly goal. Helper muscles count half, and sets beyond a muscle's goal don't add more.
+- **Muscle goals:** a ring with one segment per muscle, coloured like the heat map. Tap a segment to see that muscle's numbers.
+- **Volume:** total reps × weight against the previous week, month or year, with a note when you're up on last time.
+- **Push / pull:** a dial comparing push sets (chest, shoulders, triceps) with pull sets (lats, traps, biceps). 40–60% push counts as balanced.
+
 **Stairs** sessions are logged in stories climbed (− / + in steps of 5) instead of distance.
 
 Tap **Log cardio** to add a session: activity type, minutes, optional distance (mi or km), date and name. Each activity maps to the muscles it works. For example, a cycle works quads fully and calves, hamstrings and glutes partly. Cardio progress shows as three doughnut gauges, **Time**, **Distance** and **Stairs**, each filling toward your weekly goal for the selected range (default 150 minutes, 10 miles and 50 stories a week, set in Goals). A white dot on each ring marks where you'd be today at an even pace.

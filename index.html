@@ -293,6 +293,15 @@ body:not([data-tab="stats"]) [data-tab="stats"], body:not([data-tab="history"]) 
 .goalline { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 14px; color: var(--muted); margin-bottom: 6px; }
 .goalline b { font-family: var(--font-display); font-size: 26px; color: var(--fg); font-weight: 700; }
 .gauges { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.gauges.four { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 12px; }
+.gauges.four figcaption .pill { margin-top: 2px; white-space: normal; text-align: center; line-height: 1.3; }
+.seg { fill: none; stroke-width: 13; cursor: pointer; }
+.g-val, .g-of { pointer-events: none; }
+[data-seg].sel .seg { stroke-width: 17; }
+.dial-off { fill: none; stroke: var(--bg); stroke-width: 13; }
+.dial-ok { fill: none; stroke: var(--h3); stroke-width: 13; }
+.dial-needle { stroke: var(--fg); stroke-width: 3.5; stroke-linecap: round; }
+.dial-hub { fill: var(--fg); }
 .gauge { margin: 0; display: grid; justify-items: center; gap: 6px; min-width: 0; }
 .gauge svg { width: 100%; max-width: 170px; height: auto; display: block; }
 .g-track { fill: none; stroke: var(--bg); stroke-width: 13; }
@@ -460,6 +469,10 @@ button.tag { cursor: pointer; }
       </section>
     </div>
     <div class="col">
+      <section class="panel" aria-labelledby="liftGH" data-tab="stats">
+        <h2 id="liftGH">Lifting</h2>
+        <div id="liftGauges"></div>
+      </section>
       <section class="panel" data-tab="stats">
         <h2 id="barsTitle">Lifting goals</h2>
         <ul class="bars" id="bars"></ul>
@@ -1120,6 +1133,8 @@ function render() {
     ${c.cardioCount ? "" : `<p class="note">No cardio in this range yet.</p>`}
     <p class="note">Goals: ${hm(g.cardio)}, ${showDist(Math.round(toUnit(Number(g.distance) || 0, "mi") * 10) / 10)} and ${Number(g.stairs) || 0} stories (st) a week${days === 7 ? "" : `, scaled to ${days} day${days === 1 ? "" : "s"} (weekly goal ÷ 7 × ${days})`}.${tick != null ? " The white dot on each ring is where you'd be today at an even pace." : ""}</p>`;
 
+  renderLiftGauges({ c, list, r, days, pace, isCurrent, elapsed, tick, liftTarget, liftLv });
+
   // Cardio breakdown and personal records
   renderBreakdown(c, r);
   renderRecords();
@@ -1165,7 +1180,7 @@ function renderBreakdown(c, r) {
 }
 
 /* A doughnut gauge: the ring fills toward the target; a dot on the ring marks today's even-pace point. */
-function gauge({ value, target, label, show, tick }) {
+function gauge({ value, target, label, show, tick, caption, ofText }) {
   const R = 52, C = 2 * Math.PI * R, frac = target ? Math.min(1, value / target) : 0, lv = level(value, target);
   // The pace dot sits on the ring's centre line (radius R), so it lines up with the band at any angle.
   const tickSvg = tick != null && target ? (() => {
@@ -1177,8 +1192,83 @@ function gauge({ value, target, label, show, tick }) {
       ${frac > 0 ? `<circle class="g-fill" cx="66" cy="66" r="${R}" style="stroke:var(--h${lv || 1})" stroke-linecap="round" stroke-dasharray="${(frac * C).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 66 66)"/>` : ""}
       ${tickSvg}
       <text class="g-val" x="66" y="66">${esc(show(value))}</text>
-      <text class="g-of" x="66" y="84">${target ? `of ${esc(show(target))}` : "no goal set"}</text>
-    </svg><figcaption><b>${esc(label)}</b><span class="num">${target ? `${pctOf(value, target)}% of goal` : "Set a goal in Goals"}</span></figcaption></figure>`;
+      <text class="g-of" x="66" y="84">${esc(ofText ?? (target ? `of ${show(target)}` : "no goal set"))}</text>
+    </svg><figcaption><b>${esc(label)}</b><span class="num">${esc(caption ?? (target ? `${pctOf(value, target)}% of goal` : "Set a goal in Goals"))}</span></figcaption></figure>`;
+}
+
+/* ---------- Lifting gauges: sets toward goals, muscle goals met, volume vs last period, push/pull balance ---------- */
+const PUSH = ["chest", "shoulders", "triceps"], PULL = ["lats", "traps", "biceps"];
+const liftVolumeLb = ws => ws.filter(w => !isCardio(w)).reduce((a, w) =>
+  a + (w.exercises || []).reduce((b, x) => b + (x.sets || []).reduce((t, st) => t + (Number(st.reps) || 0) * toLb(st.weight, w.unit), 0), 0), 0);
+const compactWt = lb => { const v = wtUnit() === "kg" ? lb / LB_PER_KG : lb; return `${v >= 10000 ? `${fmt(v / 1000)}k` : Math.round(v).toLocaleString()} ${wtUnit()}`; };
+
+function renderLiftGauges({ c, list, r, days, pace, isCurrent, elapsed, tick, liftTarget, liftLv }) {
+  const withGoal = M_IDS.filter(m => liftTarget(m) > 0);
+  const per = S.period, perWord = per === "all" ? "period" : per;
+
+  // 1. Sets counted toward goals: capped at each muscle's goal, so one muscle can't fill the ring
+  const setsDone = withGoal.reduce((a, m) => a + Math.min(c.lift[m].v, liftTarget(m)), 0);
+  const setsGoal = withGoal.reduce((a, m) => a + liftTarget(m), 0);
+  const setsRound = v => Math.round(v * 10) / 10;
+  const setsSt = status(setsDone, setsGoal, pace, "set");
+
+  // 2. Muscle goals met: one segment per muscle, coloured by its heat level
+  const met = withGoal.filter(m => c.lift[m].v >= liftTarget(m)).length;
+  // Each segment is its own arc path, so a tap only ever lands on the muscle under the finger.
+  const R = 52, n = Math.max(1, withGoal.length), gapDeg = 3.5, step = 360 / n;
+  const onRing = deg => { const a = (deg * Math.PI) / 180; return `${(66 + R * Math.cos(a)).toFixed(2)} ${(66 + R * Math.sin(a)).toFixed(2)}`; };
+  const segs = withGoal.map((m, i) => {
+    const tip = `${MUSCLES[m]}: ${fmt(c.lift[m].v)} of ${fmt(liftTarget(m))} sets${c.lift[m].v >= liftTarget(m) ? " (met)" : ""}`;
+    const a0 = -90 + step * i + gapDeg / 2, a1 = a0 + step - gapDeg;
+    return `<g data-seg="${m}" data-tip="${esc(tip)}"><title>${esc(tip)}</title><path class="seg" d="M${onRing(a0)} A${R} ${R} 0 ${step - gapDeg > 180 ? 1 : 0} 1 ${onRing(a1)}" style="stroke:${liftLv[m] ? `var(--h${liftLv[m]})` : "var(--idle)"}"/></g>`;
+  }).join("");
+  const metSt = !withGoal.length ? { k: "none", txt: "No muscle goals set" } : met === withGoal.length ? { k: "met", txt: "Every goal met" } : { k: "todo", txt: `${withGoal.length - met} to go` };
+  const metGauge = `<figure class="gauge"><svg viewBox="0 0 132 132" role="img" aria-label="Muscle goals met: ${met} of ${withGoal.length}">
+      <circle class="g-track" cx="66" cy="66" r="${R}"/>${segs}
+      <text class="g-val" x="66" y="66">${met}/${withGoal.length}</text><text class="g-of" x="66" y="84">goals met</text>
+    </svg><figcaption><b>Muscle goals</b><span class="num">Tap a segment</span>${pill(metSt)}</figcaption></figure>`;
+
+  // 3. Volume (reps x weight) against the previous period of the same length
+  const vol = liftVolumeLb(c.ws);
+  let volGauge, volSt;
+  if (per === "all") {
+    volGauge = gauge({ value: vol, target: 0, label: "Volume", show: compactWt, ofText: "all time", caption: "No earlier period" });
+    volSt = { k: "none", txt: "Pick a week, month or year to compare" };
+  } else {
+    const pr = rangeFor(per, shift(per, S.anchor, -1), list);
+    const prev = liftVolumeLb(compute(list, pr).ws);
+    const pct = prev ? Math.round((vol / prev) * 100) : 0;
+    if (!prev) volSt = { k: "none", txt: `No lifting last ${perWord}` };
+    else if (vol >= prev) volSt = { k: "met", txt: pct === 100 ? `Matched last ${perWord}` : `Up ${pct - 100}% on last ${perWord}` };
+    else if (isCurrent && pace.days > 1) volSt = vol >= (prev * elapsed) / pace.days ? { k: "on", txt: `On pace · ${compactWt(prev - vol)} to match` } : { k: "behind", txt: `Behind pace · ${compactWt(prev - vol)} to match` };
+    else volSt = { k: "missed", txt: `${100 - pct}% below last ${perWord}` };
+    volGauge = gauge({ value: vol, target: prev, label: "Volume", show: compactWt, tick: prev ? tick : null, ofText: prev ? `of ${compactWt(prev)}` : `none last ${perWord}`, caption: prev ? `${pct}% of last ${perWord}` : "Reps × weight" });
+  }
+
+  // 4. Push/pull balance dial: share of upper-body sets that are push
+  const push = PUSH.reduce((a, m) => a + c.lift[m].v, 0), pull = PULL.reduce((a, m) => a + c.lift[m].v, 0), tot = push + pull;
+  const f = tot ? push / tot : 0.5, ang = Math.PI - f * Math.PI, cx = 66, cy = 74, DR = 50;
+  const pt = (frac, rad) => [(cx + rad * Math.cos(Math.PI - frac * Math.PI)).toFixed(1), (cy - rad * Math.sin(Math.PI - frac * Math.PI)).toFixed(1)];
+  const arc = (a0, a1, cls) => { const [x0, y0] = pt(a0, DR), [x1, y1] = pt(a1, DR); return `<path class="${cls}" d="M${x0} ${y0} A${DR} ${DR} 0 0 1 ${x1} ${y1}"/>`; };
+  const [nx, ny] = pt(f, DR - 8);
+  const balSt = !tot ? { k: "none", txt: "No upper-body sets yet" } : Math.abs(f - 0.5) <= 0.1 ? { k: "met", txt: "Balanced" }
+    : f > 0.5 ? { k: "behind", txt: "Push-heavy · add pull sets" } : { k: "behind", txt: "Pull-heavy · add push sets" };
+  const balGauge = `<figure class="gauge"><svg viewBox="0 0 132 104" role="img" aria-label="Push and pull balance: ${tot ? `${Math.round(f * 100)}% push` : "no sets"}">
+      ${arc(0, 0.4, "dial-off")}${arc(0.4, 0.6, "dial-ok")}${arc(0.6, 1, "dial-off")}
+      ${tot ? `<line class="dial-needle" x1="${cx}" y1="${cy}" x2="${nx}" y2="${ny}"/>` : ""}<circle class="dial-hub" cx="${cx}" cy="${cy}" r="5"/>
+      <text class="g-of" x="${pt(0, DR)[0]}" y="${cy + 18}" text-anchor="middle">Pull</text><text class="g-of" x="${pt(1, DR)[0]}" y="${cy + 18}" text-anchor="middle">Push</text>
+      <text class="g-of" x="${cx}" y="${cy + 26}" text-anchor="middle">${tot ? `${fmt(push)} : ${fmt(pull)} sets` : ""}</text>
+    </svg><figcaption><b>Push / pull</b><span class="num">${tot ? `${Math.round(f * 100)}% push` : "–"}</span>${pill(balSt)}</figcaption></figure>`;
+
+  const withPill = (g, st) => g.replace("</figcaption>", `${pill(st)}</figcaption>`);
+  $("liftGauges").innerHTML = `<div class="gauges four">
+      ${withPill(gauge({ value: setsDone, target: setsGoal, label: "Sets", show: v => fmt(setsRound(v)), tick }), setsSt)}
+      ${metGauge}
+      ${withPill(volGauge, volSt)}
+      ${balGauge}
+    </div>
+    <p class="chart-readout" id="segReadout" aria-live="polite"></p>
+    <p class="note">Sets counts work toward your muscle goals (helper muscles count half; sets beyond a muscle's goal don't add more). Volume is reps × weight compared with the ${perWord} before. Push is chest, shoulders and triceps; pull is lats, traps and biceps; balanced is 40–60% push.${tick != null ? " The white dot is where you'd be today at an even pace." : ""}</p>`;
 }
 
 function bodiesHTML(levels, sel, tips) {
@@ -1332,6 +1422,7 @@ function chartTap(containerId, selector, readoutId, remember) {
 }
 chartTap("xpChart", "[data-k]", "xpReadout", g => { S.xpSel = g.dataset.k; });
 chartTap("weightTrend", "[data-date]", "wReadout", g => { S.wSel = g.dataset.date; });
+chartTap("liftGauges", "[data-seg]", "segReadout", () => {});
 function niceStep(max) { const raw = max / 4, mag = 10 ** Math.floor(Math.log10(raw)), n = raw / mag; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * mag; }
 
 /* Body weight: latest value, recent change, and a line chart of every weigh-in (dates to scale). */
