@@ -108,6 +108,19 @@ A plain-text summary goes with it.
 
 Everything is generated on your device; nothing is uploaded.
 
+## Boss fights
+
+Every 5 levels a **boss** appears: a hard challenge you complete by logging it on a single day, any day after it unlocks. Bosses never expire. Four types take turns, and each comes back harder:
+
+| Type | Levels | Challenge in one day |
+|---|---|---|
+| Runner | 5, 25, 45 ... | 5K, 10K, 15K, half marathon, 30K, marathon |
+| Stairs | 10, 30, 50 ... | 100, 200, 300, 500, 750, 1,000 stories |
+| Iron | 15, 35, 55 ... | 30, 40, 50, 60, 75, 100 lifting sets |
+| Volume | 20, 40, 60 ... | 15k, 25k, 40k, 60k, 80k, 100k lb lifted |
+
+Rewards start at +500 XP and rise by 400 XP per boss. A new boss is announced with a popup. The crown **Boss** button in the header (and **Bosses** in the desktop sidebar) shows a badge while one is waiting, and the Today tab shows its card with today's progress. Bosses are checked from your logged workouts automatically, and beating one shows a celebration.
+
 ## Understanding your progress
 
 - **Get started checklist:** walks new users through setting goals, logging lifts and logging cardio. Each step ticks off when done. You can hide it.
