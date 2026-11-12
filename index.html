@@ -211,6 +211,8 @@ label.btn { cursor: pointer; display: inline-block; }
 .boss-alert { margin: 0; font-size: 12px; font-weight: 800; letter-spacing: .3em; text-transform: uppercase; color: var(--boss); }
 .boss-reward { margin: 0; font-size: 15px; color: var(--muted); } .boss-reward b { color: var(--h5); font-family: var(--font-display); font-size: 22px; }
 .cel-card.boss-window { border-color: var(--boss); }
+.fight-live { color: var(--boss); }
+.btn.small.boss-accept:disabled { opacity: .45; }
 .boss-accept { background: var(--boss); border-color: var(--boss); color: #0d0b1f; }
 @keyframes bossIn { from { transform: scale(.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @keyframes bossGlow { 50% { box-shadow: 0 0 0 1px rgba(139, 123, 255, .4), 0 0 70px var(--boss-glow), inset 0 0 36px rgba(139, 123, 255, .18); } }
@@ -707,7 +709,8 @@ const normGoals = g => {
     stairs: g && g.stairs != null ? Math.max(0, Math.round(Number(g.stairs) || 0)) : DEFAULT_GOALS.stairs,
     days: g && g.days != null ? Math.min(7, Math.max(0, Math.round(Number(g.days) || 0))) : DEFAULT_GOALS.days,
     history: g && Array.isArray(g.history) ? g.history : [],
-    bodyweight: g && Array.isArray(g.bodyweight) ? g.bodyweight : [] }; // [{ date, lb }], oldest first
+    bodyweight: g && Array.isArray(g.bodyweight) ? g.bodyweight : [], // [{ date, lb }], oldest first
+    bossFights: g && Array.isArray(g.bossFights) ? g.bossFights : [] }; // [{ tier, start, endedAt? }] (ms timestamps)
 };
 /* The goals that applied on a date, so changing goals later doesn't rewrite past weeks' bonuses. */
 function goalsAt(date) {
@@ -865,46 +868,61 @@ const totalXP = list => xpLedger(list).total;
 /* ---------- Boss fights: a boss unlocks every 5 levels; beat it by logging its challenge on one day ---------- */
 // Four types take turns; each time a type comes round it is harder and pays more.
 const BOSS_TYPES = {
-  run: { amounts: [3.1, 6.2, 9.3, 13.1, 18.6, 26.2], labels: ["5K", "10K", "15K", "half marathon", "30K", "marathon"],
-    names: ["Road Wraith", "Tempo Hound", "Long Road Revenant", "Half-Marathon Warden", "Endurance Colossus", "The Marathon King"] },
-  stairs: { amounts: [100, 200, 300, 500, 750, 1000],
+  run: { amounts: [6.2, 9.3, 13.1, 18.6, 26.2, 31.1], labels: ["10K", "15K", "half marathon", "30K", "marathon", "50K ultramarathon"],
+    names: ["Road Wraith", "Tempo Hound", "Half-Marathon Warden", "Endurance Colossus", "The Marathon King", "Ultra Revenant"] },
+  stairs: { amounts: [150, 300, 500, 750, 1000, 1500],
     names: ["Stairwell Imp", "Tower Sentinel", "Spire Golem", "Sky Tower Titan", "Cloudpiercer", "Summit Dragon"] },
-  sets: { amounts: [30, 40, 50, 60, 75, 100],
+  sets: { amounts: [40, 50, 60, 75, 90, 120],
     names: ["Iron Ogre", "Barbell Brute", "Rack Behemoth", "Plate Hydra", "Iron Leviathan", "Lord of a Hundred Sets"] },
-  volume: { amounts: [15000, 25000, 40000, 60000, 80000, 100000],
+  volume: { amounts: [25000, 40000, 60000, 80000, 100000, 150000],
     names: ["Stone Troll", "Granite Giant", "Forge Golem", "Mountain Breaker", "Earthshaker", "World Carrier"] }
 };
 const BOSS_ORDER = ["run", "stairs", "sets", "volume"];
+const FIGHT_MS = 24 * 3600 * 1000;
+/* Reward: the XP of the next two levels, plus 5% for every boss before it, so bosses keep pace with
+   the steeper level costs higher up and speed you along (about 1,100 XP at level 5, 14,650 at 50). */
+const bossReward = tier => { const L = tier * 5; return Math.round(((xpAtLevel(L + 2) - xpAtLevel(L)) * (1 + 0.05 * (tier - 1))) / 50) * 50; };
 function bossDef(tier) {
   const type = BOSS_ORDER[(tier - 1) % 4], T = BOSS_TYPES[type], k = Math.floor((tier - 1) / 4), last = T.amounts.length - 1;
   const extra = Math.max(0, k - last), i = Math.min(k, last);
   const amount = extra ? Math.round(T.amounts[last] * (1 + 0.15 * extra) * 10) / 10 : T.amounts[i];
   return { tier, level: tier * 5, type, amount, label: type === "run" && !extra ? T.labels[i] : "", name: T.names[i] + (extra ? ` ${["II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"][Math.min(extra - 1, 8)]}` : ""),
-    reward: 500 + 400 * (tier - 1) };
+    reward: bossReward(tier) };
 }
 const milesOf = w => (Number(w.distance) || 0) * ((w.distUnit || "mi") === "km" ? 1 / 1.609344 : 1);
-/* What each day's logged workouts add up to, for checking boss challenges. */
-function dayTotals(real) {
-  const m = new Map();
-  for (const w of real) {
-    const t = m.get(w.date) || { runMi: 0, stories: 0, sets: 0, volLb: 0 };
-    if (isCardio(w)) { if (w.activity === "run") t.runMi += milesOf(w); t.stories += Number(w.stories) || 0; }
-    else for (const x of w.exercises || []) for (const st of x.sets || []) { t.sets++; t.volLb += (Number(st.reps) || 0) * toLb(st.weight, w.unit); }
-    m.set(w.date, t);
-  }
-  return m;
+const emptyTotals = () => ({ runMi: 0, stories: 0, sets: 0, volLb: 0 });
+function addTotals(t, w) {
+  if (isCardio(w)) { if (w.activity === "run") t.runMi += milesOf(w); t.stories += Number(w.stories) || 0; }
+  else for (const x of w.exercises || []) for (const st of x.sets || []) { t.sets++; t.volLb += (Number(st.reps) || 0) * toLb(st.weight, w.unit); }
+  return t;
 }
 const bossValue = (b, t) => !t ? 0 : b.type === "run" ? t.runMi : b.type === "stairs" ? t.stories : b.type === "sets" ? t.sets : t.volLb;
 const bossMet = (b, t) => bossValue(b, t) >= b.amount - 1e-6;
-/* Walks the history day by day: rewards for bosses beaten (on a day after they unlocked), then that day's XP, then any new unlocks. */
+/* A fight lasts 24 hours from Start (or until ended early). Workouts logged during it count, in the order
+   they were logged; the fight is won the moment the totals reach the challenge. */
+function fightResult(f, real) {
+  const b = bossDef(f.tier), end = f.endedAt || f.start + FIGHT_MS, t = emptyTotals();
+  const ws = real.filter(w => (w.createdAt || 0) >= f.start && (w.createdAt || 0) <= end).sort((x, y) => x.createdAt - y.createdAt);
+  for (const w of ws) { addTotals(t, w); if (bossMet(b, t)) return { won: true, at: w.createdAt, t, end }; }
+  return { won: false, t, end, over: Date.now() > end };
+}
+/* Walks the history day by day: rewards for bosses beaten in a fight, then that day's XP, then any new unlocks. */
 function bossTimeline(real, entries) {
-  const totals = dayTotals(real), xpByDay = new Map();
+  const xpByDay = new Map(), wins = new Map();
   for (const w of real) xpByDay.set(w.date, (xpByDay.get(w.date) || 0) + xpFor(w));
   for (const e of entries) xpByDay.set(e.date, (xpByDay.get(e.date) || 0) + e.xp);
+  for (const f of S.goals.bossFights || []) {
+    const r = fightResult(f, real);
+    if (r.won && (!wins.has(f.tier) || r.at < wins.get(f.tier).at)) wins.set(f.tier, { at: r.at, date: ymd(new Date(r.at)), startDate: ymd(new Date(f.start)) });
+  }
+  for (const w of wins.values()) if (!xpByDay.has(w.date)) xpByDay.set(w.date, 0);
   const bosses = [];
   let cum = 0;
   for (const date of [...xpByDay.keys()].sort()) {
-    for (const b of bosses) if (b.unlockDate && !b.defeatDate && date > b.unlockDate && bossMet(b, totals.get(date))) { b.defeatDate = date; cum += b.reward; }
+    for (const b of bosses) {
+      const w = wins.get(b.tier);
+      if (b.unlockDate && !b.defeatDate && w && w.date === date && w.startDate >= b.unlockDate) { b.defeatDate = date; cum += b.reward; }
+    }
     cum += xpByDay.get(date);
     const lvl = levelInfo(Math.max(0, cum)).level;
     while (bosses.length < Math.floor(lvl / 5)) bosses.push({ ...bossDef(bosses.length + 1), unlockDate: null, defeatDate: null });
@@ -913,17 +931,44 @@ function bossTimeline(real, entries) {
   return bosses;
 }
 function bossChallenge(b) {
-  if (b.type === "run") return `Run ${fmt(Math.round(toUnit(b.amount, "mi") * 10) / 10)} ${distUnit()}${b.label ? ` (a ${b.label})` : ""} in one day`;
-  if (b.type === "stairs") return `Climb ${b.amount.toLocaleString()} stories in one day`;
-  if (b.type === "sets") return `Complete ${b.amount} lifting sets in one day`;
-  return `Lift ${compactWt(b.amount)} of total volume in one day`;
+  if (b.type === "run") return `Run ${fmt(Math.round(toUnit(b.amount, "mi") * 10) / 10)} ${distUnit()}${b.label ? ` (a ${b.label})` : ""} within 24 hours`;
+  if (b.type === "stairs") return `Climb ${b.amount.toLocaleString()} stories within 24 hours`;
+  if (b.type === "sets") return `Complete ${b.amount} lifting sets within 24 hours`;
+  return `Lift ${compactWt(b.amount)} of total volume within 24 hours`;
 }
 function bossProgress(b, t) {
   const v = bossValue(b, t);
   const show = b.type === "run" ? x => `${fmt(Math.round(toUnit(x, "mi") * 10) / 10)} ${distUnit()}` : b.type === "volume" ? compactWt : x => `${Math.round(x)}`;
-  return { pct: Math.min(100, (v / b.amount) * 100), text: `${show(v)} of ${show(b.amount)}${b.type === "stairs" ? " stories" : b.type === "sets" ? " sets" : ""} today` };
+  return { pct: Math.min(100, (v / b.amount) * 100), text: `${show(v)} of ${show(b.amount)}${b.type === "stairs" ? " stories" : b.type === "sets" ? " sets" : ""}` };
 }
 const activeBosses = L => (L.bosses || []).filter(b => b.unlockDate && !b.defeatDate);
+/* The latest fight for a boss: running, lost (time ran out or ended early), or none yet. */
+function fightState(b) {
+  const real = S.workouts.filter(w => !w.sample);
+  const f = (S.goals.bossFights || []).filter(x => x.tier === b.tier).sort((x, y) => y.start - x.start)[0];
+  if (!f) return { kind: "none" };
+  const r = fightResult(f, real);
+  if (r.won) return { kind: "none" };
+  return r.over ? { kind: "lost", t: r.t, f } : { kind: "active", t: r.t, f, end: r.end };
+}
+const timeLeft = ms => { const m = Math.max(0, Math.round(ms / 60000)), h = Math.floor(m / 60); return h ? `${h}h ${m % 60}m left` : `${m}m left`; };
+async function saveFights(list) {
+  const g = { ...S.goals, bossFights: list.slice(-100) };
+  await Store.saveGoals(g); S.goals = normGoals(g);
+}
+async function startFight(tier) {
+  try { await saveFights([...(S.goals.bossFights || []), { tier, start: Date.now() }]); render(); if (S.sheet === "boss") renderSheet(); toast("Fight started. You have 24 hours."); }
+  catch { toast("Couldn't start the fight. Try again."); }
+}
+async function endFight(tier) {
+  const list = (S.goals.bossFights || []).map(f => (f.tier === tier && !f.endedAt && Date.now() < f.start + FIGHT_MS ? { ...f, endedAt: Date.now() } : f));
+  try { await saveFights(list); render(); if (S.sheet === "boss") renderSheet(); } catch { toast("Couldn't end the fight. Try again."); }
+}
+// Keep countdowns fresh while a fight is running.
+setInterval(() => {
+  if (!S.loaded || !(S.goals.bossFights || []).some(f => !f.endedAt && Date.now() < f.start + FIGHT_MS + 60000)) return;
+  renderBossUI(); if (S.sheet === "boss") renderSheet();
+}, 30000);
 /* Each level takes 100 XP more than the last: level 1→2 is 100 XP, 9→10 is 900 XP. */
 const xpToNext = L => 100 * L;
 const xpAtLevel = L => (100 * L * (L - 1)) / 2;
@@ -1431,7 +1476,7 @@ function levelSheet() {
     <div class="explain"><p><b>How to earn XP</b></p>
       <p>Lifting workout: <b>${XP.workout} XP</b> + <b>${XP.perSet}–${XP.perSet * (1 + XP.weightBonus)} XP per set</b> (up to ${XP.maxSets} sets). Heavier sets earn a little more: 45 lb is ${setXP(45, "lb")} XP, 135 lb is ${setXP(135, "lb")}, 225 lb is ${setXP(225, "lb")}, and ${XP.fullAt} lb or more is ${setXP(XP.fullAt, "lb")}.<br>Cardio session: <b>${XP.session} XP</b> + <b>${XP.perMin} XP per minute</b> (up to ${XP.maxMin} minutes).</p>
       <p><b>Weekly bonuses</b> (Monday–Sunday): +${BONUS.muscle} XP per muscle goal met, +${BONUS.allMuscles} XP if every muscle goal is met, +${BONUS.cardio} XP for your cardio time goal, +${BONUS.distance} XP for your distance goal, +${BONUS.days} XP for training on your goal number of days. Hitting your days goal week after week adds a streak bonus of +${BONUS.streakStep} XP for each week in a row (up to +${BONUS.streakMax}).</p>
-      <p><b>Boss fights:</b> every 5 levels a boss appears with a hard one-day challenge (a long run, a big stair climb, a high set count or a heavy volume day). Beat it on any day after it unlocks for +500 XP at level 5, rising by 400 XP per boss.</p>
+      <p><b>Boss fights:</b> every 5 levels a boss appears with a hard challenge: a long run, a big stair climb, a high set count or a heavy volume day. Start a fight when you're ready and complete it within 24 hours. The reward is worth about two levels at that point and grows 5% more with each boss.</p>
       <p><b>Missed days:</b> when a week ends short of your workout-days goal, you lose ${BONUS.missedDay} XP per missed day and your streak resets. Your first week is never penalised, and XP never drops below 0, though it can drop you a level.</p>
       <p>Each level needs 100 XP more than the one before. You earn a new title every 10 levels.</p></div>
     <div class="lbl">Title theme</div>
@@ -1574,17 +1619,22 @@ function renderRecords() {
 
 /* Called after a save: XP toast, plus a celebration when a level (and maybe a title) is reached. */
 function renderBossUI() {
-  const L = xpLedger(S.workouts), act = activeBosses(L), today = dayTotals(S.workouts.filter(w => !w.sample)).get(ymd(new Date()));
+  const L = xpLedger(S.workouts), act = activeBosses(L);
   $("bossBadge").hidden = !act.length; $("bossBadge").textContent = act.length || "";
   $("bossBtn").classList.toggle("live", act.length > 0);
   if (!act.length) { $("bossCard").innerHTML = ""; return maybeBossPopup(L); }
-  const b = act[0], pr = bossProgress(b, today);
+  const b = act.find(x => fightState(x).kind === "active") || act[0], st = fightState(b);
+  const pr = bossProgress(b, st.t);
+  const body = st.kind === "active"
+    ? `<div class="track big"><span class="fill" style="width:${pr.pct}%;background:var(--boss)"></span></div>
+       <div class="boss-foot"><span class="note num" style="margin:0"><b class="fight-live">Fight on · ${esc(timeLeft(st.end - Date.now()))}</b> · ${esc(pr.text)}</span><button class="btn small boss-go" type="button" data-open="boss">View fight</button></div>`
+    : `<div class="boss-foot"><span class="note" style="margin:0">${st.kind === "lost" ? `Last fight fell short (${esc(pr.text)}). Try again when you're ready.` : "Start a 24-hour fight when you're ready."}</span>
+       <span class="btn-row"><button class="btn small boss-accept" type="button" data-act="boss-start" data-tier="${b.tier}">Start fight</button><button class="btn small boss-go" type="button" data-open="boss">View boss</button></span></div>`;
   $("bossCard").innerHTML = `<section class="panel boss-card" aria-label="Boss available">
       <div class="boss-head"><span class="boss-tag">Boss · Level ${b.level}</span>${act.length > 1 ? `<span class="note" style="margin:0">+${act.length - 1} more waiting</span>` : ""}</div>
       <h3 class="boss-name">${esc(b.name)}</h3>
       <p class="boss-chal">${esc(bossChallenge(b))} · <b>+${b.reward.toLocaleString()} XP</b></p>
-      <div class="track big"><span class="fill" style="width:${pr.pct}%;background:var(--boss)"></span></div>
-      <div class="boss-foot"><span class="note num" style="margin:0">${esc(pr.text)}${b.unlockDate === ymd(new Date()) ? " · beat it from tomorrow" : ""}</span><button class="btn small boss-go" type="button" data-open="boss">View boss</button></div>
+      ${body}
     </section>`;
   maybeBossPopup(L);
 }
@@ -1600,8 +1650,8 @@ function maybeBossPopup(L) {
       <p class="boss-big">${esc(b.name)}</p>
       <p class="boss-chal">${esc(bossChallenge(b))}</p>
       <p class="boss-reward">Reward <b>+${b.reward.toLocaleString()} XP</b></p>
-      <p class="note" style="margin:0">Log it all on one day, any day from ${b.unlockDate === ymd(new Date()) ? "tomorrow" : "today"}. The boss waits until you beat it; find it under Boss.</p>
-      <div class="btn-row" style="justify-content:center;margin-top:6px"><button class="btn primary boss-accept" type="button" data-act="boss-accept" data-tier="${b.tier}">Accept the challenge</button><button class="btn ghost" type="button" data-act="boss-later" data-tier="${b.tier}">Later</button></div>
+      <p class="note" style="margin:0">When you're ready, start a 24-hour fight. Everything you log during the fight counts. The boss waits until you beat it; find it under the crown.</p>
+      <div class="btn-row" style="justify-content:center;margin-top:6px"><button class="btn primary boss-accept" type="button" data-act="boss-accept" data-tier="${b.tier}">Prepare for battle</button><button class="btn ghost" type="button" data-act="boss-later" data-tier="${b.tier}">Later</button></div>
     </div></div>`;
   setTimeout(() => { const el = document.querySelector(".boss-accept"); if (el) el.focus(); }, 30);
 }
@@ -1614,16 +1664,24 @@ $("bossPop").addEventListener("click", e => {
 
 function bossSheet() {
   const L = xpLedger(S.workouts), all = L.bosses || [], act = activeBosses(L), won = all.filter(b => b.defeatDate);
-  const today = dayTotals(S.workouts.filter(w => !w.sample)).get(ymd(new Date()));
   const lvl = levelInfo(L.total).level, next = bossDef(all.length + 1);
-  const card = b => { const pr = bossProgress(b, today); return `<div class="boss-row live">
+  const busy = act.some(x => fightState(x).kind === "active");
+  const card = b => {
+    const st = fightState(b), pr = bossProgress(b, st.t);
+    return `<div class="boss-row live">
       <div class="boss-head"><span class="boss-tag">Level ${b.level} boss</span><span class="note" style="margin:0">Unlocked ${esc(shortDate(b.unlockDate))}</span></div>
       <p class="boss-big">${esc(b.name)}</p>
       <p class="boss-chal">${esc(bossChallenge(b))} · <b>+${b.reward.toLocaleString()} XP</b></p>
-      <div class="track big"><span class="fill" style="width:${pr.pct}%;background:var(--boss)"></span></div>
-      <p class="note num" style="margin:6px 0 0">${esc(pr.text)}${b.unlockDate === ymd(new Date()) ? ". It unlocked today, so it can be beaten from tomorrow." : ""}</p></div>`; };
+      ${st.kind === "active"
+        ? `<div class="track big"><span class="fill" style="width:${pr.pct}%;background:var(--boss)"></span></div>
+           <p class="note num" style="margin:6px 0 0"><b class="fight-live">Fight on · ${esc(timeLeft(st.end - Date.now()))}</b> · ${esc(pr.text)} so far. Log workouts as you go; the boss falls the moment you reach it.</p>
+           <div class="btn-row" style="margin-top:8px"><button class="btn small ghost danger" type="button" data-act="boss-end" data-tier="${b.tier}">End fight early</button></div>`
+        : `${st.kind === "lost" ? `<p class="note num" style="margin:0 0 8px">Last fight fell short: ${esc(pr.text)}.</p>` : ""}
+           <div class="btn-row"><button class="btn small boss-accept" type="button" data-act="boss-start" data-tier="${b.tier}"${busy ? " disabled" : ""}>Start 24-hour fight</button>${busy ? `<span class="note" style="margin:0">Finish your current fight first.</span>` : ""}</div>`}
+    </div>`;
+  };
   return sheetFrame("Boss fights", `
-    <div class="explain"><p><b>Every 5 levels a boss appears.</b> Beat it by logging its challenge on a single day, any day after it unlocks. Bosses never expire and pay big XP. Each one is harder than the last: runs, stair climbs, set counts and total volume take turns.</p></div>
+    <div class="explain"><p><b>Every 5 levels a boss appears.</b> When you're ready, start a fight: you then have 24 hours, and every workout you log during the fight counts toward the challenge. If time runs out, the boss stays and you can try again. Rewards are worth about two levels and grow with every boss.</p></div>
     ${act.length ? `<div class="lbl">Waiting for you</div>${act.map(card).join("")}` : `<p class="note">No boss is waiting right now.</p>`}
     <div class="lbl" style="margin-top:14px">Next boss · level ${next.level}</div>
     <div class="boss-row locked"><p class="boss-big">${esc(next.name)}</p><p class="boss-chal">${esc(bossChallenge(next))} · +${next.reward.toLocaleString()} XP</p>
@@ -2331,6 +2389,8 @@ $("sheetRoot").addEventListener("click", async e => {
   if (a.act === "close") return closeSheet();
   if (a.act === "pick-lift") return openSheet("lift", null);
   if (a.act === "open-share") return openShare();
+  if (a.act === "boss-start") return startFight(Number(a.tier));
+  if (a.act === "boss-end") return endFight(Number(a.tier));
   if (a.act === "export") return exportBackup();
   if (a.act === "import-merge") return applyImport("merge");
   if (a.act === "import-replace") return applyImport("replace");
@@ -2397,7 +2457,7 @@ document.addEventListener("click", e => {
   if (gap) { S.selLift = gap.dataset.m; render(); showLiftMap(); return; }
   const clr = e.target.closest("[data-clear]");
   if (clr) { S.selLift = null; return render(); }
-  const b = e.target.closest("[data-open], #banner [data-act], #onboard [data-act], #summary [data-act]"); if (!b) return;
+  const b = e.target.closest("[data-open], #banner [data-act], #onboard [data-act], #summary [data-act], #bossCard [data-act]"); if (!b) return;
   const k = b.dataset.open || b.dataset.act;
   if (k === "log") openSheet("lift", null);
   if (k === "cardio") openSheet("cardio", null);
@@ -2405,6 +2465,7 @@ document.addEventListener("click", e => {
   if (k === "weight") { openSheet("goals", null); setTimeout(() => { const el = $("bwLbl"); if (el) el.scrollIntoView({ block: "start", behavior: "smooth" }); }, 60); }
   if (k === "level") openSheet("level", null);
   if (k === "boss") openSheet("boss", null);
+  if (k === "boss-start") startFight(Number(b.dataset.tier));
   if (k === "share") openShare();
   if (k === "add") openSheet("add", null);
   if (k === "ob-hide") { prefs.onboardHidden = true; savePrefs(); render(); }

@@ -110,16 +110,20 @@ Everything is generated on your device; nothing is uploaded.
 
 ## Boss fights
 
-Every 5 levels a **boss** appears: a hard challenge you complete by logging it on a single day, any day after it unlocks. Bosses never expire. Four types take turns, and each comes back harder:
+Every 5 levels a **boss** appears. When you're ready, tap **Start fight**: you then have 24 hours, and every workout you log during the fight counts toward the challenge. The boss falls the moment you reach it. If time runs out, the boss stays and you can start again. You can also end a fight early.
 
-| Type | Levels | Challenge in one day |
+Four types take turns, and each comes back harder:
+
+| Type | Levels | Challenge within 24 hours |
 |---|---|---|
-| Runner | 5, 25, 45 ... | 5K, 10K, 15K, half marathon, 30K, marathon |
-| Stairs | 10, 30, 50 ... | 100, 200, 300, 500, 750, 1,000 stories |
-| Iron | 15, 35, 55 ... | 30, 40, 50, 60, 75, 100 lifting sets |
-| Volume | 20, 40, 60 ... | 15k, 25k, 40k, 60k, 80k, 100k lb lifted |
+| Runner | 5, 25, 45 ... | 10K, 15K, half marathon, 30K, marathon, 50K |
+| Stairs | 10, 30, 50 ... | 150, 300, 500, 750, 1,000, 1,500 stories |
+| Iron | 15, 35, 55 ... | 40, 50, 60, 75, 90, 120 lifting sets |
+| Volume | 20, 40, 60 ... | 25k, 40k, 60k, 80k, 100k, 150k lb lifted |
 
-Rewards start at +500 XP and rise by 400 XP per boss. A new boss is announced with a popup. The crown **Boss** button in the header (and **Bosses** in the desktop sidebar) shows a badge while one is waiting, and the Today tab shows its card with today's progress. Bosses are checked from your logged workouts automatically, and beating one shows a celebration.
+Each reward equals the XP of the next two levels, plus 5% more for every boss before it. Rewards keep pace with the steeper level costs and keep growing: about 1,100 XP at level 5, 2,200 at 10, 14,650 at 50 and 39,200 at 100.
+
+A new boss is announced with a popup. The crown **Boss** button in the header (and **Bosses** in the desktop sidebar) shows a badge while one is waiting. The Today tab shows the boss with a **Start fight** button, and during a fight, the time left and your progress.
 
 ## Understanding your progress
 
