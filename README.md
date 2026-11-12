@@ -117,9 +117,9 @@ Four types take turns, and each comes back harder:
 | Type | Levels | Challenge within 24 hours |
 |---|---|---|
 | Runner | 5, 25, 45 ... | 10K, 15K, half marathon, 30K, marathon, 50K |
-| Stairs | 10, 30, 50 ... | 150, 300, 500, 750, 1,000, 1,500 stories |
-| Iron | 15, 35, 55 ... | 40, 50, 60, 75, 90, 120 lifting sets |
-| Volume | 20, 40, 60 ... | 25k, 40k, 60k, 80k, 100k, 150k lb lifted |
+| Stairs | 10, 30, 50 ... | 150, 200, 275, 350, 425, 500 stories |
+| Iron | 15, 35, 55 ... | 40, 45, 50, 55, 60, 70 lifting sets |
+| Volume | 20, 40, 60 ... | 25k, 30k, 35k, 45k, 55k, 65k lb lifted |
 
 Each reward equals the XP of the next two levels, plus 5% more for every boss before it. Rewards keep pace with the steeper level costs and keep growing: about 1,100 XP at level 5, 2,200 at 10, 14,650 at 50 and 39,200 at 100.
 

@@ -870,11 +870,11 @@ const totalXP = list => xpLedger(list).total;
 const BOSS_TYPES = {
   run: { amounts: [6.2, 9.3, 13.1, 18.6, 26.2, 31.1], labels: ["10K", "15K", "half marathon", "30K", "marathon", "50K ultramarathon"],
     names: ["Road Wraith", "Tempo Hound", "Half-Marathon Warden", "Endurance Colossus", "The Marathon King", "Ultra Revenant"] },
-  stairs: { amounts: [150, 300, 500, 750, 1000, 1500],
+  stairs: { amounts: [150, 200, 275, 350, 425, 500],
     names: ["Stairwell Imp", "Tower Sentinel", "Spire Golem", "Sky Tower Titan", "Cloudpiercer", "Summit Dragon"] },
-  sets: { amounts: [40, 50, 60, 75, 90, 120],
-    names: ["Iron Ogre", "Barbell Brute", "Rack Behemoth", "Plate Hydra", "Iron Leviathan", "Lord of a Hundred Sets"] },
-  volume: { amounts: [25000, 40000, 60000, 80000, 100000, 150000],
+  sets: { amounts: [40, 45, 50, 55, 60, 70],
+    names: ["Iron Ogre", "Barbell Brute", "Rack Behemoth", "Plate Hydra", "Iron Leviathan", "Iron Sovereign"] },
+  volume: { amounts: [25000, 30000, 35000, 45000, 55000, 65000],
     names: ["Stone Troll", "Granite Giant", "Forge Golem", "Mountain Breaker", "Earthshaker", "World Carrier"] }
 };
 const BOSS_ORDER = ["run", "stairs", "sets", "volume"];
@@ -885,7 +885,7 @@ const bossReward = tier => { const L = tier * 5; return Math.round(((xpAtLevel(L
 function bossDef(tier) {
   const type = BOSS_ORDER[(tier - 1) % 4], T = BOSS_TYPES[type], k = Math.floor((tier - 1) / 4), last = T.amounts.length - 1;
   const extra = Math.max(0, k - last), i = Math.min(k, last);
-  const amount = extra ? Math.round(T.amounts[last] * (1 + 0.15 * extra) * 10) / 10 : T.amounts[i];
+  const amount = extra ? Math.round(T.amounts[last] * (1 + 0.08 * extra) * 10) / 10 : T.amounts[i];
   return { tier, level: tier * 5, type, amount, label: type === "run" && !extra ? T.labels[i] : "", name: T.names[i] + (extra ? ` ${["II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"][Math.min(extra - 1, 8)]}` : ""),
     reward: bossReward(tier) };
 }
