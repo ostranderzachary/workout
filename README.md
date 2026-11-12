@@ -94,17 +94,12 @@ Forged keeps the heaviest set you've logged for each exercise. kg and lb are com
 
 ## Sharing your progress
 
-Tap **Share progress** on the level card, or on the Level screen, to open a preview of a share card. The card shows:
+Tap **Share progress** on the level card, or on the Level screen, to make two share images for this week. Swipe between them on a phone; wider screens show them side by side.
 
-- your level, title, XP bar and next title
-- this week's workouts, workout days, streak and muscle goals met
-- the time and distance rings
-- a small lifting heat map
-- the title ladder
+1. **Overview:** your level, title, XP bar and next title; this week's workouts, workout days, streak and total XP; the lifting heat map with your muscle goals (closest to done first) and any records you beat this week; and the title ladder.
+2. **Gauges:** the cardio rings for time, distance and stairs; the four lifting gauges (sets, muscle goals, volume against last week, and push / pull); and your boss: the fight in progress, the boss waiting, or the next one to unlock. Each gauge shows whether you're on pace, and the white dot marks today's even-pace point.
 
-A plain-text summary goes with it.
-
-**Share** opens your phone's share menu with the image and text. Where a browser can't share images, the card is saved to your downloads and the text is copied for you to paste. **Copy text** copies just the summary.
+**Share** sends both images through your phone's share menu. Where a browser can't share images, they're saved to your downloads instead. **Save images** saves both.
 
 Everything is generated on your device; nothing is uploaded.
 

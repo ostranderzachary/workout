@@ -156,9 +156,13 @@ header.top {
 .wk-last { margin: 4px 0 0; font-size: 12px; color: var(--muted); } .wk-last.bad { color: var(--danger); }
 .acts li.bonus .num { color: var(--h5); } .acts li.neg, .acts li.neg .num { color: var(--danger); }
 .player-actions { display: flex; justify-content: flex-end; margin-top: 10px; }
-.share-prev img { display: block; width: 100%; max-width: 420px; height: auto; margin: 0 auto; border-radius: 14px; border: 1px solid var(--line); }
+.share-prev { display: grid; grid-auto-flow: column; grid-auto-columns: 84%; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
+.share-prev figure { margin: 0; scroll-snap-align: center; }
+.share-prev img { display: block; width: 100%; height: auto; border-radius: 14px; border: 1px solid var(--line); }
+.share-prev figcaption { margin-top: 6px; text-align: center; font-size: 12px; font-weight: 600; color: var(--muted); }
+@media (min-width: 600px) { .share-prev { grid-auto-flow: row; grid-template-columns: 1fr 1fr; overflow: visible; } }
 .share-wait { max-width: 420px; aspect-ratio: 4 / 5; margin: 0 auto; display: grid; place-items: center; border-radius: 14px; background: var(--bg); color: var(--muted); }
-.share-text { margin: 6px 0 0; white-space: pre-wrap; word-break: break-word; font-family: var(--font-body); font-size: 13px; line-height: 1.5; color: var(--muted); background: var(--bg); border-radius: 10px; padding: 10px 12px; user-select: text; -webkit-user-select: text; }
+.share-hint { margin-top: 10px; }
 .btn:disabled { opacity: .45; cursor: default; }
 .btn-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .import-box { border: 1px solid var(--h3); border-radius: 12px; padding: 12px 14px; margin-top: 6px; background: var(--bg); }
@@ -1721,7 +1725,7 @@ function rewardXP(beforeL, afterL, records = []) {
 }
 $("celebrate").addEventListener("click", e => { const t = e.target.closest("[data-act=cel-close]"); if (t && (e.target === t || t.id === "celOk")) { $("celebrate").innerHTML = ""; maybeBossPopup(xpLedger(S.workouts)); } });
 
-/* ---------- Sharing: an image card plus a plain-text summary of level, titles and this week ---------- */
+/* ---------- Sharing: two image cards, an overview (level, week, heat map, titles) and this week's gauges ---------- */
 function weekSnapshot() {
   const real = S.workouts.filter(w => !w.sample);
   const r = rangeFor("week", today(), real), c = compute(real, r), g = S.goals;
@@ -1731,30 +1735,37 @@ function weekSnapshot() {
   const levels = Object.fromEntries(M_IDS.map(m => [m, level(c.lift[m].v, goalOf(m))]));
   const distGoal = Math.round(toUnit(Number(g.distance) || 0, "mi") * 10) / 10;
   const L = xpLedger(S.workouts), info = levelInfo(L.total);
-  return { r, c, g, withGoal, met, levels, distGoal, wk: L.week, info, title: titleFor(info.level), next: nextTitle(info.level) };
+  // Pace through the week, as on the Stats tab
+  const elapsed = Math.min(7, Math.round((today() - r.start) / 864e5) + 1);
+  const pace = { current: true, elapsed, days: 7 }, tick = elapsed < 7 ? elapsed / 7 : null;
+  // Lifting gauges
+  const setsDone = withGoal.reduce((a, m) => a + Math.min(c.lift[m].v, goalOf(m)), 0), setsGoal = withGoal.reduce((a, m) => a + goalOf(m), 0);
+  const vol = liftVolumeLb(c.ws), prevVol = liftVolumeLb(compute(real, rangeFor("week", shift("week", today(), -1), real)).ws);
+  const push = PUSH.reduce((a, m) => a + c.lift[m].v, 0), pull = PULL.reduce((a, m) => a + c.lift[m].v, 0);
+  // Records beaten this week: the best set is from this week and the exercise was logged before the week
+  const start = ymd(r.start), before = personalRecords(real.filter(w => w.date < start));
+  const records = Object.entries(personalRecords(real)).filter(([k, p]) => p.date >= start && before[k]).map(([, p]) => p).sort((a, b) => b.lb - a.lb);
+  // Boss: the one being fought, else the one waiting, else the next to unlock
+  const act = activeBosses(L), all = L.bosses || [];
+  let boss;
+  if (act.length) { const b = act.find(x => fightState(x).kind === "active") || act[0]; boss = { b, st: fightState(b), waiting: act.length }; }
+  else boss = { b: bossDef(all.length + 1), locked: true };
+  boss.defeated = all.filter(b => b.defeatDate).length;
+  return { r, c, g, goalOf, withGoal, met, levels, distGoal, wk: L.week, info, title: titleFor(info.level), next: nextTitle(info.level),
+    pace, tick, setsDone, setsGoal, vol, prevVol, push, pull, records, boss };
 }
 
-function shareText(x) {
-  const { info, c, g, wk } = x, u = distUnit();
-  const days = new Set(c.ws.map(w => w.date)).size;
-  const lines = [`Forged: Level ${info.level}, ${x.title} (${info.total.toLocaleString()} XP)`];
-  if (x.next) lines.push(`Next title: ${x.next[1]} at level ${x.next[0]}`);
-  lines.push("", `This week, ${x.r.label}`);
-  lines.push(`- ${c.ws.length} workout${c.ws.length === 1 ? "" : "s"} on ${days} day${days === 1 ? "" : "s"}${wk && wk.streak > 1 ? `, ${wk.streak}-week streak` : ""}`);
-  lines.push(`- Lifting: ${c.sets} sets, ${x.met}/${x.withGoal.length} muscle goals`);
-  lines.push(`- Cardio: ${hm(c.minutes)} (${pctOf(c.minutes, g.cardio)}%), ${fmt(c.distance)} ${u} (${pctOf(c.distance, x.distGoal)}%)${c.stories || g.stairs ? `, ${c.stories} stories (${pctOf(c.stories, g.stairs)}%)` : ""}`);
-  return lines.join("\n");
-}
-
-/* Draws the card on a canvas (1080 x 1350, a portrait size that suits chat apps).
-   The body figures are redrawn from the same outlines the heat map uses. */
-async function drawCard(x) {
+/* Shared canvas setup for both cards (1080 x 1350, a portrait size that suits chat apps). */
+async function cardKit() {
   const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-  const C = { bg: css("--bg"), surface: css("--surface"), fg: css("--fg"), muted: css("--muted"), line: css("--line"), body: css("--body"), idle: css("--idle") };
+  const C = { bg: css("--bg"), surface: css("--surface"), fg: css("--fg"), muted: css("--muted"), line: css("--line"), body: css("--body"), idle: css("--idle"),
+    danger: css("--danger"), boss: css("--boss"), bossGlow: css("--boss-glow") };
   for (let i = 1; i <= 5; i++) C["h" + i] = css("--h" + i);
   const DISP = css("--font-display"), BODY = css("--font-body");
   try { await Promise.all([document.fonts.load(`700 80px ${DISP}`), document.fonts.load(`500 28px ${BODY}`), document.fonts.load(`700 28px ${BODY}`)]); } catch {}
-
+  return { C, DISP, BODY };
+}
+function cardCanvas({ C, DISP, BODY }, x, page) {
   const W = 1080, H = 1350, cv = document.createElement("canvas");
   cv.width = W; cv.height = H;
   const ctx = cv.getContext("2d");
@@ -1762,55 +1773,71 @@ async function drawCard(x) {
   const text = (t, x0, y0, font, color, align = "left") => { ctx.font = font; ctx.fillStyle = color; ctx.textAlign = align; ctx.fillText(t, x0, y0); };
   const fit = (t, font, max) => { ctx.font = font; let s = t; while (ctx.measureText(s).width > max && s.length > 1) s = s.slice(0, -2) + "…"; return s; };
   const panel = (y0, h) => { rr(40, y0, W - 80, h, 28); ctx.fillStyle = C.surface; ctx.fill(); };
-  const { info, c, g, wk } = x;
-
+  // A status pill like the app's: filled when met, outlined otherwise
+  const pillC = (st, cx, y0, max = 220) => {
+    const font = `700 20px ${BODY}`, t = fit(st.txt, font, max - 32);
+    ctx.font = font; const w = ctx.measureText(t).width + 32;
+    rr(cx - w / 2, y0, w, 38, 19);
+    const tone = st.k === "met" ? [C.h5, "#0b1a0f", true] : st.k === "on" ? [C.h3, C.h4] : st.k === "behind" ? [C.danger, C.danger] : [C.line, C.muted];
+    if (tone[2]) { ctx.fillStyle = tone[0]; ctx.fill(); } else { ctx.lineWidth = 2; ctx.strokeStyle = tone[0]; ctx.stroke(); }
+    text(t, cx, y0 + 26, font, tone[1], "center");
+  };
+  // A doughnut: track, fill coloured by heat level, and a white dot for today's even-pace point
+  const ringC = (cx, cy, R, lw, frac, color, tick) => {
+    ctx.lineWidth = lw; ctx.lineCap = "butt"; ctx.strokeStyle = C.bg;
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
+    if (frac > 0) { ctx.lineCap = "round"; ctx.strokeStyle = color; ctx.beginPath(); ctx.arc(cx, cy, R, -Math.PI / 2, -Math.PI / 2 + Math.min(1, frac) * Math.PI * 2); ctx.stroke(); }
+    if (tick != null) {
+      const a = -Math.PI / 2 + tick * Math.PI * 2;
+      ctx.beginPath(); ctx.arc(cx + R * Math.cos(a), cy + R * Math.sin(a), lw * 0.32, 0, Math.PI * 2);
+      ctx.fillStyle = C.fg; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = C.surface; ctx.stroke();
+    }
+  };
   ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
-  text("FORGED", 64, 104, `700 64px ${DISP}`, C.fg);
-  text(`This week · ${x.r.label}`, W - 64, 100, `500 30px ${BODY}`, C.muted, "right");
+  text("FORGED", 64, 100, `700 64px ${DISP}`, C.fg);
+  text(`This week · ${x.r.label}`, W - 64, 96, `500 30px ${BODY}`, C.muted, "right");
+  text(`Logged with Forged · ${page} of 2`, W / 2, H - 16, `500 20px ${BODY}`, C.muted, "center");
+  return { cv, ctx, W, H, rr, text, fit, panel, pillC, ringC };
+}
+const cardImage = async cv => ({ url: cv.toDataURL("image/png"), blob: await new Promise(res => cv.toBlob(res, "image/png")) });
+// Splits "On pace · 40m to go" into a short pill and a detail line
+const splitSt = st => { const [a, ...rest] = st.txt.split(" · "); return [{ k: st.k, txt: a }, rest.join(" · ")]; };
+
+/* Card 1: level and XP, this week's numbers, the lifting heat map with muscle goals and records, and the title ladder. */
+async function drawOverview(x, K) {
+  const { C, DISP, BODY } = K, { ctx, W, rr, text, fit, panel } = cardCanvas(K, x, 1);
+  const { info, c, wk } = x;
 
   // Level, title and XP
-  panel(140, 250);
-  const grad = ctx.createLinearGradient(80, 175, 260, 355); grad.addColorStop(0, C.h4); grad.addColorStop(1, C.h2);
-  rr(80, 175, 180, 180, 36); ctx.fillStyle = grad; ctx.fill();
-  text("LEVEL", 170, 225, `700 24px ${BODY}`, "#0b1a0f", "center");
-  text(String(info.level), 170, 330, `700 112px ${DISP}`, "#0b1a0f", "center");
-  text(fit(x.title.toUpperCase(), `700 62px ${DISP}`, 700), 300, 240, `700 62px ${DISP}`, C.fg);
-  rr(300, 270, 700, 24, 12); ctx.fillStyle = C.bg; ctx.fill();
+  panel(130, 250);
+  const grad = ctx.createLinearGradient(80, 165, 260, 345); grad.addColorStop(0, C.h4); grad.addColorStop(1, C.h2);
+  rr(80, 165, 180, 180, 36); ctx.fillStyle = grad; ctx.fill();
+  text("LEVEL", 170, 215, `700 24px ${BODY}`, "#0b1a0f", "center");
+  text(String(info.level), 170, 320, `700 112px ${DISP}`, "#0b1a0f", "center");
+  // Long titles step down in size before they're shortened
+  let tSize = 62; ctx.font = `700 ${tSize}px ${DISP}`;
+  while (tSize > 40 && ctx.measureText(x.title.toUpperCase()).width > 700) ctx.font = `700 ${(tSize -= 2)}px ${DISP}`;
+  text(fit(x.title.toUpperCase(), `700 ${tSize}px ${DISP}`, 700), 300, 230, `700 ${tSize}px ${DISP}`, C.fg);
+  rr(300, 260, 700, 24, 12); ctx.fillStyle = C.bg; ctx.fill();
   const xpW = Math.max(24, 700 * (info.into / info.need));
   const xg = ctx.createLinearGradient(300, 0, 1000, 0); xg.addColorStop(0, C.h3); xg.addColorStop(1, C.h5);
-  rr(300, 270, xpW, 24, 12); ctx.fillStyle = xg; ctx.fill();
-  text(`${info.into.toLocaleString()} / ${info.need.toLocaleString()} XP to level ${info.level + 1}`, 300, 336, `500 28px ${BODY}`, C.muted);
-  if (x.next) text(fit(`Next title: ${x.next[1]} at level ${x.next[0]}`, `700 28px ${BODY}`, 700), 300, 372, `700 28px ${BODY}`, C.fg);
+  rr(300, 260, xpW, 24, 12); ctx.fillStyle = xg; ctx.fill();
+  text(`${info.into.toLocaleString()} / ${info.need.toLocaleString()} XP to level ${info.level + 1}`, 300, 326, `500 28px ${BODY}`, C.muted);
+  if (x.next) text(fit(`Next title: ${x.next[1]} at level ${x.next[0]}`, `700 28px ${BODY}`, 700), 300, 362, `700 28px ${BODY}`, C.fg);
 
   // This week's numbers
-  panel(410, 150);
+  panel(400, 150);
   const tiles = [["Workouts", String(c.ws.length)], ["Workout days", wk && wk.target ? `${wk.days}/${wk.target}` : String(new Set(c.ws.map(w => w.date)).size)],
-    ["Week streak", String(wk ? wk.streak : 0)], ["Muscle goals", `${x.met}/${x.withGoal.length}`]];
+    ["Week streak", String(wk ? wk.streak : 0)], ["Total XP", info.total >= 1e5 ? `${fmt(info.total / 1000)}k` : info.total.toLocaleString()]];
   tiles.forEach(([k, v], i) => {
     const tx = 80 + i * 245;
-    text(v, tx, 498, `700 64px ${DISP}`, C.fg);
-    text(k.toUpperCase(), tx, 536, `600 22px ${BODY}`, C.muted);
+    text(fit(v, `700 64px ${DISP}`, 225), tx, 488, `700 64px ${DISP}`, C.fg);
+    text(k.toUpperCase(), tx, 526, `600 22px ${BODY}`, C.muted);
   });
 
-  // Cardio rings (left) and lifting heat map (right)
-  panel(580, 590);
-  text("CARDIO", 80, 632, `700 26px ${DISP}`, C.muted);
-  text("LIFTING", 580, 632, `700 26px ${DISP}`, C.muted);
-  text(`${c.sets} set${c.sets === 1 ? "" : "s"} this week`, 1000, 632, `500 24px ${BODY}`, C.muted, "right");
-  const ring = (cx, cy, value, target, show, label) => {
-    const R = 92, frac = target ? Math.min(1, value / target) : 0, lv = level(value, target);
-    ctx.lineWidth = 26; ctx.lineCap = "butt"; ctx.strokeStyle = C.bg;
-    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
-    if (frac > 0) { ctx.lineCap = "round"; ctx.strokeStyle = C["h" + (lv || 1)]; ctx.beginPath(); ctx.arc(cx, cy, R, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2); ctx.stroke(); }
-    text(fit(show(value), `700 44px ${DISP}`, 150), cx, cy + 6, `700 44px ${DISP}`, C.fg, "center");
-    text(target ? `of ${show(target)}` : "no goal", cx, cy + 40, `500 20px ${BODY}`, C.muted, "center");
-    text(label, cx, cy + 150, `700 24px ${BODY}`, C.fg, "center");
-    text(target ? `${pctOf(value, target)}% of goal` : "No goal set", cx, cy + 184, `500 24px ${BODY}`, C.muted, "center");
-  };
-  ring(190, 770, c.minutes, Number(g.cardio) || 0, hm, "TIME");
-  ring(420, 770, c.distance, x.distGoal, v => `${fmt(v)} ${distUnit()}`, "DISTANCE");
-  text(`${c.cardioCount} session${c.cardioCount === 1 ? "" : "s"} this week${c.stories ? ` · ${c.stories} stories` : ""}`, 305, 1010, `500 24px ${BODY}`, C.muted, "center");
-
+  // Lifting heat map (left) with muscle goals and records (right)
+  panel(570, 600);
+  text("LIFTING MAP", 80, 622, `700 26px ${DISP}`, C.muted);
   const drawFig = (shapes, ox, oy, sc) => {
     ctx.save(); ctx.translate(ox, oy); ctx.scale(sc, sc);
     const both = (d, fill, stroke) => {
@@ -1831,13 +1858,38 @@ async function drawCard(x) {
     }
     ctx.restore();
   };
-  drawFig(FRONT, 585, 660, 0.98);
-  drawFig(BACK, 815, 660, 0.98);
-  // Legend under the figures
+  drawFig(FRONT, 58, 645, 0.98);
+  drawFig(BACK, 282, 645, 0.98);
   const sw = ["idle", "h1", "h2", "h3", "h4", "h5"];
-  sw.forEach((k, i) => { rr(600 + i * 62, 1112, 54, 14, 7); ctx.fillStyle = C[k]; ctx.fill(); });
-  text("None", 600, 1150, `500 20px ${BODY}`, C.muted);
-  text("Goal met", 600 + 5 * 62 + 54, 1150, `500 20px ${BODY}`, C.muted, "right");
+  sw.forEach((k, i) => { rr(80 + i * 66, 1102, 58, 14, 7); ctx.fillStyle = C[k]; ctx.fill(); });
+  text("None", 80, 1144, `500 20px ${BODY}`, C.muted);
+  text("Goal met", 80 + 5 * 66 + 58, 1144, `500 20px ${BODY}`, C.muted, "right");
+
+  ctx.fillStyle = C.line; ctx.fillRect(536, 610, 2, 530);
+  const RX = 572, RW = 428;
+  text("MUSCLE GOALS", RX, 622, `700 26px ${DISP}`, C.muted);
+  text(`${x.met}/${x.withGoal.length} met`, RX + RW, 622, `700 26px ${BODY}`, x.withGoal.length && x.met === x.withGoal.length ? C.h5 : C.fg, "right");
+  const recs = x.records.slice(0, 3), nRows = recs.length ? 4 : 7;
+  const rows = x.withGoal.map(m => ({ m, v: c.lift[m].v, t: x.goalOf(m) })).sort((a, b) => b.v / b.t - a.v / a.t || b.t - a.t).slice(0, nRows);
+  if (!rows.length) text("Set muscle goals to track them here.", RX, 690, `500 24px ${BODY}`, C.muted);
+  rows.forEach((o, i) => {
+    const y = 684 + i * 64, lv = level(o.v, o.t);
+    text(MUSCLES[o.m], RX, y, `600 24px ${BODY}`, C.fg);
+    text(`${fmt(o.v)} / ${fmt(o.t)} sets`, RX + RW, y, `500 22px ${BODY}`, lv === 5 ? C.h5 : C.muted, "right");
+    rr(RX, y + 14, RW, 12, 6); ctx.fillStyle = C.bg; ctx.fill();
+    if (o.v > 0) { rr(RX, y + 14, Math.max(12, RW * Math.min(1, o.v / o.t)), 12, 6); ctx.fillStyle = C["h" + (lv || 1)]; ctx.fill(); }
+  });
+  if (x.withGoal.length > rows.length && rows.length) text(`+${x.withGoal.length - rows.length} more muscles`, RX, 684 + rows.length * 64 - 4, `500 20px ${BODY}`, C.muted);
+  if (recs.length) {
+    const y0 = 990;
+    text("NEW RECORDS", RX, y0, `700 26px ${DISP}`, C.muted);
+    recs.forEach((p, i) => {
+      const y = y0 + 42 + i * 38, val = `${showWt(p.lb)} × ${p.reps}`;
+      ctx.font = `700 24px ${BODY}`; const vw = ctx.measureText(val).width;
+      text(fit(p.name, `600 24px ${BODY}`, RW - vw - 20), RX, y, `600 24px ${BODY}`, C.fg);
+      text(val, RX + RW, y, `700 24px ${BODY}`, C.h5, "right");
+    });
+  }
 
   // Title ladder
   panel(1190, 120);
@@ -1860,72 +1912,176 @@ async function drawCard(x) {
   const top = TITLES[TITLES.length - 1][1];
   ctx.font = `500 22px ${BODY}`;
   if (x.title !== top && labelX + curW / 2 + 40 < 1000 - ctx.measureText(top).width) text(top, 1000, ly + 44, `500 22px ${BODY}`, C.muted, "right");
+  return ctx.canvas;
+}
 
-  text("Logged with Forged", W / 2, H - 14, `500 20px ${BODY}`, C.muted, "center");
-  const url = cv.toDataURL("image/png");
-  const blob = await new Promise(res => cv.toBlob(res, "image/png"));
-  return { url, blob };
+/* Card 2: the cardio rings, the four lifting gauges and the current boss. */
+async function drawGauges(x, K) {
+  const { C, DISP, BODY } = K, { ctx, W, rr, text, fit, panel, pillC, ringC } = cardCanvas(K, x, 2);
+  const { c, g, pace, tick } = x, u = distUnit();
+  const center = (cx, cy, val, of) => {
+    text(fit(val, `700 44px ${DISP}`, 150), cx, cy + 8, `700 44px ${DISP}`, C.fg, "center");
+    if (of) text(fit(of, `500 20px ${BODY}`, 140), cx, cy + 40, `500 20px ${BODY}`, C.muted, "center");
+  };
+  const caption = (cx, y0, label, st, sub) => {
+    text(label, cx, y0, `700 24px ${BODY}`, C.fg, "center");
+    let y = y0 + 14;
+    if (sub) { text(fit(sub, `500 22px ${BODY}`, 220), cx, y + 20, `500 22px ${BODY}`, C.muted, "center"); y += 34; }
+    const [p, detail] = splitSt(st);
+    pillC(p, cx, y);
+    if (detail) text(fit(detail, `500 22px ${BODY}`, 228), cx, y + 72, `500 22px ${BODY}`, C.muted, "center");
+  };
+
+  // Cardio: time, distance and stairs toward the weekly goals
+  panel(130, 470);
+  text("CARDIO", 80, 182, `700 26px ${DISP}`, C.muted);
+  text(`${c.cardioCount} session${c.cardioCount === 1 ? "" : "s"} this week`, 1000, 182, `500 24px ${BODY}`, C.muted, "right");
+  const cardio = [
+    ["TIME", c.minutes, Number(g.cardio) || 0, hm, "min"],
+    ["DISTANCE", c.distance, x.distGoal, v => `${fmt(v)} ${u}`, "dist"],
+    ["STAIRS", c.stories, Number(g.stairs) || 0, v => `${Math.round(v)}`, "stories"]];
+  cardio.forEach(([label, v, t, show, uw], i) => {
+    const cx = 220 + i * 320, cy = 320;
+    ringC(cx, cy, 94, 28, t ? v / t : 0, C["h" + (level(v, t) || 1)], t && v < t ? tick : null);
+    center(cx, cy, show(v), t ? `of ${show(t)}${uw === "stories" ? " stories" : ""}` : "no goal");
+    caption(cx, 474, label, status(v, t, pace, uw));
+  });
+
+  // Lifting: sets toward goals, muscle goals met, volume against last week, push/pull balance
+  panel(620, 490);
+  text("LIFTING", 80, 672, `700 26px ${DISP}`, C.muted);
+  text(`${c.sets} set${c.sets === 1 ? "" : "s"} logged this week`, 1000, 672, `500 24px ${BODY}`, C.muted, "right");
+  const col = i => 165 + i * 250, cy = 810, R = 80, LW = 24, capY = 942;
+
+  // 1. Sets
+  const sv = Math.round(x.setsDone * 10) / 10;
+  ringC(col(0), cy, R, LW, x.setsGoal ? x.setsDone / x.setsGoal : 0, C["h" + (level(x.setsDone, x.setsGoal) || 1)], x.setsGoal && x.setsDone < x.setsGoal ? tick : null);
+  center(col(0), cy, fmt(sv), x.setsGoal ? `of ${fmt(x.setsGoal)}` : "no goal");
+  caption(col(0), capY, "SETS", status(x.setsDone, x.setsGoal, pace, "set"), x.setsGoal ? `${pctOf(x.setsDone, x.setsGoal)}% of goal` : "");
+
+  // 2. Muscle goals: one segment per muscle, coloured like the heat map
+  const n = Math.max(1, x.withGoal.length), step = (Math.PI * 2) / n, gap = n > 1 ? 0.07 : 0;
+  ctx.lineWidth = LW; ctx.lineCap = "butt";
+  if (!x.withGoal.length) { ctx.strokeStyle = C.bg; ctx.beginPath(); ctx.arc(col(1), cy, R, 0, Math.PI * 2); ctx.stroke(); }
+  x.withGoal.forEach((m, i) => {
+    const a0 = -Math.PI / 2 + i * step + gap / 2;
+    ctx.strokeStyle = x.levels[m] ? C["h" + x.levels[m]] : C.idle;
+    ctx.beginPath(); ctx.arc(col(1), cy, R, a0, a0 + step - gap); ctx.stroke();
+  });
+  center(col(1), cy, `${x.met}/${x.withGoal.length}`, "goals met");
+  caption(col(1), capY, "MUSCLE GOALS", !x.withGoal.length ? { k: "none", txt: "No goals set" } : x.met === x.withGoal.length ? { k: "met", txt: "Every goal met" } : { k: "todo", txt: `${x.withGoal.length - x.met} to go` },
+    x.withGoal.length ? `${pctOf(x.met, x.withGoal.length)}% of muscles` : "");
+
+  // 3. Volume against last week
+  const { vol, prevVol: prev } = x, pct = prev ? Math.round((vol / prev) * 100) : 0;
+  let volSt;
+  if (!prev) volSt = { k: "none", txt: "No lifting last week" };
+  else if (vol >= prev) volSt = { k: "met", txt: pct === 100 ? "Matched last week" : `Up ${pct - 100}%` };
+  else if (pace.elapsed < 7) volSt = vol >= (prev * pace.elapsed) / 7 ? { k: "on", txt: `On pace · ${compactWt(prev - vol)} to match` } : { k: "behind", txt: `Behind pace · ${compactWt(prev - vol)} to match` };
+  else volSt = { k: "missed", txt: `${100 - pct}% below last week` };
+  ringC(col(2), cy, R, LW, prev ? vol / prev : 0, C["h" + (level(vol, prev) || 1)], prev && vol < prev ? tick : null);
+  center(col(2), cy, compactWt(vol), prev ? `of ${compactWt(prev)}` : "reps × weight");
+  caption(col(2), capY, "VOLUME", volSt, prev ? `${pct}% of last week` : "vs last week");
+
+  // 4. Push / pull dial: 40-60% push is balanced
+  const tot = x.push + x.pull, f = tot ? x.push / tot : 0.5, dcx = col(3), dcy = cy + 34, DR = 86;
+  const dArc = (a0, a1, color) => { ctx.strokeStyle = color; ctx.lineWidth = LW; ctx.lineCap = "butt"; ctx.beginPath(); ctx.arc(dcx, dcy, DR, Math.PI + a0 * Math.PI, Math.PI + a1 * Math.PI); ctx.stroke(); };
+  dArc(0, 0.4, C.bg); dArc(0.4, 0.6, C.h3); dArc(0.6, 1, C.bg);
+  if (tot) {
+    const a = Math.PI + f * Math.PI;
+    ctx.strokeStyle = C.fg; ctx.lineWidth = 6; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(dcx, dcy); ctx.lineTo(dcx + (DR - 14) * Math.cos(a), dcy + (DR - 14) * Math.sin(a)); ctx.stroke();
+  }
+  ctx.beginPath(); ctx.arc(dcx, dcy, 9, 0, Math.PI * 2); ctx.fillStyle = C.fg; ctx.fill();
+  text("Pull", dcx - DR, dcy + 34, `500 20px ${BODY}`, C.muted, "center");
+  text("Push", dcx + DR, dcy + 34, `500 20px ${BODY}`, C.muted, "center");
+  text(tot ? `${Math.round(f * 100)}%` : "–", dcx, dcy + 44, `700 36px ${DISP}`, C.fg, "center");
+  const balSt = !tot ? { k: "none", txt: "No upper-body sets" } : Math.abs(f - 0.5) <= 0.1 ? { k: "met", txt: "Balanced" }
+    : f > 0.5 ? { k: "behind", txt: "Push-heavy · add pull sets" } : { k: "behind", txt: "Pull-heavy · add push sets" };
+  caption(dcx, capY, "PUSH / PULL", balSt, tot ? `${fmt(x.push)} : ${fmt(x.pull)} sets` : "upper body");
+
+  // Boss
+  const { b, st, locked, waiting, defeated } = x.boss, BY = 1130, BH = 180;
+  ctx.save(); if (!locked) { ctx.shadowColor = C.bossGlow; ctx.shadowBlur = 40; }
+  rr(40, BY, W - 80, BH, 28);
+  const bg = ctx.createLinearGradient(40, BY, 700, BY + BH); bg.addColorStop(0, "#1d1a3d"); bg.addColorStop(1, C.surface);
+  ctx.fillStyle = locked ? C.surface : bg; ctx.fill(); ctx.restore();
+  rr(40, BY, W - 80, BH, 28); ctx.lineWidth = 2; ctx.strokeStyle = locked ? C.line : C.boss; ctx.stroke();
+  ctx.save(); ctx.translate(76, BY + 44); ctx.scale(3.6, 3.6);
+  ctx.strokeStyle = locked ? C.muted : C.boss; ctx.lineWidth = 1.8; ctx.lineJoin = "round"; ctx.lineCap = "round";
+  ctx.stroke(new Path2D("M4 18h16M5 15L3 7l5 4 4-6 4 6 5-4-2 8z")); ctx.restore();
+  const active = st && st.kind === "active";
+  const tag = locked ? `NEXT BOSS · UNLOCKS AT LEVEL ${b.level}` : active ? `FIGHT ON · ${timeLeft(st.end - Date.now())}` : `BOSS WAITING · LEVEL ${b.level}${waiting > 1 ? ` · +${waiting - 1} MORE` : ""}`;
+  text(tag, 190, BY + 52, `800 22px ${BODY}`, locked ? C.muted : C.boss);
+  text(`+${b.reward.toLocaleString()} XP`, 1000, BY + 52, `700 26px ${BODY}`, locked ? C.muted : C.boss, "right");
+  ctx.save(); if (!locked) { ctx.shadowColor = C.bossGlow; ctx.shadowBlur = 18; }
+  text(fit(b.name.toUpperCase(), `700 50px ${DISP}`, 810), 190, BY + 108, `700 50px ${DISP}`, C.fg); ctx.restore();
+  if (active) {
+    const pr = bossProgress(b, st.t);
+    rr(190, BY + 128, 560, 16, 8); ctx.fillStyle = C.bg; ctx.fill();
+    if (pr.pct > 0) { rr(190, BY + 128, Math.max(16, 560 * pr.pct / 100), 16, 8); ctx.fillStyle = C.boss; ctx.fill(); }
+    text(fit(pr.text, `600 22px ${BODY}`, 230), 1000, BY + 144, `600 22px ${BODY}`, C.fg, "right");
+  } else {
+    text(fit(bossChallenge(b), `500 24px ${BODY}`, defeated ? 560 : 810), 190, BY + 148, `500 24px ${BODY}`, C.muted);
+    if (defeated) text(`${defeated} boss${defeated === 1 ? "" : "es"} defeated`, 1000, BY + 148, `600 24px ${BODY}`, C.fg, "right");
+  }
+  return ctx.canvas;
+}
+
+async function drawCards(x) {
+  const K = await cardKit();
+  return Promise.all([cardImage(await drawOverview(x, K)), cardImage(await drawGauges(x, K))]);
 }
 
 function shareSheet() {
-  const x = S.share || {};
+  const x = S.share || {}, cards = x.cards || [];
+  const alts = [`Progress card: level ${x.level}, ${x.title}, with this week's heat map`, "This week's cardio and lifting gauges"];
   return sheetFrame("Share progress", `
-    <div class="share-prev">${x.url ? `<img src="${x.url}" alt="Progress card: level ${x.level}, ${esc(x.title)}, with this week's stats">` : `<div class="share-wait">Making your card…</div>`}</div>
-    <div class="lbl" style="margin-top:14px">Message sent with it</div>
-    <pre class="share-text" id="shareText">${esc(x.text || "")}</pre>
+    ${cards.length ? `<div class="share-prev">${cards.map((c, i) => `<figure><img src="${c.url}" alt="${esc(alts[i])}"><figcaption>${i ? "2 · Gauges" : "1 · Overview"}</figcaption></figure>`).join("")}</div>`
+      : `<div class="share-wait">Making your cards…</div>`}
+    <p class="note share-hint">Two images: your level, week and heat map, then this week's gauges and boss.</p>
     ${S.shareMsg ? `<p class="note" role="status">${esc(S.shareMsg)}</p>` : ""}`,
-    `<button class="btn ghost" type="button" data-act="share-copy">Copy text</button>
-     <div class="right"><button class="btn primary" type="button" data-act="share-send"${x.blob ? "" : " disabled"}>Share</button></div>`);
+    `<button class="btn ghost" type="button" data-act="share-save"${cards.length ? "" : " disabled"}>Save images</button>
+     <div class="right"><button class="btn primary" type="button" data-act="share-send"${cards.length ? "" : " disabled"}>Share</button></div>`);
 }
 function openShare() {
   const x = weekSnapshot();
-  S.share = { text: shareText(x), level: x.info.level, title: x.title };
+  S.share = { level: x.info.level, title: x.title };
   S.shareMsg = "";
   openSheet("share", null);
-  drawCard(x).then(r => { if (S.sheet === "share") { Object.assign(S.share, r); renderSheet(); } })
-    .catch(() => { if (S.sheet === "share") { S.shareMsg = "Couldn't draw the image on this device. You can still copy and send the text."; renderSheet(); } });
+  drawCards(x).then(cards => { if (S.sheet === "share") { S.share.cards = cards; renderSheet(); } })
+    .catch(() => { if (S.sheet === "share") { S.shareMsg = "Couldn't draw the images on this device."; renderSheet(); } });
 }
-async function copyShareText() {
-  const t = S.share ? S.share.text : "";
-  try { await navigator.clipboard.writeText(t); return true; } catch {}
-  try {
-    const el = $("shareText"), range = document.createRange(); range.selectNodeContents(el);
-    const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
-    return document.execCommand("copy");
-  } catch { return false; }
-}
-/* Saves the card. Inside the Claude viewer, plain download links are blocked, so use its save prompt;
-   elsewhere, a normal download. Resolves true if a save was started. */
-async function saveShareImage() {
-  const filename = `forged-level-${S.share.level}.png`;
+const shareName = i => `forged-level-${S.share.level}-${i ? "gauges" : "overview"}.png`;
+/* Saves both cards. Inside the Claude viewer, plain download links are blocked, so use its save prompt;
+   elsewhere, normal downloads. Resolves to how many saves were started. */
+async function saveShareImages() {
+  const cards = (S.share && S.share.cards) || [];
   if (window.claude && typeof window.claude.use === "function") {
     const dl = await window.claude.use("downloads").catch(() => null);
-    if (!dl) return false;
-    try { await dl.save({ filename, data: S.share.blob }); return true; } catch { return false; }
+    if (!dl) return 0;
+    let n = 0;
+    for (const [i, c] of cards.entries()) { try { await dl.save({ filename: shareName(i), data: c.blob }); n++; } catch {} }
+    return n;
   }
-  const a = document.createElement("a");
-  a.href = S.share.url; a.download = filename;
-  document.body.appendChild(a); a.click(); a.remove();
-  return true;
+  for (const [i, c] of cards.entries()) {
+    const a = document.createElement("a");
+    a.href = c.url; a.download = shareName(i);
+    document.body.appendChild(a); a.click(); a.remove();
+    if (!i) await new Promise(r => setTimeout(r, 300)); // some browsers drop a second download fired at once
+  }
+  return cards.length;
 }
-/* Share the image with the text; if images can't be shared, share or copy the text and save the image. */
+const savedMsg = n => n ? `Saved ${n === 2 ? "both cards" : "the card"} to your downloads. Attach ${n === 2 ? "them" : "it"} to your message.`
+  : "This view can't share or save images: press and hold each card above to save it.";
+/* Shares both images through the phone's share menu; where images can't be shared, saves them instead. */
 async function sendShare() {
-  const x = S.share; if (!x || !x.blob) return;
-  const file = new File([x.blob], `forged-level-${x.level}.png`, { type: "image/png" });
+  const x = S.share; if (!x || !x.cards) return;
+  const files = x.cards.map((c, i) => new File([c.blob], shareName(i), { type: "image/png" }));
   try {
-    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text: x.text }); return; }
-    if (navigator.share) {
-      await navigator.share({ text: x.text });
-      const saved = await saveShareImage();
-      S.shareMsg = saved ? "Sent the text. This browser can't share images, so the card was saved to attach." : "Sent the text. This browser can't share or save images: press and hold the card above to save it.";
-      return renderSheet();
-    }
+    if (navigator.canShare && navigator.canShare({ files })) { await navigator.share({ files }); return; }
   } catch (e) { if (e && e.name === "AbortError") return; }
-  const saved = await saveShareImage();
-  const ok = await copyShareText();
-  S.shareMsg = saved
-    ? `Saved the card${ok ? " and copied the text" : ""}. Paste the text and attach the image in your message.`
-    : `${ok ? "Copied the text. " : ""}This view can't share or save images: press and hold the card above to save it.`;
+  S.shareMsg = savedMsg(await saveShareImages());
   renderSheet();
 }
 
@@ -2397,7 +2553,7 @@ $("sheetRoot").addEventListener("click", async e => {
   if (a.act === "import-cancel") { S.importPending = null; return renderSheet(); }
   if (a.theme) { setTheme(a.theme); render(); return renderSheet(); }
   if (a.act === "share-send") return sendShare();
-  if (a.act === "share-copy") { const ok = await copyShareText(); S.shareMsg = ok ? "Text copied." : "Couldn't copy automatically. Press and hold the text to copy it."; return renderSheet(); }
+  if (a.act === "share-save") { S.shareMsg = savedMsg(await saveShareImages()); return renderSheet(); }
   if (a.act === "pick-cardio") return openSheet("cardio", null);
   if (a.act === "save") return saveDraft();
   if (a.act === "goals-reset") { S.draft = { ...JSON.parse(JSON.stringify(DEFAULT_GOALS)), bwInput: d.bwInput }; return renderSheet(); }
