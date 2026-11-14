@@ -214,6 +214,8 @@ label.btn { cursor: pointer; display: inline-block; }
 .acct-card.warn { border-color: var(--danger); }
 .acct-offer { margin-top: 12px; padding: 14px; border: 1px solid var(--h3); border-radius: 14px; }
 .acct-offer p { margin: 4px 0 10px; }
+.auth-alt { margin-top: 14px; }
+.auth-alt summary { cursor: pointer; color: var(--muted); font-size: 14px; font-weight: 600; }
 .side-only { display: none !important; }
 @media (min-width: 900px) { .tabbar .side-only { display: flex !important; } }
 .boss-card { margin-bottom: 12px; border-color: var(--boss); box-shadow: 0 0 22px var(--boss-glow); background: linear-gradient(160deg, rgba(139, 123, 255, .14), var(--surface) 60%); }
@@ -779,7 +781,8 @@ const Store = {
     const known = this.storedUser(), linkErr = this.linkError();
     if (known) this.enterCloud(known); else this.useLocal();
     if (linkErr) setTimeout(() => toast(linkErr), 300);
-    if (known || /access_token=/.test(location.hash)) this.connect().catch(() => { this.syncErr = {}; this.status(); });
+    this.fromLink = /access_token=/.test(location.hash);
+    if (known || this.fromLink) this.connect().catch(() => { this.syncErr = {}; this.status(); });
   },
   useLocal() {
     this.mode = "local"; this.user = null; this.cache = null;
@@ -870,6 +873,7 @@ const Store = {
       if (this.mode !== "cloud" || !this.user || this.user.id !== u.id) this.enterCloud({ id: u.id, email: u.email || "" });
       else if (u.email) this.user.email = u.email;
       if (ev === "SIGNED_IN" || ev === "INITIAL_SESSION" || this.syncErr) { this.subscribe(); this.sync(); }
+      if (this.fromLink) { this.fromLink = false; toast(`Signed in as ${u.email || "you"}. Syncing your workouts…`); }
     } else if (ev === "SIGNED_OUT" && this.mode === "cloud") this.leaveCloud(!this.cache || !this.cache.outbox.length);
     else if (ev === "INITIAL_SESSION" && this.mode === "cloud") { this.syncErr = { auth: true }; this.status(); }
     if (S.sheet === "account") renderSheet();
@@ -2779,19 +2783,23 @@ function accountSheet() {
     <button class="btn auth-google" type="button" data-act="auth-google"${busy}>${GOOGLE_SVG}<span>Continue with Google</span></button>
     <div class="auth-or">or use your email</div>
     ${a.sent ? `
-      <p class="note" style="margin:0 0 10px">We sent a code to <b>${esc(a.email)}</b>. It can take a minute to arrive, so check your spam folder too.</p>
-      <div class="field"><label for="authCode">Code from the email</label>
-        <input id="authCode" class="inp auth-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="••••••"></div>
-      <div class="btn-row" style="margin-top:12px"><button class="btn primary" type="button" data-act="auth-verify"${busy}>${a.busy ? "Checking…" : "Sign in"}</button>
-        <button class="btn ghost small" type="button" data-act="auth-resend"${busy}>Send a new code</button>
-        <button class="btn ghost small" type="button" data-act="auth-reset">Use a different email</button></div>`
+      <div class="acct-offer" style="margin-top:0"><b>Check your email</b>
+        <p class="note">We sent a sign-in link to <b>${esc(a.email)}</b>. Open the email on this device and tap the link: Forged opens and you're signed in. It can take a minute to arrive, so check your spam folder too.</p>
+        <div class="btn-row"><button class="btn small" type="button" data-act="auth-resend"${busy}>${a.busy ? "Sending…" : "Send a new link"}</button>
+          <button class="btn ghost small" type="button" data-act="auth-reset">Use a different email</button></div></div>
+      <details class="auth-alt"${a.codeOpen ? " open" : ""}><summary>Email has a code instead?</summary>
+        <div class="field" style="margin-top:10px"><label for="authCode">Code from the email</label>
+          <input id="authCode" class="inp auth-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="••••••"></div>
+        <div class="btn-row" style="margin-top:10px"><button class="btn primary small" type="button" data-act="auth-verify"${busy}>${a.busy ? "Checking…" : "Sign in with code"}</button></div></details>`
     : `
       <div class="field"><label for="authEmail">Email</label>
         <input id="authEmail" class="inp" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="you@example.com" value="${esc(a.email || "")}"></div>
-      <div class="btn-row" style="margin-top:12px"><button class="btn primary" type="button" data-act="auth-email"${busy}>${a.busy ? "Sending…" : "Email me a code"}</button></div>`}
+      <div class="btn-row" style="margin-top:12px"><button class="btn primary" type="button" data-act="auth-email"${busy}>${a.busy ? "Sending…" : "Email me a sign-in link"}</button></div>`}
+    ${standalone() ? `<p class="note" style="margin-top:14px">Using Forged from your home screen? Sign in with Google: email links open in your browser, not here.</p>` : ""}
     <p class="note" style="margin-top:16px">After you sign in, you can add the workouts already in this browser to your account.</p>`,
     `<div class="right"><button class="btn" type="button" data-act="close">Not now</button></div>`);
 }
+const standalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 function authMsg(e) {
   const m = (e && e.message) || "";
   if (/expired|invalid|otp/i.test(m)) return "That code didn't work. Check it, or send a new one.";
@@ -2816,10 +2824,11 @@ async function accountAction(act) {
     const email = act === "auth-resend" ? a.email : (($("authEmail") || {}).value || "").trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { S.error = "Enter your email address."; return renderSheet(); }
     a.email = email;
-    return authRun(async () => { await Store.sendCode(email); a.sent = true; if (act === "auth-resend") toast("New code sent."); });
+    return authRun(async () => { await Store.sendCode(email); a.sent = true; if (act === "auth-resend") toast("New link sent."); });
   }
   if (act === "auth-verify") {
     const code = (($("authCode") || {}).value || "").replace(/\D/g, "");
+    a.codeOpen = true;
     if (code.length < 6) { S.error = "Enter the code from the email."; return renderSheet(); }
     return authRun(async () => { await Store.verifyCode(a.email, code); S.auth = {}; toast("Signed in. Syncing your workouts…"); });
   }

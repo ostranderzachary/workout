@@ -148,7 +148,7 @@ Without an account, workouts are saved in the browser's `localStorage`, so they 
 
 ## Accounts and sync
 
-Tap the person icon (**Sign in**) at the top right. Sign in with **Google**, or with your email: Forged emails you a 6-digit code to type in. A code works even when Forged is added to your home screen, where an email link would open in the browser instead.
+Tap the person icon (**Sign in**) at the top right. Sign in with **Google**, or with your email: Forged emails you a sign-in link, and tapping it opens Forged signed in. Open the email on the device you want to sign in on. If you use Forged from your home screen, sign in with Google, because email links open in the browser instead. If the email ever contains a code (see the setup notes), tap **Email has a code instead?** and type it in.
 
 Once you're signed in:
 
@@ -162,7 +162,7 @@ Accounts use [Supabase](https://supabase.com) (sign-in and a Postgres database).
 ### Setting up Supabase
 
 1. Create a Supabase project. Turn on the **Email** and **Google** sign-in providers, and set the **Site URL** and **Redirect URLs** to the GitHub Pages address.
-2. Add `Your Forged code: {{ .Token }}` to the **Magic Link** email template, so the email includes the sign-in code.
+2. The standard Supabase sign-in email works as it is. Optional: once you've set up custom SMTP (Supabase only lets you edit email templates with it), you can add `Your Forged code: {{ .Token }}` to the **Magic Link** template, so the email also includes a code.
 3. Open the **SQL Editor**, paste [`supabase/schema.sql`](supabase/schema.sql) and tap **Run**. It creates the `workouts` and `profiles` tables, the security rules and live updates, and is safe to run again.
 4. The project URL and publishable key are set at the top of the storage code in `index.html` (`const SB`).
 
