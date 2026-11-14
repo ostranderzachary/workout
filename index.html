@@ -320,6 +320,8 @@ body:not([data-tab="stats"]) [data-tab="stats"], body:not([data-tab="history"]) 
 .badge { display: inline-block; font-family: var(--font-display); font-weight: 700; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; border-radius: 4px; padding: 1px 6px; margin-right: 8px; vertical-align: 1px; background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
 .badge.cardio { background: var(--h3); border-color: var(--h3); color: #0b1a0f; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.themes { margin: 8px 0 6px; display: grid; gap: 12px; }
+.theme-head { display: block; margin-bottom: 6px; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 .chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 13px; font-weight: 600; font-size: 14px; }
 .chip[aria-pressed="true"] { background: var(--ink-btn); color: var(--ink-btn-fg); border-color: var(--ink-btn); }
 .withunit { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 6px; align-items: center; }
@@ -1297,6 +1299,20 @@ const THEMES = {
     [100, "Grandmaster", "The highest rank. A lifetime of discipline."]
   ] }
 };
+/* How the theme picker groups the themes. Any theme left out here lands under "More". */
+const THEME_GROUPS = [
+  ["Fantasy and sci-fi", ["got", "redrising", "starwars", "disney"]],
+  ["Mythology", ["greek", "norse", "egyptian"]],
+  ["Anime", ["solo", "dbz", "naruto", "hxh", "aot"]],
+  ["Comics", ["marvel", "marvelvillains", "dc", "dcvillains"]],
+  ["Military", ["military", "navy", "airforce", "marines", "spaceforce", "coastguard"]],
+  ["Warriors and martial arts", ["warriors", "belts"]]
+];
+function themeGroups() {
+  const listed = new Set(THEME_GROUPS.flatMap(([, ks]) => ks));
+  const rest = Object.keys(THEMES).filter(k => !listed.has(k));
+  return [...THEME_GROUPS.map(([n, ks]) => [n, ks.filter(k => THEMES[k])]), ...(rest.length ? [["More", rest]] : [])].filter(([, ks]) => ks.length);
+}
 const themeKey = () => (THEMES[prefs.theme] ? prefs.theme : "got");
 let TITLES = THEMES[themeKey()].titles;
 function setTheme(k) { prefs.theme = k; savePrefs(); TITLES = THEMES[themeKey()].titles; }
@@ -1653,7 +1669,8 @@ function levelSheet() {
       <p><b>Missed days:</b> when a week ends short of your workout-days goal, you lose ${BONUS.missedDay} XP per missed day and your streak resets. Your first week is never penalised, and XP never drops below 0, though it can drop you a level.</p>
       <p>Each level needs 100 XP more than the one before. You earn a new title every 10 levels.</p></div>
     <div class="lbl">Title theme</div>
-    <div class="chips themes" style="margin:6px 0 4px">${Object.entries(THEMES).map(([k, th]) => `<button type="button" class="chip" data-theme="${k}" aria-pressed="${k === themeKey()}">${esc(th.name)}</button>`).join("")}</div>
+    <div class="themes">${themeGroups().map(([name, ks]) => `<div class="theme-group" role="group" aria-label="${esc(name)}"><span class="theme-head">${esc(name)}</span>
+      <div class="chips">${ks.map(k => `<button type="button" class="chip" data-theme="${k}" aria-pressed="${k === themeKey()}">${esc(THEMES[k].name)}</button>`).join("")}</div></div>`).join("")}</div>
     <p class="note" style="margin:0 0 12px">Pick a theme you follow. It only changes the names; your level and XP stay the same.</p>
     <div class="lbl">Titles · ${esc(THEMES[themeKey()].name)}</div>
     <ol class="titles">${TITLES.map(([l, t]) => `<li class="${info.level >= l ? "got" : ""}${titleFor(info.level) === t ? " now" : ""}"><span class="num">Lv ${l}</span><span class="t-name"><b>${esc(t)}</b><em>${esc(TITLES.find(x => x[1] === t)[2])}</em></span><small>${info.level >= l ? (titleFor(info.level) === t ? "Current" : "Unlocked") : `${(xpAtLevel(l) - info.total).toLocaleString()} XP to go`}</small></li>`).join("")}</ol>
