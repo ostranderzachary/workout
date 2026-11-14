@@ -194,6 +194,26 @@ label.btn { cursor: pointer; display: inline-block; }
 .boss-btn.live { color: var(--fg); border-color: var(--boss); box-shadow: 0 0 14px var(--boss-glow); }
 .boss-btn i { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; border-radius: 9px; background: var(--boss); color: #0d0b1f; font-style: normal; font-size: 11px; font-weight: 800; display: grid; place-items: center; padding: 0 4px; }
 @media (max-width: 420px) { .boss-btn span { display: none; } }
+/* Account: header button, sign-in and account sheets */
+.acct-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 40px; border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 7px 10px; font-weight: 700; font-size: 13px; color: var(--fg); }
+.acct-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.acct-btn.in { padding: 4px; border-radius: 50%; }
+.acct-av { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--h3); color: #0b1a0f; font-weight: 800; font-size: 14px; flex: none; }
+.acct-btn i { position: absolute; right: -2px; bottom: -2px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--bg); background: var(--h5); }
+.acct-btn[data-state="busy"] i { background: var(--muted); } .acct-btn[data-state="warn"] i { background: var(--danger); }
+@media (max-width: 420px) { .acct-btn span:not(.acct-av) { display: none; } }
+.auth-google { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 16px; background: #fff; color: #1f1f1f; border-color: #fff; font-size: 15px; }
+.auth-google svg { width: 18px; height: 18px; flex: none; }
+.auth-or { display: flex; align-items: center; gap: 10px; margin: 18px 0 12px; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+.auth-or::before, .auth-or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.auth-code { font-family: var(--font-display); font-size: 26px; letter-spacing: .3em; text-align: center; }
+.acct-card { display: flex; align-items: center; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); }
+.acct-card .acct-av { width: 44px; height: 44px; font-size: 20px; }
+.acct-card b { display: block; word-break: break-all; }
+.acct-card .note { display: block; margin: 2px 0 0; }
+.acct-card.warn { border-color: var(--danger); }
+.acct-offer { margin-top: 12px; padding: 14px; border: 1px solid var(--h3); border-radius: 14px; }
+.acct-offer p { margin: 4px 0 10px; }
 .side-only { display: none !important; }
 @media (min-width: 900px) { .tabbar .side-only { display: flex !important; } }
 .boss-card { margin-bottom: 12px; border-color: var(--boss); box-shadow: 0 0 22px var(--boss-glow); background: linear-gradient(160deg, rgba(139, 123, 255, .14), var(--surface) 60%); }
@@ -457,6 +477,7 @@ button.tag { cursor: pointer; }
       <button class="boss-btn" type="button" data-open="boss" id="bossBtn" aria-label="Boss fights"><svg viewBox="0 0 24 24"><path d="M4 18h16M5 15L3 7l5 4 4-6 4 6 5-4-2 8z"/></svg><span>Boss</span><i id="bossBadge" hidden></i></button>
       <button class="lvl-chip" type="button" data-open="level" id="lvlChip" aria-label="Your level"></button>
       <button class="btn" type="button" data-open="goals">Goals</button>
+      <button class="acct-btn" type="button" data-open="account" id="acctBtn" aria-label="Sign in to sync" hidden></button>
     </div>
   </header>
 
@@ -727,47 +748,282 @@ function goalsAt(date) {
 }
 const perDay = w => (Number(w) || 0) / 7;
 
-/* ---------- Storage: shared db per signed-in person, else this browser ---------- */
+/* ---------- Storage ----------
+   Three places workouts can live:
+   - "db": inside the Claude artifact, its shared database for the signed-in person.
+   - "cloud": on the web when signed in, the Supabase account. A copy is kept on the device with a queue of
+     changes not yet sent, so logging works offline and syncs when the connection is back.
+   - "local": otherwise, this browser only. */
 const LS_KEY = "musclemap.workouts.v1";
 const GOALS_KEY = "musclemap.goals.v1";
+const SB = {
+  url: "https://yljrwexzjcsnsqpjmehi.supabase.co",
+  key: "sb_publishable_ica3u_SuPCaoqtLTGLM5Cw_NpDV0FZ-", // public by design; the database's row rules keep data private
+  lib: "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js",
+  authKey: "forged.auth"
+};
+const inClaude = () => !!(window.claude && typeof window.claude.use === "function");
+const SETUP_CODES = ["PGRST205", "PGRST106", "42P01", "42501"]; // missing tables or permissions: the SQL hasn't been run
+
 const Store = {
-  mode: "local", col: null,
+  mode: "local", col: null, cb: null,
+  sb: null, libP: null, user: null, cache: null, chan: null, syncing: false, again: false, syncErr: null, offerPending: false,
   readLocal() { try { return JSON.parse(localStorage.getItem(LS_KEY) || "[]"); } catch { return []; } },
   writeLocal(list) { try { localStorage.setItem(LS_KEY, JSON.stringify(list)); return true; } catch { return false; } },
   readGoals() { try { return JSON.parse(localStorage.getItem(GOALS_KEY) || "null"); } catch { return null; } },
+
   async init(onData, onGoals, onStatus) {
-    const useLocal = () => { this.mode = "local"; onStatus("Saved in this browser"); onGoals(this.readGoals()); onData(this.readLocal()); };
-    if (!window.claude || typeof window.claude.use !== "function") return useLocal();
-    onStatus("Connecting…");
+    this.cb = { onData, onGoals, onStatus };
+    if (inClaude()) return this.initClaude();
+    // Signed in before on this device: show the account's saved copy straight away, then connect.
+    const known = this.storedUser(), linkErr = this.linkError();
+    if (known) this.enterCloud(known); else this.useLocal();
+    if (linkErr) setTimeout(() => toast(linkErr), 300);
+    if (known || /access_token=/.test(location.hash)) this.connect().catch(() => { this.syncErr = {}; this.status(); });
+  },
+  useLocal() {
+    this.mode = "local"; this.user = null; this.cache = null;
+    this.cb.onStatus("Saved in this browser"); this.cb.onGoals(this.readGoals()); this.cb.onData(this.readLocal());
+    renderAcct();
+  },
+  async initClaude() {
+    this.cb.onStatus("Connecting…");
     let db = null, user = null;
     try { [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]); } catch {}
     const uid = user ? await user.id().catch(() => null) : null;
-    if (!db || !uid) return useLocal();
+    if (!db || !uid) return this.useLocal();
     this.mode = "db";
     this.col = db.collection("data/users/" + uid);
     this.col.onSnapshot(snap => {
-      onStatus("Synced to your account");
+      this.cb.onStatus("Synced to your account");
       const g = snap.docs.find(d => d.id === "_goals");
-      onGoals(g ? g.data() : null);
-      onData(snap.docs.filter(d => !d.id.startsWith("_")).map(d => ({ ...d.data(), id: d.id })));
-    }, () => onStatus("Can't reach your saved workouts. Reload to try again."));
+      this.cb.onGoals(g ? g.data() : null);
+      this.cb.onData(snap.docs.filter(d => !d.id.startsWith("_")).map(d => ({ ...d.data(), id: d.id })));
+    }, () => this.cb.onStatus("Can't reach your saved workouts. Reload to try again."));
   },
+
   async save(w, all) {
     const body = JSON.parse(JSON.stringify(w)); delete body.id;
     if (this.mode === "db") return this.col.doc(w.id).set(body);
     const list = all.filter(x => x.id !== w.id).concat([w]);
+    if (this.mode === "cloud") { this.cache.workouts = list; this.queue({ k: "w:" + w.id, op: "save", id: w.id, body }); return list; }
     if (!this.writeLocal(list)) throw new Error("This browser blocked saving. Check that site data is allowed.");
     return list;
   },
   async remove(id, all) {
     if (this.mode === "db") return this.col.doc(id).delete();
-    const list = all.filter(x => x.id !== id); this.writeLocal(list); return list;
+    const list = all.filter(x => x.id !== id);
+    if (this.mode === "cloud") { this.cache.workouts = list; this.queue({ k: "w:" + id, op: "remove", id }); return list; }
+    this.writeLocal(list); return list;
   },
   async saveGoals(g) {
     if (this.mode === "db") return this.col.doc("_goals").set(g);
+    if (this.mode === "cloud") { this.cache.goals = g; this.queue({ k: "goals", op: "goals", body: g }); return; }
     try { localStorage.setItem(GOALS_KEY, JSON.stringify(g)); } catch { throw new Error("This browser blocked saving. Check that site data is allowed."); }
+  },
+  // Settings that follow the account (theme and units); called whenever prefs are saved.
+  prefsChanged() {
+    if (this.mode !== "cloud" || !this.cache) return;
+    const p = Object.fromEntries(BACKUP_PREFS.filter(k => prefs[k] != null).map(k => [k, prefs[k]]));
+    if (JSON.stringify(p) === JSON.stringify(this.cache.prefs)) return;
+    this.cache.prefs = p; this.queue({ k: "prefs", op: "prefs", body: p });
+  },
+
+  /* ----- Account (Supabase) ----- */
+  storedUser() {
+    try {
+      const v = JSON.parse(localStorage.getItem(SB.authKey) || "null"), u = v && v.user;
+      return u && u.id ? { id: u.id, email: u.email || "" } : null;
+    } catch { return null; }
+  },
+  // Errors Google or the email link can send back in the address
+  linkError() {
+    const q = new URLSearchParams(location.hash.slice(1) + "&" + location.search.slice(1));
+    const msg = q.get("error_description") || q.get("error");
+    if (!msg) return "";
+    history.replaceState(null, "", location.pathname);
+    return `Couldn't sign in: ${msg.replace(/\+/g, " ")}`;
+  },
+  loadLib() {
+    if (window.supabase && window.supabase.createClient) return Promise.resolve(window.supabase);
+    return this.libP || (this.libP = new Promise((res, rej) => {
+      const el = document.createElement("script"); el.src = SB.lib; el.async = true;
+      el.onload = () => (window.supabase ? res(window.supabase) : rej(new Error("Sign-in didn't load. Try again.")));
+      el.onerror = () => { this.libP = null; el.remove(); rej(new Error("Can't reach the sign-in service. Check your connection and try again.")); };
+      document.head.appendChild(el);
+    }));
+  },
+  async client() {
+    if (this.sb) return this.sb;
+    const lib = await this.loadLib();
+    if (!this.sb) {
+      this.sb = lib.createClient(SB.url, SB.key, { auth: { storageKey: SB.authKey, persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+      // Supabase asks that no other Supabase calls run inside this callback, so react on the next tick.
+      this.sb.auth.onAuthStateChange((ev, session) => setTimeout(() => this.authChanged(ev, session), 0));
+    }
+    return this.sb;
+  },
+  async connect() { const sb = await this.client(); await sb.auth.getSession(); },
+  authChanged(ev, session) {
+    const u = session && session.user;
+    if (u) {
+      if (this.mode !== "cloud" || !this.user || this.user.id !== u.id) this.enterCloud({ id: u.id, email: u.email || "" });
+      else if (u.email) this.user.email = u.email;
+      if (ev === "SIGNED_IN" || ev === "INITIAL_SESSION" || this.syncErr) { this.subscribe(); this.sync(); }
+    } else if (ev === "SIGNED_OUT" && this.mode === "cloud") this.leaveCloud(!this.cache || !this.cache.outbox.length);
+    else if (ev === "INITIAL_SESSION" && this.mode === "cloud") { this.syncErr = { auth: true }; this.status(); }
+    if (S.sheet === "account") renderSheet();
+  },
+  cacheKey(uid) { return "forged.cloud." + uid; },
+  enterCloud(user) {
+    this.mode = "cloud"; this.user = user; this.syncErr = null;
+    let c = null;
+    try { c = JSON.parse(localStorage.getItem(this.cacheKey(user.id)) || "null"); } catch {}
+    this.cache = c && Array.isArray(c.workouts) ? { outbox: [], ...c } : { workouts: [], goals: null, prefs: null, outbox: [], syncedAt: 0 };
+    this.offerPending = !this.cache.syncedAt;
+    this.cb.onGoals(this.cache.goals); this.cb.onData(this.cache.workouts);
+    this.status();
+    if (S.sheet === "account") renderSheet();
+  },
+  leaveCloud(clear) {
+    if (this.chan && this.sb) this.sb.removeChannel(this.chan);
+    this.chan = null;
+    if (clear && this.user) try { localStorage.removeItem(this.cacheKey(this.user.id)); } catch {}
+    this.syncErr = null;
+    this.useLocal();
+  },
+  writeCache() { try { localStorage.setItem(this.cacheKey(this.user.id), JSON.stringify(this.cache)); } catch {} },
+  // Adds a change to the queue (replacing an older one for the same workout), saves it, then tries to send it.
+  queue(op) {
+    this.cache.outbox = this.cache.outbox.filter(o => o.k !== op.k).concat([op]);
+    this.writeCache(); this.status(); this.sync();
+  },
+  waiting() { return this.cache ? this.cache.outbox.length : 0; },
+  status() {
+    if (this.mode !== "cloud") return;
+    const n = this.waiting(), e = this.syncErr, ch = `${n} change${n === 1 ? "" : "s"}`;
+    this.cb.onStatus(e && e.setup ? "Account storage isn't set up yet"
+      : e && e.auth ? "Sign in again to sync"
+      : e ? (n ? `Offline · ${ch} waiting` : "Offline · showing saved copy")
+      : this.syncing || !this.cache.syncedAt ? "Syncing…"
+      : n ? `${ch} waiting to sync` : "Synced to your account");
+    renderAcct();
+  },
+  statusKind() { return this.mode !== "cloud" ? "local" : this.syncErr ? "warn" : this.syncing || this.waiting() || !this.cache.syncedAt ? "busy" : "ok"; },
+
+  /* Sends queued changes, then reloads the account's copy. Only one runs at a time; calls made meanwhile run once more after. */
+  async sync() {
+    if (this.mode !== "cloud" || !this.sb) return;
+    if (this.syncing) { this.again = true; return; }
+    this.syncing = true; this.status();
+    const uid = this.user.id, sb = this.sb, gone = () => !this.user || this.user.id !== uid;
+    try {
+      while (this.cache.outbox.length) {
+        const o = this.cache.outbox[0];
+        const r = o.op === "save" ? await sb.from("workouts").upsert({ user_id: uid, id: o.id, data: o.body })
+          : o.op === "remove" ? await sb.from("workouts").delete().eq("user_id", uid).eq("id", o.id)
+          : await sb.from("profiles").upsert({ user_id: uid, [o.op]: o.body });
+        if (r.error) throw r.error;
+        if (gone()) return;
+        const i = this.cache.outbox.indexOf(o); // a newer change to the same item may have replaced it meanwhile
+        if (i >= 0) this.cache.outbox.splice(i, 1);
+        this.writeCache();
+      }
+      const rows = [];
+      for (let from = 0; ; from += 1000) { // the API returns at most 1,000 rows per request
+        const { data, error } = await sb.from("workouts").select("id,data").order("id").range(from, from + 999);
+        if (error) throw error;
+        rows.push(...data);
+        if (data.length < 1000) break;
+      }
+      const { data: prof, error: pe } = await sb.from("profiles").select("goals,prefs").maybeSingle();
+      if (pe) throw pe;
+      if (gone()) return;
+      // Changes queued while this ran are still waiting; show them on top of the account's copy.
+      let list = rows.map(r => ({ ...r.data, id: r.id })), goals = prof ? prof.goals : null;
+      for (const o of this.cache.outbox) {
+        if (o.op === "save") list = list.filter(x => x.id !== o.id).concat([{ ...o.body, id: o.id }]);
+        if (o.op === "remove") list = list.filter(x => x.id !== o.id);
+        if (o.op === "goals") goals = o.body;
+      }
+      Object.assign(this.cache, { workouts: list, goals, syncedAt: Date.now() });
+      this.syncErr = null;
+      this.writeCache();
+      if (!this.cache.outbox.some(o => o.op === "prefs")) {
+        if (prof && prof.prefs) this.applyPrefs(prof.prefs); else this.prefsChanged(); // first sign-in: the account takes this device's settings
+      }
+      this.cb.onGoals(goals); this.cb.onData(list);
+      if (this.offerPending) { this.offerPending = false; this.offerUpload(); }
+    } catch (e) {
+      this.syncErr = { setup: SETUP_CODES.includes(e && e.code), auth: !!(e && (e.status === 401 || /JWT/i.test(e.message || ""))), message: e && e.message };
+    } finally {
+      this.syncing = false; this.status();
+      if (S.sheet === "account") renderSheet();
+      if (this.again) { this.again = false; this.sync(); }
+    }
+  },
+  applyPrefs(p) {
+    this.cache.prefs = p;
+    let changed = false;
+    for (const k of BACKUP_PREFS) if (p[k] != null && prefs[k] !== p[k]) { prefs[k] = p[k]; changed = true; }
+    if (changed) { savePrefs(); setTheme(themeKey()); }
+  },
+  subscribe() {
+    if (this.chan || !this.sb || !this.user) return;
+    const uid = this.user.id, kick = () => { clearTimeout(this.kickT); this.kickT = setTimeout(() => this.sync(), 600); };
+    this.chan = this.sb.channel("forged-" + uid);
+    // Inserts and updates only: Supabase sends delete events to every listener, so deletes are picked up on the next sync instead.
+    for (const table of ["workouts", "profiles"]) for (const event of ["INSERT", "UPDATE"])
+      this.chan.on("postgres_changes", { event, schema: "public", table, filter: `user_id=eq.${uid}` }, kick);
+    this.chan.subscribe();
+  },
+  // Workouts saved on this device before signing in that the account doesn't have yet
+  devicePending() {
+    if (this.mode !== "cloud") return { ws: [], goals: null };
+    const have = new Set(S.workouts.map(w => w.id));
+    return { ws: this.readLocal().filter(w => w && w.id && !w.sample && !have.has(w.id)), goals: S.goalsSaved ? null : this.readGoals() };
+  },
+  offerUpload() {
+    const p = this.devicePending();
+    if (p.ws.length) { if (!S.sheet) openSheet("account", null); }
+    else if (p.goals) this.uploadDevice(); // just goals: bring them along without asking
+  },
+  uploadDevice() {
+    const p = this.devicePending();
+    const list = S.workouts.concat(p.ws);
+    for (const w of p.ws) { const body = JSON.parse(JSON.stringify(w)); delete body.id; this.cache.outbox.push({ k: "w:" + w.id, op: "save", id: w.id, body }); }
+    if (p.goals) { this.cache.goals = p.goals; this.cache.outbox = this.cache.outbox.filter(o => o.k !== "goals").concat([{ k: "goals", op: "goals", body: p.goals }]); }
+    this.cache.workouts = list;
+    this.writeCache();
+    this.cb.onData(list); if (p.goals) this.cb.onGoals(p.goals);
+    this.sync();
+    return p.ws.length;
+  },
+  async signInGoogle() {
+    const sb = await this.client();
+    const { error } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname } });
+    if (error) throw error;
+  },
+  async sendCode(email) {
+    const sb = await this.client();
+    const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: location.origin + location.pathname } });
+    if (error) throw error;
+  },
+  async verifyCode(email, token) {
+    const sb = await this.client();
+    const { error } = await sb.auth.verifyOtp({ email, token, type: "email" });
+    if (error) throw error;
+  },
+  async signOut() {
+    const sb = this.sb;
+    this.leaveCloud(true);
+    try { if (sb) await sb.auth.signOut({ scope: "local" }); } catch {}
+    try { localStorage.removeItem(SB.authKey); } catch {}
   }
 };
+// Catch up when the app comes back to the front or the connection returns.
+document.addEventListener("visibilitychange", () => { if (!document.hidden) Store.sync(); });
+window.addEventListener("online", () => { if (Store.mode === "cloud" && !Store.sb) Store.connect().catch(() => {}); else Store.sync(); });
 
 /* ---------- Example data shown until the first real workout ---------- */
 function sampleWorkouts() {
@@ -801,7 +1057,7 @@ function sampleWorkouts() {
 /* ---------- State ---------- */
 let prefs = {};
 try { prefs = JSON.parse(localStorage.getItem("musclemap.prefs") || "{}"); } catch {}
-const savePrefs = () => { try { localStorage.setItem("musclemap.prefs", JSON.stringify(prefs)); } catch {} };
+const savePrefs = () => { try { localStorage.setItem("musclemap.prefs", JSON.stringify(prefs)); } catch {} Store.prefsChanged(); };
 const S = { workouts: [], goals: normGoals(null), goalsSaved: false, loaded: false, period: prefs.period || "week", anchor: today(), selLift: null, sheet: null, draft: null, error: "", confirmDel: false };
 const SAMPLE = sampleWorkouts();
 const data = () => (S.workouts.length ? S.workouts : SAMPLE);
@@ -2324,7 +2580,8 @@ function openSheet(kind, w) {
   if (kind === "lift") S.draft = w && !w.sample ? JSON.parse(JSON.stringify(w)) : { id: null, date: defaultDate(), name: "", unit: prefs.unit || "lb", exercises: [newEx()] };
   if (kind === "cardio") S.draft = w && !w.sample ? { ...w } : { id: null, kind: "cardio", date: defaultDate(), name: "", activity: prefs.activity || "run", minutes: "", distance: "", distUnit: distUnit() };
   if (kind === "goals") S.draft = JSON.parse(JSON.stringify(S.goals));
-  if (kind === "level" || kind === "add" || kind === "share" || kind === "boss") S.draft = {};
+  if (kind === "level" || kind === "add" || kind === "share" || kind === "boss" || kind === "account") S.draft = {};
+  if (kind === "account") { S.auth = { email: (S.auth || {}).email, sent: (S.auth || {}).sent }; S.confirmOut = false; }
   renderSheet();
   // On touch screens, don't pop the keyboard straight away; let people see the whole form first.
   if (!matchMedia("(pointer: coarse)").matches) setTimeout(() => { const f = document.querySelector(kind === "lift" ? "#sheetRoot .ex input" : kind === "cardio" ? "#c-min" : null); if (f && !S.draft.id) f.focus(); }, 30);
@@ -2378,6 +2635,7 @@ function renderSheet() {
   if (S.sheet === "add") root.innerHTML = addSheet();
   if (S.sheet === "share") root.innerHTML = shareSheet();
   if (S.sheet === "boss") root.innerHTML = bossSheet();
+  if (S.sheet === "account") root.innerHTML = accountSheet();
   // Re-rendering the same form (adding a set, picking an option) keeps your scroll position.
   if (same) { const b = root.querySelector(".sheet-body"), sh = root.querySelector(".sheet"); if (b) b.scrollTop = keep[0]; if (sh) sh.scrollTop = keep[1]; }
   root.dataset.kind = S.sheet;
@@ -2480,6 +2738,106 @@ function backupSection() {
     </div>`;
 }
 
+/* ---------- Account: sign in on the web to sync through Supabase ---------- */
+const PERSON_SVG = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
+const GOOGLE_SVG = `<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>`;
+
+function renderAcct() {
+  const b = $("acctBtn"); if (!b) return;
+  b.hidden = inClaude();
+  const signedIn = Store.mode === "cloud" && Store.user;
+  b.dataset.state = Store.statusKind();
+  b.classList.toggle("in", !!signedIn);
+  b.innerHTML = signedIn ? `<span class="acct-av">${esc((Store.user.email || "?").charAt(0).toUpperCase())}</span><i aria-hidden="true"></i>` : `${PERSON_SVG}<span>Sign in</span>`;
+  b.setAttribute("aria-label", signedIn ? `Account: ${Store.user.email}. ${$("sync").textContent}` : "Sign in to sync");
+}
+
+function accountSheet() {
+  const a = S.auth || (S.auth = {});
+  if (Store.mode === "cloud" && Store.user) {
+    const n = Store.waiting(), e = Store.syncErr, pend = Store.devicePending().ws.length, at = Store.cache.syncedAt ? new Date(Store.cache.syncedAt) : null;
+    const state = e && e.setup ? "Your account's storage isn't set up yet: run supabase/schema.sql from the repo in Supabase's SQL Editor. Changes are kept on this device until then."
+      : e && e.auth ? "Your sign-in has expired. Sign out and sign in again to keep syncing. Changes are kept on this device."
+      : e ? `Can't reach your account right now.${n ? ` ${plural(n, "change")} saved on this device will sync when you're back online.` : ""}`
+      : Store.syncing || !at ? "Syncing…"
+      : n ? `${plural(n, "change")} waiting to sync.`
+      : `Everything is synced. Last checked at ${at.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}.`;
+    return sheetFrame("Account", `
+      <div class="acct-card${e ? " warn" : ""}"><span class="acct-av">${esc((Store.user.email || "?").charAt(0).toUpperCase())}</span>
+        <div style="min-width:0"><b>${esc(Store.user.email || "Signed in")}</b><span class="note" role="status">${esc(state)}</span></div></div>
+      ${pend ? `<div class="acct-offer"><b>This browser has ${plural(pend, "workout")} from before you signed in.</b>
+        <p class="note">Add them to your account to keep everything together. Workouts already in your account aren't added twice.</p>
+        <button class="btn primary small" type="button" data-act="auth-upload">Add ${pend === 1 ? "it" : "them"} to my account</button></div>` : ""}
+      <p class="note" style="margin-top:14px">Your workouts, goals, body weight, boss fights, title theme and units sync to every device you sign in on. Anything you log offline is kept here and sent when you're back online.</p>
+      ${S.confirmOut ? `<div class="err" role="alert">${plural(n, "change")} haven't synced yet and will be lost if you sign out now. Tap Sign out again to sign out anyway, or Sync now to try first.</div>` : ""}`,
+      `<button class="btn ghost" type="button" data-act="auth-signout">Sign out</button>
+       <div class="right"><button class="btn" type="button" data-act="auth-sync"${Store.syncing ? " disabled" : ""}>Sync now</button><button class="btn primary" type="button" data-act="close">Done</button></div>`);
+  }
+  const busy = a.busy ? " disabled" : "";
+  return sheetFrame("Sign in", `
+    <p class="note" style="margin:0 0 14px">Sign in to back up your workouts and use Forged on your phone and computer. Without an account, everything stays in this browser.</p>
+    <button class="btn auth-google" type="button" data-act="auth-google"${busy}>${GOOGLE_SVG}<span>Continue with Google</span></button>
+    <div class="auth-or">or use your email</div>
+    ${a.sent ? `
+      <p class="note" style="margin:0 0 10px">We sent a code to <b>${esc(a.email)}</b>. It can take a minute to arrive, so check your spam folder too.</p>
+      <div class="field"><label for="authCode">Code from the email</label>
+        <input id="authCode" class="inp auth-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="••••••"></div>
+      <div class="btn-row" style="margin-top:12px"><button class="btn primary" type="button" data-act="auth-verify"${busy}>${a.busy ? "Checking…" : "Sign in"}</button>
+        <button class="btn ghost small" type="button" data-act="auth-resend"${busy}>Send a new code</button>
+        <button class="btn ghost small" type="button" data-act="auth-reset">Use a different email</button></div>`
+    : `
+      <div class="field"><label for="authEmail">Email</label>
+        <input id="authEmail" class="inp" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="you@example.com" value="${esc(a.email || "")}"></div>
+      <div class="btn-row" style="margin-top:12px"><button class="btn primary" type="button" data-act="auth-email"${busy}>${a.busy ? "Sending…" : "Email me a code"}</button></div>`}
+    <p class="note" style="margin-top:16px">After you sign in, you can add the workouts already in this browser to your account.</p>`,
+    `<div class="right"><button class="btn" type="button" data-act="close">Not now</button></div>`);
+}
+function authMsg(e) {
+  const m = (e && e.message) || "";
+  if (/expired|invalid|otp/i.test(m)) return "That code didn't work. Check it, or send a new one.";
+  if (/rate limit|security purposes|too many/i.test(m)) return "Too many tries for now. Wait a minute, then try again.";
+  if (/fetch|network|load/i.test(m)) return "Can't reach the sign-in service. Check your connection and try again.";
+  return m || "Couldn't sign in. Try again.";
+}
+async function authRun(fn) {
+  S.error = ""; S.auth.busy = true; renderSheet();
+  try { await fn(); } catch (e) { S.error = authMsg(e); }
+  if (S.auth) S.auth.busy = false;
+  if (S.sheet === "account") {
+    renderSheet();
+    const f = $("authCode") || $("authEmail");
+    if (f && !(Store.mode === "cloud")) f.focus();
+  }
+}
+async function accountAction(act) {
+  const a = S.auth || (S.auth = {});
+  if (act === "auth-google") return authRun(() => Store.signInGoogle());
+  if (act === "auth-email" || act === "auth-resend") {
+    const email = act === "auth-resend" ? a.email : (($("authEmail") || {}).value || "").trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { S.error = "Enter your email address."; return renderSheet(); }
+    a.email = email;
+    return authRun(async () => { await Store.sendCode(email); a.sent = true; if (act === "auth-resend") toast("New code sent."); });
+  }
+  if (act === "auth-verify") {
+    const code = (($("authCode") || {}).value || "").replace(/\D/g, "");
+    if (code.length < 6) { S.error = "Enter the code from the email."; return renderSheet(); }
+    return authRun(async () => { await Store.verifyCode(a.email, code); S.auth = {}; toast("Signed in. Syncing your workouts…"); });
+  }
+  if (act === "auth-reset") { S.auth = { email: a.email }; S.error = ""; return renderSheet(); }
+  if (act === "auth-upload") { const n = Store.uploadDevice(); toast(`Adding ${plural(n, "workout")} to your account.`); return renderSheet(); }
+  if (act === "auth-sync") { Store.sync(); return renderSheet(); }
+  if (act === "auth-signout") {
+    if (Store.waiting() && !S.confirmOut) { S.confirmOut = true; return renderSheet(); }
+    S.confirmOut = false; await Store.signOut(); closeSheet(); render();
+    return toast("Signed out. This browser's own workouts are shown again.");
+  }
+}
+$("sheetRoot").addEventListener("keydown", e => {
+  if (e.key !== "Enter") return;
+  const act = e.target.id === "authEmail" ? "auth-email" : e.target.id === "authCode" ? "auth-verify" : null;
+  if (act) { e.preventDefault(); accountAction(act); }
+});
+
 function backupData() {
   return {
     app: "forged", version: 1, exportedAt: new Date().toISOString(),
@@ -2529,7 +2887,7 @@ async function applyImport(mode) {
   const list = mode === "replace" ? incoming : current.filter(w => !ids.has(w.id)).concat(incoming);
   const added = list.length - (mode === "replace" ? 0 : current.length);
   try {
-    if (Store.mode === "db") {
+    if (Store.mode !== "local") {
       if (mode === "replace") for (const w of current) if (!ids.has(w.id)) await Store.remove(w.id, current);
       for (const w of incoming) await Store.save(w, list);
     } else if (!Store.writeLocal(list)) throw new Error("This browser blocked saving. Check that site data is allowed.");
@@ -2734,6 +3092,7 @@ $("sheetRoot").addEventListener("click", async e => {
   if (a.act === "boss-start") return startFight(Number(a.tier));
   if (a.act === "boss-end") return endFight(Number(a.tier));
   if (a.act === "export") return exportBackup();
+  if (a.act && a.act.startsWith("auth-")) return accountAction(a.act);
   if (a.act === "import-merge") return applyImport("merge");
   if (a.act === "import-replace") return applyImport("replace");
   if (a.act === "import-cancel") { S.importPending = null; return renderSheet(); }
@@ -2807,6 +3166,7 @@ document.addEventListener("click", e => {
   if (k === "weight") { openSheet("goals", null); setTimeout(() => { const el = $("bwLbl"); if (el) el.scrollIntoView({ block: "start", behavior: "smooth" }); }, 60); }
   if (k === "level") openSheet("level", null);
   if (k === "boss") openSheet("boss", null);
+  if (k === "account") openSheet("account", null);
   if (k === "boss-start") startFight(Number(b.dataset.tier));
   if (k === "share") openShare();
   if (k === "add") openSheet("add", null);

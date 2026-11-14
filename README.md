@@ -144,7 +144,27 @@ Tap **Log cardio** to add a session: activity type, minutes, optional distance (
 
 It's a single static file with no build step. Open `index.html` in a browser, or host it on any static host. For GitHub Pages: **Settings → Pages → Deploy from a branch → `main` / root**.
 
-Workouts are saved in the browser's `localStorage`, so they stay on that device and browser only.
+Without an account, workouts are saved in the browser's `localStorage`, so they stay on that device and browser only. Sign in to sync them (below).
+
+## Accounts and sync
+
+Tap the person icon (**Sign in**) at the top right. Sign in with **Google**, or with your email: Forged emails you a 6-digit code to type in. A code works even when Forged is added to your home screen, where an email link would open in the browser instead.
+
+Once you're signed in:
+
+- Your workouts, goals (with their history), body weight, boss fights, title theme and units are stored in your account and sync to every device you sign in on. An open app picks up changes from another device within a few seconds, or when you switch back to it.
+- Everything is also kept on the device. If you log a workout with no signal, it's saved and sent when you're back online. The account icon has a dot: green when synced, grey while syncing or waiting, red when offline or something needs attention. Tap it for details.
+- If this browser already has workouts from before you signed in, Forged offers to add them to your account. Workouts already in the account aren't added twice.
+- **Sign out** removes the account's copy from the device, and this browser's own workouts are shown again. If changes haven't synced yet, Forged warns you first.
+
+Accounts use [Supabase](https://supabase.com) (sign-in and a Postgres database). The database's row-level security rules mean each person can only read and change their own rows, so the public key in the page is safe to share. The Claude artifact version keeps using its own built-in storage.
+
+### Setting up Supabase
+
+1. Create a Supabase project. Turn on the **Email** and **Google** sign-in providers, and set the **Site URL** and **Redirect URLs** to the GitHub Pages address.
+2. Add `Your Forged code: {{ .Token }}` to the **Magic Link** email template, so the email includes the sign-in code.
+3. Open the **SQL Editor**, paste [`supabase/schema.sql`](supabase/schema.sql) and tap **Run**. It creates the `workouts` and `profiles` tables, the security rules and live updates, and is safe to run again.
+4. The project URL and publishable key are set at the top of the storage code in `index.html` (`const SB`).
 
 ## Backup and restore
 
