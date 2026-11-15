@@ -125,6 +125,29 @@ Each reward equals the XP of the next two levels, plus 5% more for every boss be
 
 A new boss is announced with a popup. The crown **Boss** button in the header (and **Bosses** in the desktop sidebar) shows a badge while one is waiting. The Today tab shows the boss with a **Start fight** button, and during a fight, the time left and your progress.
 
+## Leaderboard
+
+A global leaderboard for signed-in users, with four tabs:
+
+- **This week** and **This month:** workout XP (sets and cardio minutes) for the current week (Monday to Sunday) or month, with a countdown to the reset.
+- **Total XP:** all-time XP, including weekly bonuses and boss rewards.
+- **Bosses:** bosses defeated.
+
+**Each row shows:**
+- the rank, with gold, silver and bronze for the top three
+- the display name, title and title theme
+- the level
+- the score
+- the workouts in that period, the weekly streak and bosses defeated
+
+Your own row is highlighted, even if you're outside the top 100, and the top of the board shows your rank, for example "#2 of 42 players this week".
+
+**Joining is opt-in.** Pick a display name (2–24 characters, unique). Others only see your name, title, level and scores, never your email or workouts. You can change the name or leave any time. Your entry updates itself as you train.
+
+**Finding it:** a card on the Today tab shows your weekly rank. There's also a **Ranks** button in the header on wider screens and **Leaderboard** in the desktop sidebar. The Claude artifact version doesn't have a leaderboard, because it doesn't use Supabase.
+
+Weekly and monthly XP are calculated by the database from logged workouts, so they can't be changed by editing the app. Total XP, level and bosses come from the app, and the database checks them: the level is recalculated and implausible numbers are capped. The setup is in [`supabase/leaderboard.sql`](supabase/leaderboard.sql), run once in the SQL Editor after `schema.sql`.
+
 ## Understanding your progress
 
 - **Get started checklist:** walks new users through setting goals, logging lifts and logging cardio. Each step ticks off when done. You can hide it.

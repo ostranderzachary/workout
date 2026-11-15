@@ -263,6 +263,41 @@ label.btn { cursor: pointer; display: inline-block; }
 /* iOS draws date inputs at their own width and ignores the column; make them fill it like any other field */
 input[type="date"].inp { -webkit-appearance: none; appearance: none; display: block; width: 100%; min-width: 0; max-width: 100%; min-height: 46px; text-align: left; }
 input[type="date"].inp::-webkit-date-and-time-value { text-align: left; }
+/* Leaderboard */
+.lb-btn { color: var(--fg); }
+@media (max-width: 599px) { .lb-btn { display: none !important; } }
+.lb-card { width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; margin-bottom: 12px; padding: 12px 14px; border-radius: 16px; border: 1px solid var(--line); background: linear-gradient(120deg, rgba(245, 196, 81, .12), var(--surface) 55%); color: var(--fg); }
+.lb-card .lb-ico { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; flex: none; background: linear-gradient(135deg, #f5c451, #c98a1b); color: #2a1c00; }
+.lb-card .lb-ico svg, .lb-hero svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.lb-card .lb-txt { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.lb-card b { font-size: 15px; }
+.lb-card small { color: var(--muted); font-size: 13px; }
+.lb-card .chev { color: var(--muted); font-size: 22px; line-height: 1; flex: none; }
+.lb-hero { width: 56px; height: 56px; border-radius: 18px; display: grid; place-items: center; background: linear-gradient(135deg, #f5c451, #c98a1b); color: #2a1c00; margin-bottom: 12px; }
+.lb-hero svg { width: 30px; height: 30px; }
+.lb-tabs { grid-template-columns: repeat(4, 1fr); margin: 4px 0 12px; }
+.lb-tabs button { font-size: 13px; padding: 8px 2px; }
+.lb-sum { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 0 0 10px; }
+.lb-sum b { font-family: var(--font-display); font-size: 22px; text-transform: uppercase; letter-spacing: .02em; }
+.lb-sum small { color: var(--muted); font-size: 13px; }
+.lb-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.lb-row { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 14px; background: var(--bg); border: 1px solid transparent; }
+.lb-row.me { border-color: var(--h3); background: linear-gradient(120deg, rgba(108, 201, 90, .12), var(--bg) 60%); }
+.lb-place { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: 16px; color: var(--muted); border: 1px solid var(--line); }
+.lb-row.p1 .lb-place { background: linear-gradient(135deg, #ffe08a, #d9a227); color: #2a1c00; border: 0; }
+.lb-row.p2 .lb-place { background: linear-gradient(135deg, #eef2f6, #9aa6b2); color: #1a1f24; border: 0; }
+.lb-row.p3 .lb-place { background: linear-gradient(135deg, #f0b07a, #a8622e); color: #2a1300; border: 0; }
+.lb-who { display: grid; gap: 1px; min-width: 0; }
+.lb-who b { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-who b i { font-style: normal; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--h5); margin-left: 6px; }
+.lb-who span { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-who em { font-style: normal; color: var(--fg); }
+.lb-score { text-align: right; display: grid; gap: 1px; }
+.lb-score b { font-family: var(--font-display); font-size: 20px; line-height: 1; }
+.lb-score small { font-size: 11px; color: var(--muted); }
+.lb-gap { text-align: center; color: var(--muted); font-size: 18px; line-height: 1; padding: 2px 0; }
+.lb-empty { padding: 22px 12px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 14px; }
+.lb-mine { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; font-size: 14px; }
 .auth-alt { margin-top: 14px; }
 .auth-alt summary { cursor: pointer; color: var(--muted); font-size: 14px; font-weight: 600; }
 .side-only { display: none !important; }
@@ -526,6 +561,7 @@ button.tag { cursor: pointer; }
     <div class="brand"><h1>Forged</h1><span class="sync" id="sync">Loading…</span></div>
     <div class="top-actions">
       <button class="boss-btn" type="button" data-open="boss" id="bossBtn" aria-label="Boss fights"><svg viewBox="0 0 24 24"><path d="M4 18h16M5 15L3 7l5 4 4-6 4 6 5-4-2 8z"/></svg><span>Boss</span><i id="bossBadge" hidden></i></button>
+      <button class="boss-btn lb-btn" type="button" data-open="leaderboard" id="lbBtn" aria-label="Leaderboard" hidden><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/></svg><span>Ranks</span></button>
       <button class="lvl-chip" type="button" data-open="level" id="lvlChip" aria-label="Your level"></button>
       <button class="btn" type="button" data-open="goals">Goals</button>
       <button class="acct-btn" type="button" data-open="account" id="acctBtn" aria-label="Sign in to sync" hidden></button>
@@ -535,6 +571,7 @@ button.tag { cursor: pointer; }
   <div id="banner" data-tab="today"></div>
   <section class="panel player" id="player" aria-label="Your level" data-tab="today"></section>
   <div id="bossCard" data-tab="today"></div>
+  <div id="lbCard" data-tab="today"></div>
   <div id="onboard" data-tab="today"></div>
 
   <div class="periods" role="group" aria-label="Time range" id="periods">
@@ -610,6 +647,7 @@ button.tag { cursor: pointer; }
   <button type="button" data-tabbtn="stats"><svg viewBox="0 0 24 24"><path d="M5 20V11M12 20V4M19 20v-6"/></svg><span>Stats</span></button>
   <button type="button" data-tabbtn="history"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>History</span></button>
   <button type="button" class="side-only" data-open="boss"><svg viewBox="0 0 24 24"><path d="M4 18h16M5 15L3 7l5 4 4-6 4 6 5-4-2 8z"/></svg><span>Bosses</span></button>
+  <button type="button" class="side-only lb-side" data-open="leaderboard" hidden><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/></svg><span>Leaderboard</span></button>
 </nav>
 <div id="sheetRoot"></div>
 <div id="celebrate"></div>
@@ -941,6 +979,7 @@ const Store = {
     if (S.sheet === "account") renderSheet();
   },
   leaveCloud(clear) {
+    this.lbRow = undefined; this.lbMine = null; this.lbSent = null; this.lbMineAt = 0;
     if (this.chan && this.sb) this.sb.removeChannel(this.chan);
     this.chan = null;
     if (clear && this.user) try { localStorage.removeItem(this.cacheKey(this.user.id)); } catch {}
@@ -1009,6 +1048,7 @@ const Store = {
       }
       this.cb.onGoals(goals); this.cb.onData(list);
       if (this.offerPending) { this.offerPending = false; this.offerUpload(); }
+      this.lbAfterSync();
     } catch (e) {
       this.syncErr = { setup: SETUP_CODES.includes(e && e.code), auth: !!(e && (e.status === 401 || /JWT/i.test(e.message || ""))), message: e && e.message };
     } finally {
@@ -1068,6 +1108,55 @@ const Store = {
     const sb = await this.client();
     const { error } = await sb.auth.verifyOtp({ email, token, type: "email" });
     if (error) throw error;
+  },
+  /* ----- Leaderboard ----- */
+  lbRow: undefined, lbMine: null, lbSent: null, lbMineAt: 0,
+  async lbLoadRow() {
+    if (this.mode !== "cloud" || !this.sb) return null;
+    const { data, error } = await this.sb.from("leaderboard").select("display_name,title,theme,total_xp,level,bosses,streak").maybeSingle();
+    if (error) throw error;
+    this.lbRow = data || null;
+    return this.lbRow;
+  },
+  async lbBoard(board, rows = 100) {
+    const sb = await this.client();
+    const { data, error } = await sb.rpc("forged_leaderboard", { board, on_day: ymd(today()), max_rows: rows });
+    if (error) throw error;
+    return data || [];
+  },
+  async lbJoin(name) {
+    const st = lbStats();
+    const { data, error } = await this.sb.from("leaderboard").upsert({ user_id: this.user.id, display_name: name, ...st }).select("display_name,title,theme,total_xp,level,bosses,streak").maybeSingle();
+    if (error) throw error;
+    this.lbRow = data; this.lbSent = JSON.stringify(st); this.lbMineAt = 0;
+  },
+  async lbRename(name) {
+    const { data, error } = await this.sb.from("leaderboard").update({ display_name: name }).eq("user_id", this.user.id).select("display_name,title,theme,total_xp,level,bosses,streak").maybeSingle();
+    if (error) throw error;
+    if (data) this.lbRow = data;
+  },
+  async lbLeave() {
+    const { error } = await this.sb.from("leaderboard").delete().eq("user_id", this.user.id);
+    if (error) throw error;
+    this.lbRow = null; this.lbMine = null; this.lbSent = null;
+  },
+  // After each sync: keep your entry's XP, title and bosses current, and refresh your weekly rank for the Today card.
+  async lbAfterSync() {
+    try {
+      if (this.lbRow === undefined) await this.lbLoadRow();
+      if (!this.lbRow) { renderLbCard(); return; }
+      const st = lbStats(), key = JSON.stringify(st);
+      if (key !== this.lbSent) {
+        const { data, error } = await this.sb.from("leaderboard").update(st).eq("user_id", this.user.id).select("display_name,title,theme,total_xp,level,bosses,streak").maybeSingle();
+        if (!error) { this.lbSent = key; if (data) this.lbRow = data; this.lbMineAt = 0; }
+      }
+      if (Date.now() - this.lbMineAt > 60000) {
+        const rows = await this.lbBoard("week", 1);
+        const mine = rows.find(r => r.is_me);
+        this.lbMine = mine && mine.score > 0 ? mine : null; this.lbMineAt = Date.now();
+      }
+    } catch {}
+    renderLbCard();
   },
   async signOut() {
     const sb = this.sb;
@@ -2784,7 +2873,8 @@ function openSheet(kind, w) {
     ? { id: w.id, kind: "cardio", date: w.date, items: [cItem(w)] } // one session, opened from History
     : { id: null, kind: "cardio", date: defaultDate(), items: [w ? { ...cItem(w), id: null, createdAt: null } : cItem()] };
   if (kind === "goals") S.draft = JSON.parse(JSON.stringify(S.goals));
-  if (kind === "level" || kind === "add" || kind === "share" || kind === "boss" || kind === "account") S.draft = {};
+  if (kind === "level" || kind === "add" || kind === "share" || kind === "boss" || kind === "account" || kind === "leaderboard") S.draft = {};
+  if (kind === "leaderboard") { S.lb = { tab: (S.lb && S.lb.tab) || "week", data: {}, name: "", renaming: false, confirmLeave: false }; /* fresh scores each time it opens */ setTimeout(() => lbLoad(S.lb.tab), 0); }
   if (kind === "account") { S.auth = { email: (S.auth || {}).email, sent: (S.auth || {}).sent }; S.confirmOut = false; }
   renderSheet();
   // On touch screens, don't pop the keyboard straight away; let people see the whole form first.
@@ -2876,6 +2966,7 @@ function renderSheet() {
   if (S.sheet === "share") root.innerHTML = shareSheet();
   if (S.sheet === "boss") root.innerHTML = bossSheet();
   if (S.sheet === "account") root.innerHTML = accountSheet();
+  if (S.sheet === "leaderboard") root.innerHTML = lbSheet();
   // Re-rendering the same form (adding a set, picking an option) keeps your scroll position.
   if (same) { const b = root.querySelector(".sheet-body"), sh = root.querySelector(".sheet"); if (b) b.scrollTop = keep[0]; if (sh) sh.scrollTop = keep[1]; }
   root.dataset.kind = S.sheet;
@@ -2995,11 +3086,145 @@ function backupSection() {
     </div>`;
 }
 
+/* ---------- Leaderboard: global boards for weekly, monthly and total XP, and bosses defeated ---------- */
+const TROPHY_SVG = `<svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/></svg>`;
+const LB_TABS = [["week", "This week"], ["month", "This month"], ["total", "Total XP"], ["bosses", "Bosses"]];
+// What your entry shows: the app's own total (with bonuses and boss rewards), title and bosses
+function lbStats() {
+  const L = xpLedger(S.workouts), info = levelInfo(L.total);
+  return { title: titleFor(info.level), theme: THEMES[themeKey()].name, total_xp: L.total,
+    bosses: (L.bosses || []).filter(b => b.defeatDate).length, streak: L.week ? L.week.streak || 0 : 0 };
+}
+const lbOrdinal = n => `#${Number(n).toLocaleString()}`;
+function lbResets(board) {
+  const t = today();
+  if (board === "week") { const n = 7 - ((t.getDay() + 6) % 7); return n === 1 ? "Resets tomorrow (Monday)" : `Resets Monday · ${n} days left`; }
+  if (board === "month") { const end = new Date(t.getFullYear(), t.getMonth() + 1, 1), n = Math.round((end - t) / 864e5); return n === 1 ? "Resets tomorrow" : `Resets ${MON[end.getMonth()]} 1 · ${n} days left`; }
+  return board === "total" ? "All time, including weekly bonuses and boss rewards" : "Bosses defeated, all time";
+}
+const lbErr = e => {
+  const c = e && e.code, m = (e && e.message) || "";
+  if (c === "23505") return "That name is taken. Try another.";
+  if (c === "23514") return "Names need 2–24 characters, with no spaces at either end and no < or >.";
+  if (["PGRST202", "PGRST205", "42883", "42P01"].includes(c)) return "The leaderboard isn't set up yet: run supabase/leaderboard.sql in Supabase's SQL Editor.";
+  if (/fetch|network|load/i.test(m)) return "Can't reach the leaderboard. Check your connection and try again.";
+  return m || "Something went wrong. Try again.";
+};
+const lbNameOk = n => n.length >= 2 && n.length <= 24 && !/[<>]/.test(n);
+async function lbLoad(board, force) {
+  const st = S.lb; if (!st || Store.mode !== "cloud") return;
+  const have = st.data[board];
+  if (have && !force && Date.now() - have.at < 60000) return;
+  st.data[board] = { ...(have || {}), loading: true, err: "" };
+  if (S.sheet === "leaderboard") renderSheet();
+  try {
+    if (Store.lbRow === undefined) await Store.lbLoadRow();
+    const rows = await Store.lbBoard(board);
+    st.data[board] = { rows, at: Date.now(), loading: false, err: "" };
+  } catch (e) { st.data[board] = { ...(have || {}), loading: false, err: lbErr(e) }; }
+  if (S.sheet === "leaderboard") renderSheet();
+}
+function lbRowHTML(r, board) {
+  const sub = [`Lv ${r.level}`,
+    board === "week" ? `${plural(r.workouts, "workout")} this week` : board === "month" ? `${plural(r.workouts, "workout")} this month` : `${plural(r.workouts, "workout")}`,
+    r.streak > 1 ? `${r.streak}-week streak` : "", board !== "bosses" && r.bosses ? plural(r.bosses, "boss").replace("bosss", "bosses") : "",
+    board === "bosses" ? `${Number(r.total_xp).toLocaleString()} XP` : ""].filter(Boolean).join(" · ");
+  return `<li class="lb-row${r.is_me ? " me" : ""}${r.place <= 3 ? ` p${r.place}` : ""}">
+    <span class="lb-place num" aria-label="Rank ${r.place}">${r.place}</span>
+    <span class="lb-who"><b>${esc(r.display_name)}${r.is_me ? "<i>You</i>" : ""}</b>
+      <span><em>${esc(r.title || "")}</em>${r.theme ? ` · ${esc(r.theme)}` : ""}</span>
+      <span class="num">${esc(sub)}</span></span>
+    <span class="lb-score"><b class="num">${esc(board === "bosses" ? String(r.score) : Number(r.score).toLocaleString())}</b><small>${board === "bosses" ? (r.score === 1 ? "boss" : "bosses") : "XP"}</small></span>
+  </li>`;
+}
+function lbSheet() {
+  const st = S.lb || (S.lb = { tab: "week", data: {} });
+  if (Store.mode !== "cloud") {
+    return sheetFrame("Leaderboard", `<div class="lb-hero">${TROPHY_SVG}</div>
+      <p class="pick-intro">See how your training stacks up against everyone on Forged: this week, this month, all time and bosses defeated.</p>
+      <p class="note">Sign in to see the boards and join with a display name. Others only see your name, title, level and scores, never your email or workouts.</p>`,
+      `<div class="right"><button class="btn" type="button" data-act="close">Not now</button><button class="btn primary" type="button" data-act="lb-signin">Sign in</button></div>`);
+  }
+  const board = st.tab, d = st.data[board] || { loading: true }, rows = d.rows || [], joined = !!Store.lbRow;
+  const meRow = rows.find(r => r.is_me), me = meRow && (meRow.score > 0 || board === "total" || board === "bosses") ? meRow : null;
+  const players = rows.length ? Number(rows[0].players) : 0, label = "";
+  const suggest = st.name || (Store.user && Store.user.email ? Store.user.email.split("@")[0].replace(/[^A-Za-z0-9 _.-]/g, "").slice(0, 24) : "");
+  const join = Store.lbRow === null ? `<div class="acct-offer" style="margin:0 0 14px"><b>Join the global leaderboard</b>
+      <p class="note">Pick the name others will see next to your title, level and scores. Your email and workouts stay private. You can change the name or leave any time.</p>
+      <div class="field"><label for="lbName">Display name</label><input id="lbName" class="inp" maxlength="24" autocomplete="nickname" spellcheck="false" placeholder="2–24 characters" value="${esc(suggest)}"></div>
+      <div class="btn-row" style="margin-top:10px"><button class="btn primary" type="button" data-act="lb-join"${st.busy ? " disabled" : ""}>${st.busy ? "Joining…" : "Join"}</button></div></div>` : "";
+  const sum = me ? `<b>${lbOrdinal(me.place)}</b> <small>of ${players.toLocaleString()} ${players === 1 ? "player" : "players"} ${board === "week" ? "this week" : board === "month" ? "this month" : board === "bosses" ? "for bosses defeated" : "for total XP"}</small>`
+    : joined ? `<b>Not ranked yet</b> <small>Log a workout ${board === "week" ? "this week" : board === "month" ? "this month" : ""} to get on this board</small>`
+    : `<b>${players.toLocaleString()} ${players === 1 ? "player" : "players"}</b> <small>Join to get your own rank</small>`;
+  const top = rows.filter(r => !r.is_me || (r.place <= 100 && (r.score > 0 || board === "total" || board === "bosses"))), mine = me && !top.includes(me) ? me : null;
+  const list = d.err ? `<div class="err" role="alert">${esc(d.err)}</div>`
+    : !d.rows && d.loading ? `<div class="lb-empty">Loading the board…</div>`
+    : !rows.length ? `<div class="lb-empty">${board === "week" ? "Nobody has logged a workout this week yet. Be the first." : board === "month" ? "Nobody has logged a workout this month yet." : "Nobody has joined yet. Be the first."}</div>`
+    : `<ol class="lb-list">${top.map(r => lbRowHTML(r, board)).join("")}${mine ? `<li class="lb-gap" aria-hidden="true">⋯</li>${lbRowHTML(mine, board)}` : ""}</ol>`;
+  const entry = joined ? (st.renaming
+    ? `<div class="lb-mine" style="display:block"><div class="field"><label for="lbName">Display name</label><input id="lbName" class="inp" maxlength="24" spellcheck="false" value="${esc(st.name || Store.lbRow.display_name)}"></div>
+        <div class="btn-row" style="margin-top:10px"><button class="btn primary small" type="button" data-act="lb-rename">Save name</button><button class="btn ghost small" type="button" data-act="lb-rename-cancel">Cancel</button></div></div>`
+    : `<div class="lb-mine"><span>Showing as <b>${esc(Store.lbRow.display_name)}</b></span>
+        <span class="btn-row"><button class="btn small ghost" type="button" data-act="lb-rename-start">Change name</button>
+        <button class="btn small ghost${st.confirmLeave ? " danger" : ""}" type="button" data-act="lb-leave">${st.confirmLeave ? "Tap again to leave" : "Leave"}</button></span></div>`) : "";
+  return sheetFrame("Leaderboard", `${join}
+    <div class="periods lb-tabs" role="tablist" aria-label="Boards">${LB_TABS.map(([k, n]) => `<button type="button" role="tab" data-lbtab="${k}" aria-pressed="${k === board}" aria-selected="${k === board}">${n}</button>`).join("")}</div>
+    <div class="lb-sum">${sum}</div>
+    <p class="note" style="margin:-4px 0 12px">${esc(lbResets(board))}${board === "week" || board === "month" ? ". Workout XP: sets and cardio minutes." : "."}</p>
+    ${list}${entry}
+    ${st.err ? `<div class="err" role="alert">${esc(st.err)}</div>` : ""}`,
+    `<button class="btn ghost" type="button" data-act="lb-refresh"${d.loading ? " disabled" : ""}>${d.loading ? "Refreshing…" : "Refresh"}</button><div class="right"><button class="btn primary" type="button" data-act="close">Done</button></div>`);
+}
+async function lbAction(a) {
+  const st = S.lb; if (!st) return;
+  if (a.lbtab) { st.tab = a.lbtab; st.confirmLeave = false; renderSheet(); return lbLoad(a.lbtab); }
+  if (a.act === "lb-signin") return openSheet("account", null);
+  if (a.act === "lb-refresh") return lbLoad(st.tab, true);
+  if (a.act === "lb-join" || a.act === "lb-rename") {
+    const name = (($("lbName") || {}).value || "").trim().replace(/\s+/g, " ");
+    st.name = name; st.err = "";
+    if (!lbNameOk(name)) { st.err = "Names need 2–24 characters and can't include < or >."; return renderSheet(); }
+    st.busy = true; renderSheet();
+    try {
+      if (a.act === "lb-join") { await Store.lbJoin(name); toast(`You're on the leaderboard as ${name}.`); }
+      else { await Store.lbRename(name); st.renaming = false; toast(`Now showing as ${name}.`); }
+      st.data = {}; st.name = "";
+    } catch (e) { st.err = lbErr(e); }
+    st.busy = false; renderSheet(); renderLbCard();
+    return lbLoad(st.tab, true);
+  }
+  if (a.act === "lb-rename-start") { st.renaming = true; st.name = Store.lbRow.display_name; st.err = ""; renderSheet(); const f = $("lbName"); if (f) f.focus(); return; }
+  if (a.act === "lb-rename-cancel") { st.renaming = false; st.err = ""; return renderSheet(); }
+  if (a.act === "lb-leave") {
+    if (!st.confirmLeave) { st.confirmLeave = true; return renderSheet(); }
+    st.confirmLeave = false;
+    try { await Store.lbLeave(); st.data = {}; toast("You've left the leaderboard."); } catch (e) { st.err = lbErr(e); }
+    renderSheet(); renderLbCard();
+    return lbLoad(st.tab, true);
+  }
+}
+// The Today card: your weekly rank once you've joined, otherwise an invitation
+function renderLbCard() {
+  const el = $("lbCard"); if (!el) return;
+  const web = !inClaude();
+  document.querySelectorAll("#lbBtn, .lb-side").forEach(b => { b.hidden = !web; });
+  if (!web) { el.innerHTML = ""; return; }
+  let head = "Global leaderboard", sub = "Sign in to see where you rank this week";
+  if (Store.mode === "cloud") {
+    if (Store.lbRow === null) { head = "Join the global leaderboard"; sub = "Pick a name and see where you rank"; }
+    else if (Store.lbRow && Store.lbMine) { head = `${lbOrdinal(Store.lbMine.place)} of ${Number(Store.lbMine.players).toLocaleString()} this week`; sub = `${Number(Store.lbMine.score).toLocaleString()} XP this week · tap for all boards`; }
+    else if (Store.lbRow) { head = "Your rank this week"; sub = "Log a workout this week to get on the board"; }
+    else sub = "See where you rank this week";
+  }
+  el.innerHTML = `<button type="button" class="lb-card" data-open="leaderboard"><span class="lb-ico">${TROPHY_SVG}</span><span class="lb-txt"><b>${esc(head)}</b><small>${esc(sub)}</small></span><span class="chev" aria-hidden="true">›</span></button>`;
+}
+
 /* ---------- Account: sign in on the web to sync through Supabase ---------- */
 const PERSON_SVG = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
 const GOOGLE_SVG = `<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>`;
 
 function renderAcct() {
+  renderLbCard();
   const b = $("acctBtn"); if (!b) return;
   b.hidden = inClaude();
   const signedIn = Store.mode === "cloud" && Store.user;
@@ -3098,6 +3323,7 @@ $("sheetRoot").addEventListener("keydown", e => {
   if (e.key !== "Enter") return;
   const act = e.target.id === "authEmail" ? "auth-email" : e.target.id === "authCode" ? "auth-verify" : null;
   if (act) { e.preventDefault(); accountAction(act); }
+  if (e.target.id === "lbName") { e.preventDefault(); lbAction({ act: S.lb && S.lb.renaming ? "lb-rename" : "lb-join" }); }
 });
 
 function backupData() {
@@ -3396,6 +3622,7 @@ $("sheetRoot").addEventListener("click", async e => {
   if (a.act === "export") return exportBackup();
   if (a.act === "tour") { closeSheet(); return startTour(0); }
   if (a.act && a.act.startsWith("auth-")) return accountAction(a.act);
+  if ((a.act && a.act.startsWith("lb-")) || a.lbtab) return lbAction(a);
   if (a.act === "import-merge") return applyImport("merge");
   if (a.act === "import-replace") return applyImport("replace");
   if (a.act === "import-cancel") { S.importPending = null; return renderSheet(); }
@@ -3487,6 +3714,7 @@ document.addEventListener("click", e => {
   if (k === "level") openSheet("level", null);
   if (k === "boss") openSheet("boss", null);
   if (k === "account") openSheet("account", null);
+  if (k === "leaderboard") openSheet("leaderboard", null);
   if (k === "boss-start") startFight(Number(b.dataset.tier));
   if (k === "share") openShare();
   if (k === "add") openSheet("add", null);
