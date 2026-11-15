@@ -1110,7 +1110,14 @@ const Store = {
     if (error) throw error;
   },
   /* ----- Leaderboard ----- */
-  lbRow: undefined, lbMine: null, lbSent: null, lbMineAt: 0,
+  lbRow: undefined, lbMine: null, lbSent: null, lbMineAt: 0, lbLegacy: false,
+  lbFields(st) { if (!this.lbLegacy) return st; const { week_xp, week_of, month_xp, month_of, ...rest } = st; return rest; },
+  // PostgREST says PGRST204 when a column doesn't exist yet: the leaderboard SQL hasn't been rerun
+  async lbWrite(run) {
+    let r = await run();
+    if (r.error && r.error.code === "PGRST204" && !this.lbLegacy) { this.lbLegacy = true; r = await run(); }
+    return r;
+  },
   async lbLoadRow() {
     if (this.mode !== "cloud" || !this.sb) return null;
     const { data, error } = await this.sb.from("leaderboard").select("display_name,title,theme,total_xp,level,bosses,streak").maybeSingle();
@@ -1126,7 +1133,7 @@ const Store = {
   },
   async lbJoin(name) {
     const st = lbStats();
-    const { data, error } = await this.sb.from("leaderboard").upsert({ user_id: this.user.id, display_name: name, ...st }).select("display_name,title,theme,total_xp,level,bosses,streak").maybeSingle();
+    const { data, error } = await this.lbWrite(() => this.sb.from("leaderboard").upsert({ user_id: this.user.id, display_name: name, ...this.lbFields(st) }).select("display_name,title,theme,total_xp,level,bosses,streak").maybeSingle());
     if (error) throw error;
     this.lbRow = data; this.lbSent = JSON.stringify(st); this.lbMineAt = 0;
   },
@@ -1147,7 +1154,7 @@ const Store = {
       if (!this.lbRow) { renderLbCard(); return; }
       const st = lbStats(), key = JSON.stringify(st);
       if (key !== this.lbSent) {
-        const { data, error } = await this.sb.from("leaderboard").update(st).eq("user_id", this.user.id).select("display_name,title,theme,total_xp,level,bosses,streak").maybeSingle();
+        const { data, error } = await this.lbWrite(() => this.sb.from("leaderboard").update(this.lbFields(st)).eq("user_id", this.user.id).select("display_name,title,theme,total_xp,level,bosses,streak").maybeSingle());
         if (!error) { this.lbSent = key; if (data) this.lbRow = data; this.lbMineAt = 0; }
       }
       if (Date.now() - this.lbMineAt > 60000) {
@@ -3091,9 +3098,15 @@ const TROPHY_SVG = `<svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5
 const LB_TABS = [["week", "This week"], ["month", "This month"], ["total", "Total XP"], ["bosses", "Bosses"]];
 // What your entry shows: the app's own total (with bonuses and boss rewards), title and bosses
 function lbStats() {
-  const L = xpLedger(S.workouts), info = levelInfo(L.total);
+  const L = xpLedger(S.workouts), info = levelInfo(L.total), t = today();
+  // XP earned between two dates, counted exactly like the History chart: workouts, bonuses, boss rewards and penalties
+  const between = (a, b) => S.workouts.filter(w => !w.sample && w.date >= a && w.date <= b).reduce((n, w) => n + xpFor(w), 0)
+    + L.entries.filter(e => e.date >= a && e.date <= b).reduce((n, e) => n + e.xp, 0);
+  const w0 = weekStart(t), m0 = new Date(t.getFullYear(), t.getMonth(), 1), m1 = new Date(t.getFullYear(), t.getMonth() + 1, 0);
   return { title: titleFor(info.level), theme: THEMES[themeKey()].name, total_xp: L.total,
-    bosses: (L.bosses || []).filter(b => b.defeatDate).length, streak: L.week ? L.week.streak || 0 : 0 };
+    bosses: (L.bosses || []).filter(b => b.defeatDate).length, streak: L.week ? L.week.streak || 0 : 0,
+    week_xp: Math.max(0, between(ymd(w0), ymd(addDays(w0, 6)))), week_of: ymd(w0),
+    month_xp: Math.max(0, between(ymd(m0), ymd(m1))), month_of: ymd(m0) };
 }
 const lbOrdinal = n => `#${Number(n).toLocaleString()}`;
 function lbResets(board) {
@@ -3170,7 +3183,7 @@ function lbSheet() {
   return sheetFrame("Leaderboard", `${join}
     <div class="periods lb-tabs" role="tablist" aria-label="Boards">${LB_TABS.map(([k, n]) => `<button type="button" role="tab" data-lbtab="${k}" aria-pressed="${k === board}" aria-selected="${k === board}">${n}</button>`).join("")}</div>
     <div class="lb-sum">${sum}</div>
-    <p class="note" style="margin:-4px 0 12px">${esc(lbResets(board))}${board === "week" || board === "month" ? ". Workout XP: sets and cardio minutes." : "."}</p>
+    <p class="note" style="margin:-4px 0 12px">${esc(lbResets(board))}${board === "week" || board === "month" ? `. All XP earned ${board === "week" ? "this week" : "this month"}, as on your History page.` : "."}</p>
     ${list}${entry}
     ${st.err ? `<div class="err" role="alert">${esc(st.err)}</div>` : ""}`,
     `<button class="btn ghost" type="button" data-act="lb-refresh"${d.loading ? " disabled" : ""}>${d.loading ? "Refreshing…" : "Refresh"}</button><div class="right"><button class="btn primary" type="button" data-act="close">Done</button></div>`);

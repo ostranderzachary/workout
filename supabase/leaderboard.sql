@@ -3,10 +3,10 @@
 -- It is safe to run again.
 --
 -- Boards: weekly XP, monthly XP, total XP and bosses defeated.
--- * Weekly and monthly XP are worked out here, in the database, from the workouts people have logged,
---   with the same formula the app uses. Editing the app can't change them.
--- * Total XP, level, title and bosses also include weekly bonuses and boss rewards, which the app works out.
---   The app reports them, and this database recomputes the level and caps anything implausible.
+-- * All XP matches the History page: workout XP plus weekly bonuses and boss rewards (minus missed-day
+--   penalties). The app works these out and reports them; this database checks every number against what
+--   the logged workouts, weekly bonuses and boss fights could earn, caps anything above that, and
+--   recomputes the level. If the app hasn't reported a period yet, its workout XP is used instead.
 -- * Joining is opt-in. Others only ever see your display name, title, level and scores: never your email
 --   or your workouts.
 
@@ -69,6 +69,12 @@ create table if not exists public.leaderboard (
   constraint leaderboard_text_ok check (char_length(title) <= 40 and char_length(theme) <= 40)
 );
 
+-- Weekly and monthly XP as the app shows them, with the Monday of that week and the 1st of that month.
+alter table public.leaderboard add column if not exists week_xp integer not null default 0;
+alter table public.leaderboard add column if not exists week_of date;
+alter table public.leaderboard add column if not exists month_xp integer not null default 0;
+alter table public.leaderboard add column if not exists month_of date;
+
 -- No two people can take the same name (ignoring capitals).
 create unique index if not exists leaderboard_name_unique on public.leaderboard (lower(display_name));
 
@@ -85,7 +91,26 @@ create policy "Own leaderboard entry" on public.leaderboard for all to authentic
 -- * bosses can't be more than the bosses you've actually fought (your saved boss fights), or one per 5 levels;
 -- * total XP can't be more than four times the workout XP the database can see, plus 1,000 a week for weekly
 --   bonuses, plus the rewards for those bosses (the same formula as the app);
--- * the level is recomputed from the XP.
+-- * the level is recomputed from the XP;
+-- * weekly XP can't be more than that week's workout XP, plus 1,000 for weekly bonuses, plus the rewards for
+--   bosses fought that week; monthly XP the same for the month, with 6,000 for the weeks' bonuses.
+create or replace function public.forged_period_cap(uid uuid, d0 date, d1 date, bonus integer, max_tier integer) returns integer
+language sql stable security definer set search_path = '' as $$
+  select (select coalesce(sum(public.forged_workout_xp(w.data)), 0)
+            from public.workouts w
+            where w.user_id = uid and w.data->>'date' >= to_char(d0, 'YYYY-MM-DD') and w.data->>'date' <= to_char(d1, 'YYYY-MM-DD'))
+       + bonus
+       + (select coalesce(sum(round(100 * (10 * t + 1) * (1 + 0.05 * (t - 1)) / 50.0) * 50), 0)
+            from (select distinct (f->>'tier')::integer as t
+                    from public.profiles p,
+                         jsonb_array_elements(case when jsonb_typeof(p.goals->'bossFights') = 'array' then p.goals->'bossFights' else '[]'::jsonb end) f
+                    where p.user_id = uid and f->>'tier' ~ '^[0-9]+$' and f->>'start' ~ '^[0-9]+$'
+                      -- a day either side, so time zones never cut off a real fight
+                      and to_timestamp((f->>'start')::bigint / 1000.0) >= d0 - 1
+                      and to_timestamp((f->>'start')::bigint / 1000.0) < d1 + 2) x
+            where x.t between 1 and max_tier)::integer
+$$;
+
 create or replace function public.forged_leaderboard_check() returns trigger
 language plpgsql security definer set search_path = '' as $$
 declare
@@ -112,6 +137,18 @@ begin
   new.level := floor((1 + sqrt(1 + 8 * new.total_xp / 100.0)) / 2)::integer;
   new.bosses := least(b, new.level / 5);
   new.streak := least(greatest(coalesce(new.streak, 0), 0), weeks);
+  if new.week_of is null then new.week_xp := 0;
+  else
+    new.week_of := new.week_of - (extract(isodow from new.week_of)::integer - 1); -- always a Monday
+    new.week_xp := least(greatest(coalesce(new.week_xp, 0), 0),
+                         public.forged_period_cap(new.user_id, new.week_of, new.week_of + 6, 1000, new.bosses));
+  end if;
+  if new.month_of is null then new.month_xp := 0;
+  else
+    new.month_of := date_trunc('month', new.month_of)::date; -- always the 1st
+    new.month_xp := least(greatest(coalesce(new.month_xp, 0), 0),
+                          public.forged_period_cap(new.user_id, new.month_of, (new.month_of + interval '1 month - 1 day')::date, 6000, new.bosses));
+  end if;
   new.updated_at := now();
   if tg_op = 'UPDATE' then new.joined_at := old.joined_at; end if;
   return new;
@@ -148,12 +185,15 @@ language sql stable security definer set search_path = '' as $$
     group by w.user_id
   ),
   scored as (
+    -- Weekly and monthly XP: what the app reported for this period, or the workout XP if it hasn't yet
     select l.user_id, l.display_name, l.title, l.theme, l.level, l.total_xp, l.bosses, l.streak,
            coalesce(d.n, 0) as n,
-           case when board in ('week', 'month') then coalesce(d.xp, 0)
+           case when board = 'week' then (case when l.week_of = span.d0 then l.week_xp else coalesce(d.xp, 0) end)
+                when board = 'month' then (case when l.month_of = span.d0 then l.month_xp else coalesce(d.xp, 0) end)
                 when board = 'bosses' then l.bosses
                 else l.total_xp end as score
     from public.leaderboard l
+    cross join span
     left join done d on d.user_id = l.user_id
   ),
   ranked as (
@@ -176,3 +216,4 @@ revoke all on function public.forged_num(text) from public, anon, authenticated;
 revoke all on function public.forged_date(text) from public, anon, authenticated;
 revoke all on function public.forged_workout_xp(jsonb) from public, anon, authenticated;
 revoke all on function public.forged_leaderboard_check() from public, anon, authenticated;
+revoke all on function public.forged_period_cap(uuid, date, date, integer, integer) from public, anon, authenticated;

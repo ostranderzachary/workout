@@ -129,7 +129,7 @@ A new boss is announced with a popup. The crown **Boss** button in the header (a
 
 A global leaderboard for signed-in users, with four tabs:
 
-- **This week** and **This month:** workout XP (sets and cardio minutes) for the current week (Monday to Sunday) or month, with a countdown to the reset.
+- **This week** and **This month:** all XP earned in the current week (Monday to Sunday) or month, the same total as the History page: workouts, weekly bonuses and boss rewards, minus any missed-day penalties. A countdown shows when the board resets.
 - **Total XP:** all-time XP, including weekly bonuses and boss rewards.
 - **Bosses:** bosses defeated.
 
@@ -146,7 +146,7 @@ Your own row is highlighted, even if you're outside the top 100, and the top of 
 
 **Finding it:** a card on the Today tab shows your weekly rank. There's also a **Ranks** button in the header on wider screens and **Leaderboard** in the desktop sidebar. The Claude artifact version doesn't have a leaderboard, because it doesn't use Supabase.
 
-Weekly and monthly XP are calculated by the database from logged workouts, so they can't be changed by editing the app. Total XP, level and bosses come from the app, and the database checks them: the level is recalculated and implausible numbers are capped. The setup is in [`supabase/leaderboard.sql`](supabase/leaderboard.sql), run once in the SQL Editor after `schema.sql`.
+The app reports your XP, matching what you see in Forged, and the database checks every number against what your logged workouts, weekly bonuses and boss fights in that period could earn. Anything above that is capped, and the level is recalculated, so the numbers can't be inflated by editing the app. The setup is in [`supabase/leaderboard.sql`](supabase/leaderboard.sql), run once in the SQL Editor after `schema.sql`.
 
 ## Understanding your progress
 
