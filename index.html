@@ -214,6 +214,33 @@ label.btn { cursor: pointer; display: inline-block; }
 .acct-card.warn { border-color: var(--danger); }
 .acct-offer { margin-top: 12px; padding: 14px; border: 1px solid var(--h3); border-radius: 14px; }
 .acct-offer p { margin: 4px 0 10px; }
+/* First-run tour: a dimmed screen, a spotlight on the button being explained, and a card beside it */
+.tour { position: fixed; inset: 0; z-index: 70; }
+.tour-dim { position: absolute; inset: 0; background: rgba(5, 7, 10, .74); }
+.tour-spot { position: absolute; border-radius: 16px; box-shadow: 0 0 0 9999px rgba(5, 7, 10, .74), 0 0 0 2px var(--h5), 0 0 24px rgba(182, 242, 106, .45); pointer-events: none; transition: left .25s ease, top .25s ease, width .25s ease, height .25s ease; }
+.tour-spot.boss { box-shadow: 0 0 0 9999px rgba(5, 7, 10, .74), 0 0 0 2px var(--boss), 0 0 26px var(--boss-glow); }
+.tour-card { position: absolute; width: min(calc(100vw - 32px), 380px); background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 20px 20px 16px; box-shadow: 0 24px 60px rgba(0, 0, 0, .55); animation: tourIn .28s cubic-bezier(.2, 1.2, .4, 1); }
+.tour-card.center { left: 50%; top: 50%; transform: translate(-50%, -50%); animation: tourInC .28s cubic-bezier(.2, 1.2, .4, 1); }
+.tour-card .tip { position: absolute; width: 16px; height: 16px; background: var(--surface); border-left: 1px solid var(--line); border-top: 1px solid var(--line); transform: rotate(45deg); top: -9px; }
+.tour-card.above .tip { top: auto; bottom: -9px; transform: rotate(225deg); }
+.tour-ico { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; background: linear-gradient(135deg, var(--h4), var(--h2)); color: #0b1a0f; margin-bottom: 12px; }
+.tour-ico svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.tour-ico.boss { background: linear-gradient(135deg, #a99bff, #5a48d6); color: #0d0b1f; box-shadow: 0 0 22px var(--boss-glow); }
+.tour-step { margin: 0; font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--h5); }
+.tour-card.is-boss .tour-step { color: var(--boss); }
+.tour-card h3 { margin: 4px 0 8px; font-family: var(--font-display); font-size: 26px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; line-height: 1.05; }
+.tour-card p.tour-body { margin: 0; font-size: 15px; line-height: 1.5; color: var(--muted); }
+.tour-card p.tour-body b { color: var(--fg); }
+.tour-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 18px; }
+.tour-dots { display: flex; gap: 6px; }
+.tour-dots i { width: 8px; height: 8px; border-radius: 4px; background: var(--line); transition: width .2s ease, background .2s ease; }
+.tour-dots i.on { width: 22px; background: var(--h5); }
+.tour-card.is-boss .tour-dots i.on { background: var(--boss); }
+.tour-btns { display: flex; gap: 8px; align-items: center; }
+.tour-skip { background: none; border: 0; color: var(--muted); font-weight: 600; font-size: 14px; padding: 8px 4px; }
+@keyframes tourIn { from { opacity: 0; translate: 0 8px; } }
+@keyframes tourInC { from { opacity: 0; transform: translate(-50%, -46%); } }
+@media (prefers-reduced-motion: reduce) { .tour-card, .tour-spot { animation: none; transition: none; } }
 .auth-alt { margin-top: 14px; }
 .auth-alt summary { cursor: pointer; color: var(--muted); font-size: 14px; font-weight: 600; }
 .side-only { display: none !important; }
@@ -565,6 +592,7 @@ button.tag { cursor: pointer; }
 <div id="sheetRoot"></div>
 <div id="celebrate"></div>
 <div id="bossPop"></div>
+<div id="tour"></div>
 <div class="toast" id="toast" role="status" hidden></div>
 
 <script>
@@ -1927,7 +1955,8 @@ function levelSheet() {
       <p><b>Weekly bonuses</b> (Monday–Sunday): +${BONUS.muscle} XP per muscle goal met, +${BONUS.allMuscles} XP if every muscle goal is met, +${BONUS.cardio} XP for your cardio time goal, +${BONUS.distance} XP for your distance goal, +${BONUS.days} XP for training on your goal number of days. Hitting your days goal week after week adds a streak bonus of +${BONUS.streakStep} XP for each week in a row (up to +${BONUS.streakMax}).</p>
       <p><b>Boss fights:</b> every 5 levels a boss appears with a hard challenge: a long run, a big stair climb, a high set count or a heavy volume day. Start a fight when you're ready and complete it within 24 hours. The reward is worth about two levels at that point and grows 5% more with each boss.</p>
       <p><b>Missed days:</b> when a week ends short of your workout-days goal, you lose ${BONUS.missedDay} XP per missed day and your streak resets. Your first week is never penalised, and XP never drops below 0, though it can drop you a level.</p>
-      <p>Each level needs 100 XP more than the one before. You earn a new title every 10 levels.</p></div>
+      <p>Each level needs 100 XP more than the one before. You earn a new title every 10 levels.</p>
+      <button class="btn small" type="button" data-act="tour">Take the quick tour again</button></div>
     <div class="lbl">Title theme</div>
     <div class="themes">${themeGroups().map(([name, ks]) => `<div class="theme-group" role="group" aria-label="${esc(name)}"><span class="theme-head">${esc(name)}</span>
       <div class="chips">${ks.map(k => `<button type="button" class="chip" data-theme="${k}" aria-pressed="${k === themeKey()}">${esc(THEMES[k].name)}</button>`).join("")}</div></div>`).join("")}</div>
@@ -2089,8 +2118,89 @@ function renderBossUI() {
   maybeBossPopup(L);
 }
 /* Announce each newly unlocked boss once per device, when nothing else is on screen. */
+/* ---------- First-run tour: welcome, goals, levels and title themes, boss fights ---------- */
+const TOUR_ICONS = {
+  hello: `<svg viewBox="0 0 24 24"><path d="M6 7v10M18 7v10M3 9.5v5M21 9.5v5M6 12h12"/></svg>`,
+  goals: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></svg>`,
+  level: `<svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg>`,
+  boss: `<svg viewBox="0 0 24 24"><path d="M4 18h16M5 15L3 7l5 4 4-6 4 6 5-4-2 8z"/></svg>`
+};
+const TOUR = [
+  { icon: "hello", title: "Welcome to Forged",
+    body: "Log your lifts and cardio, watch your muscles light up on the heat map, and level up as you train. Here's a quick tour of how it works." },
+  { icon: "goals", target: "header [data-open=goals]", title: "Set your weekly goals",
+    body: "Choose how many <b>sets each muscle</b> should get every week, plus your <b>cardio time, distance and stairs</b>. Each muscle on the heat map turns brighter green as it gets closer to its goal, and meeting goals earns bonus XP every week." },
+  { icon: "level", target: "#lvlChip", title: "Level up and earn titles",
+    body: "Every workout earns <b>XP</b>, and each level takes a little more than the last. Every 10 levels unlocks a new <b>title</b>. Tap your level to pick a <b>title theme</b>: Game of Thrones, Marvel, Naruto, military ranks and more." },
+  { icon: "boss", target: "#bossBtn", boss: true, title: "Take on boss fights",
+    body: "Every 5 levels a <b>boss</b> appears: a long run, a big stair climb, a high set count or a heavy lifting day. Start the fight when you're ready and finish it <b>within 24 hours</b> to win a big XP reward." }
+];
+function startTour(i = 0) { $("bossPop").innerHTML = ""; window.scrollTo(0, 0); S.tour = i; renderTour(); if (!matchMedia("(pointer: coarse)").matches) setTimeout(() => { const b = document.querySelector("#tour [data-tour=next]"); if (b) b.focus(); }, 40); }
+function endTour() {
+  S.tour = null; $("tour").innerHTML = "";
+  if (!prefs.tourDone) { prefs.tourDone = true; savePrefs(); }
+  if (S.loaded) maybeBossPopup(xpLedger(S.workouts));
+}
+function maybeTour() {
+  if (prefs.tourDone || S.tour != null || S.tourAsked) return;
+  S.tourAsked = true;
+  setTimeout(() => { if (!S.sheet && !$("celebrate").innerHTML) startTour(0); }, 500);
+}
+function renderTour() {
+  const root = $("tour");
+  if (S.tour == null) { root.innerHTML = ""; return; }
+  const i = S.tour, st = TOUR[i], last = i === TOUR.length - 1;
+  const el = st.target ? document.querySelector(st.target) : null;
+  const r = el && el.offsetParent !== null ? el.getBoundingClientRect() : null;
+  const vw = innerWidth, vh = innerHeight, W = Math.min(vw - 32, 380), pad = 6;
+  let spot = `<div class="tour-dim"></div>`, place = "center", style = "", tip = "";
+  if (r && r.width) {
+    spot = `<div class="tour-spot${st.boss ? " boss" : ""}" style="left:${r.left - pad}px;top:${r.top - pad}px;width:${r.width + pad * 2}px;height:${r.height + pad * 2}px"></div>`;
+    const left = Math.min(Math.max(16, r.left + r.width / 2 - W / 2), vw - W - 16);
+    const below = r.bottom + 20 < vh * 0.55;
+    place = below ? "below" : "above";
+    style = below ? `left:${left}px;top:${r.bottom + pad + 14}px` : `left:${left}px;bottom:${vh - r.top + pad + 14}px`;
+    tip = `<span class="tip" style="left:${Math.min(Math.max(18, r.left + r.width / 2 - left - 8), W - 34)}px"></span>`;
+  }
+  root.innerHTML = `<div class="tour" role="dialog" aria-modal="true" aria-labelledby="tourH" aria-describedby="tourB">${spot}
+    <div class="tour-card${place === "center" ? " center" : place === "above" ? " above" : ""}${st.boss ? " is-boss" : ""}" style="${style}">${tip}
+      <div class="tour-ico${st.boss ? " boss" : ""}">${TOUR_ICONS[st.icon]}</div>
+      <p class="tour-step">${i ? `Step ${i} of ${TOUR.length - 1}` : "Quick tour"}</p>
+      <h3 id="tourH">${st.title}</h3>
+      <p class="tour-body" id="tourB">${st.body}</p>
+      <div class="tour-foot">
+        <span class="tour-dots" aria-hidden="true">${TOUR.map((_, k) => `<i class="${k === i ? "on" : ""}"></i>`).join("")}</span>
+        <span class="tour-btns">${last ? "" : `<button type="button" class="tour-skip" data-tour="skip">Skip</button>`}${i ? `<button type="button" class="btn small" data-tour="back">Back</button>` : ""}
+          <button type="button" class="btn primary" data-tour="next">${last ? "Let's go" : i ? "Next" : "Show me"}</button></span>
+      </div>
+    </div></div>`;
+}
+$("tour").addEventListener("click", e => {
+  const b = e.target.closest("[data-tour]"); if (!b) return;
+  const k = b.dataset.tour;
+  if (k === "skip" || (k === "next" && S.tour === TOUR.length - 1)) return endTour();
+  S.tour = Math.max(0, Math.min(TOUR.length - 1, S.tour + (k === "next" ? 1 : -1)));
+  renderTour();
+  if (matchMedia("(pointer: coarse)").matches) return;
+  const f = document.querySelector(`#tour [data-tour=${k === "back" && S.tour === 0 ? "next" : k}]`) || document.querySelector("#tour [data-tour=next]");
+  if (f) f.focus();
+});
+document.addEventListener("keydown", e => {
+  if (S.tour == null) return;
+  if (e.key === "Escape") { e.preventDefault(); endTour(); }
+  if (e.key === "ArrowRight") { e.preventDefault(); const b = document.querySelector("#tour [data-tour=next]"); if (b) b.click(); }
+  if (e.key === "ArrowLeft") { e.preventDefault(); const b = document.querySelector("#tour [data-tour=back]"); if (b) b.click(); }
+  if (e.key === "Tab") { // keep focus inside the tour card
+    const f = [...document.querySelectorAll("#tour button")]; if (!f.length) return;
+    const at = f.indexOf(document.activeElement);
+    if (e.shiftKey && at <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && at === f.length - 1) { e.preventDefault(); f[0].focus(); }
+  }
+});
+addEventListener("resize", () => { if (S.tour != null) renderTour(); });
+
 function maybeBossPopup(L) {
-  if (!S.loaded || S.sheet || $("celebrate").innerHTML || $("bossPop").innerHTML) return;
+  if (!S.loaded || S.sheet || S.tour != null || $("celebrate").innerHTML || $("bossPop").innerHTML) return;
   const seen = prefs.bossSeen || [], b = activeBosses(L).find(x => !seen.includes(x.tier));
   if (!b) return;
   $("bossPop").innerHTML = `<div class="overlay boss-pop" role="dialog" aria-modal="true" aria-labelledby="bossPopH"><div class="boss-window">
@@ -3101,6 +3211,7 @@ $("sheetRoot").addEventListener("click", async e => {
   if (a.act === "boss-start") return startFight(Number(a.tier));
   if (a.act === "boss-end") return endFight(Number(a.tier));
   if (a.act === "export") return exportBackup();
+  if (a.act === "tour") { closeSheet(); return startTour(0); }
   if (a.act && a.act.startsWith("auth-")) return accountAction(a.act);
   if (a.act === "import-merge") return applyImport("merge");
   if (a.act === "import-replace") return applyImport("replace");
@@ -3212,7 +3323,7 @@ $("sheetRoot").addEventListener("focusin", e => {
 
 render();
 Store.init(
-  list => { S.workouts = list; S.loaded = true; render(); },
+  list => { S.workouts = list; S.loaded = true; render(); maybeTour(); },
   g => { S.goals = normGoals(g); S.goalsSaved = !!g; render(); },
   msg => { $("sync").textContent = msg; }
 );
