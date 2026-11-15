@@ -254,6 +254,7 @@ label.btn { cursor: pointer; display: inline-block; }
 .pick-prev b { color: var(--fg); }
 .pick-prev .lv { color: var(--h5); font-weight: 700; }
 .pick-foot .btn { width: 100%; }
+.cont-note { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin: 0 0 12px; padding: 10px 12px; border: 1px solid var(--h3); border-radius: 12px; font-size: 14px; color: var(--fg); }
 .auth-alt { margin-top: 14px; }
 .auth-alt summary { cursor: pointer; color: var(--muted); font-size: 14px; font-weight: 600; }
 .side-only { display: none !important; }
@@ -2793,9 +2794,22 @@ function sheetFrame(title, body, actions, { compact = false } = {}) {
     <div class="sheet-body">${body}${S.error ? `<div class="err" role="alert">${esc(S.error)}</div>` : ""}</div>
     <div class="sheet-actions">${actions}</div></div></div>`;
 }
+/* Today's lifting workout (the latest one if there are several), so + Lifting carries on with it. */
+function todaysLift() {
+  const t = ymd(today());
+  return S.workouts.filter(w => !w.sample && !isCardio(w) && w.date === t).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0] || null;
+}
+function openLift() {
+  const w = todaysLift();
+  if (!w) return openSheet("lift", null);
+  openSheet("lift", w); S.draft.cont = true; renderSheet();
+  // Start at the last exercise, where the next set goes
+  setTimeout(() => { const ex = document.querySelectorAll("#sheetRoot .ex"); if (ex.length) ex[ex.length - 1].scrollIntoView({ block: "start" }); }, 30);
+}
 function addSheet() {
+  const w = todaysLift(), n = w ? (w.exercises || []).reduce((a, x) => a + (x.sets || []).length, 0) : 0;
   return sheetFrame("Log a workout", `<div class="addgrid">
-      <button type="button" class="addopt" data-act="pick-lift"><b>Lifting</b><span>Exercises with their sets, reps and weight</span></button>
+      <button type="button" class="addopt" data-act="pick-lift"><b>Lifting</b><span>${w ? `Continue today's workout: ${esc(liftTitle(w))}, ${plural(n, "set")} so far` : "Exercises with their sets, reps and weight"}</span></button>
       <button type="button" class="addopt" data-act="pick-cardio"><b>Cardio</b><span>A run, ride, swim or other session: minutes and distance</span></button>
     </div>`, `<div class="right"><button class="btn ghost" type="button" data-act="close">Cancel</button></div>`, { compact: true });
 }
@@ -2838,7 +2852,9 @@ function liftSheet(d) {
   const custom = new Set();
   S.workouts.forEach(w => (w.exercises || []).forEach(x => { if (!LIB[x.name]) custom.add(x.name); }));
   const names = Object.keys(LIB).concat([...custom]).sort();
-  return sheetFrame(d.id ? "Edit lifts" : "Log lifts", `
+  return sheetFrame(d.cont ? "Today's lifts" : d.id ? "Edit lifts" : "Log lifts", `
+    ${d.cont ? `<div class="cont-note"><span>Adding to the workout you logged today. Add sets or exercises, then save.</span>
+      <button class="btn small ghost" type="button" data-act="lift-new">Start a separate workout</button></div>` : ""}
     <div class="field"><label for="f-date">Date</label><input class="inp" id="f-date" type="date" value="${esc(d.date)}" max="${ymd(today())}" data-f="date"></div>
     <div class="field" style="margin-top:10px"><span class="lbl">Weight unit</span>
       <div class="tags">${["lb", "kg"].map(u => `<button type="button" class="tag ${d.unit === u ? "p" : ""}" data-unit="${u}">${u}</button>`).join("")}</div></div>
@@ -3247,7 +3263,7 @@ async function saveDraft() {
     const minutes = Number(d.minutes) || 0;
     if (minutes <= 0) { S.error = "Enter how many minutes the session took."; return renderSheet(); }
     prefs.activity = d.activity; savePrefs();
-    w = { id: d.id || `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, kind: "cardio", date: d.date, name: d.name.trim(), activity: d.activity,
+    w = { id: d.id || `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, kind: "cardio", date: d.date, name: (d.name || "").trim(), activity: d.activity,
       minutes, distance: d.activity === "stairs" ? 0 : Number(d.distance) || 0, distUnit: d.distUnit,
       stories: d.activity === "stairs" ? Math.max(0, Math.round(Number(d.stories) || 0)) : 0, createdAt: d.createdAt || Date.now() };
   } else {
@@ -3260,7 +3276,7 @@ async function saveDraft() {
     else if (exercises.some(x => !x.p.length && !x.s.length)) err = `Choose the muscles that “${exercises.find(x => !x.p.length && !x.s.length).name}” works.`;
     else if (exercises.some(x => !x.sets.length)) err = `Enter reps for at least one set of “${exercises.find(x => !x.sets.length).name}”.`;
     if (err) { S.error = err; return renderSheet(); }
-    w = { id: d.id || `w${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, date: d.date, name: d.name.trim(), unit: d.unit, exercises, createdAt: d.createdAt || Date.now() };
+    w = { id: d.id || `w${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, date: d.date, name: (d.name || "").trim(), unit: d.unit, exercises, createdAt: d.createdAt || Date.now() };
   }
   try {
     const before = xpLedger(S.workouts);
@@ -3285,7 +3301,8 @@ $("sheetRoot").addEventListener("click", async e => {
   if (b.classList.contains("overlay")) { if (e.target === b) closeSheet(); return; }
   const a = b.dataset;
   if (a.act === "close") return closeSheet();
-  if (a.act === "pick-lift") return openSheet("lift", null);
+  if (a.act === "pick-lift") return openLift();
+  if (a.act === "lift-new") return openSheet("lift", null);
   if (a.act === "open-share") return openShare();
   if (a.act === "boss-start") return startFight(Number(a.tier));
   if (a.act === "boss-end") return endFight(Number(a.tier));
@@ -3359,7 +3376,7 @@ document.addEventListener("click", e => {
   if (clr) { S.selLift = null; return render(); }
   const b = e.target.closest("[data-open], #banner [data-act], #onboard [data-act], #summary [data-act], #bossCard [data-act]"); if (!b) return;
   const k = b.dataset.open || b.dataset.act;
-  if (k === "log") openSheet("lift", null);
+  if (k === "log") openLift();
   if (k === "cardio") openSheet("cardio", null);
   if (k === "goals") openSheet("goals", null);
   if (k === "weight") { openSheet("goals", null); setTimeout(() => { const el = $("bwLbl"); if (el) el.scrollIntoView({ block: "start", behavior: "smooth" }); }, 60); }

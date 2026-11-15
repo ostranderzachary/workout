@@ -11,6 +11,7 @@ A mobile-friendly workout tracker. Log lifts and cardio, set daily goals, and se
 - **Heat map:** switch between Day, Week, Month, Year and All, and step back through earlier periods. Tap a muscle to see which exercises worked it.
 - **Sets per muscle:** a set counts 1 for the main muscles and 0.5 for helper muscles. The weekly view marks a 10–20 sets per week target.
 - **History:** tap a workout to edit or delete it.
+- **Keep adding to today's workout:** if you've already logged lifts today, **+ → Lifting** reopens that workout (the latest one, if there are several) at its last exercise, so you can add sets or exercises and save. The menu shows "Continue today's workout" with the sets so far. Tap **Start a separate workout** at the top of the form to log a new session instead.
 - Example workouts are shown until you log your first one. They are never saved.
 
 ## On your phone
