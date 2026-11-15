@@ -248,7 +248,9 @@ label.btn { cursor: pointer; display: inline-block; }
 .sheet.pick .sheet-actions { flex: none; }
 .pick-intro { margin: 0 0 14px; color: var(--muted); font-size: 15px; line-height: 1.5; }
 .pick-foot { display: grid; gap: 10px; width: 100%; }
-.pick-prev { min-height: 42px; font-size: 13px; color: var(--muted); line-height: 1.45; }
+.pick-lbl { margin: 20px 0 4px; scroll-margin-top: 8px; }
+.pick-titles li { grid-template-columns: 52px minmax(0, 1fr); }
+.pick-prev { min-height: 20px; font-size: 13px; color: var(--muted); line-height: 1.45; }
 .pick-prev b { color: var(--fg); }
 .pick-prev .lv { color: var(--h5); font-weight: 700; }
 .pick-foot .btn { width: 100%; }
@@ -2142,9 +2144,10 @@ function maybeThemePick(after) {
       <p class="pick-intro" id="pickD">As you level up you earn a new title every 10 levels. Pick the world you want to rise through. You can change it any time by tapping your level.</p>
       <div class="themes">${themeGroups().map(([name, ks]) => `<div class="theme-group" role="group" aria-label="${esc(name)}"><span class="theme-head">${esc(name)}</span>
         <div class="chips">${ks.map(k => `<button type="button" class="chip" data-pick="${k}" aria-pressed="false">${esc(THEMES[k].name)}</button>`).join("")}</div></div>`).join("")}</div>
+      <div id="pickLadder" aria-live="polite"></div>
     </div>
     <div class="sheet-actions"><div class="pick-foot">
-      <p class="pick-prev" id="pickPrev" aria-live="polite">Tap a theme to see where it starts and where it ends.</p>
+      <p class="pick-prev" id="pickPrev">Tap a theme to see all its titles.</p>
       <button class="btn primary" type="button" data-pick-ok disabled>Choose a theme</button>
     </div></div>
   </div></div>`;
@@ -2155,10 +2158,14 @@ $("themePick").addEventListener("click", e => {
   const chip = e.target.closest("[data-pick]");
   if (chip) {
     // Update in place so the list keeps its scroll position
-    const k = chip.dataset.pick, T = THEMES[k].titles, mid = T.find(t => t[0] === 50) || T[5];
+    const k = chip.dataset.pick, T = THEMES[k].titles;
     S.pick.sel = k;
     document.querySelectorAll("#themePick [data-pick]").forEach(b => b.setAttribute("aria-pressed", String(b === chip)));
-    $("pickPrev").innerHTML = `<b>${esc(THEMES[k].name)}</b>: start as <span class="lv">Lv 1</span> <b>${esc(T[0][1])}</b>, reach <span class="lv">Lv 50</span> <b>${esc(mid[1])}</b>, top out at <span class="lv">Lv 100</span> <b>${esc(T[T.length - 1][1])}</b>.`;
+    $("pickPrev").innerHTML = `<b>${esc(THEMES[k].name)}</b>: <span class="lv">Lv 1</span> <b>${esc(T[0][1])}</b> to <span class="lv">Lv 100</span> <b>${esc(T[T.length - 1][1])}</b>. Scroll up to compare another theme.`;
+    // Every title in the theme, listed under the themes
+    $("pickLadder").innerHTML = `<div class="lbl pick-lbl">Titles · ${esc(THEMES[k].name)}</div>
+      <ol class="titles pick-titles">${T.map(([l, t, d], i) => `<li class="got${i === 0 ? " now" : ""}"><span class="num">Lv ${l}</span><span class="t-name"><b>${esc(t)}</b><em>${esc(d)}</em></span></li>`).join("")}</ol>`;
+    $("pickLadder").scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
     const ok = document.querySelector("#themePick [data-pick-ok]");
     ok.disabled = false;
     const lvl = levelInfo(xpLedger(S.workouts).total).level;
