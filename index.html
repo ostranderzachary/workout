@@ -2794,22 +2794,30 @@ function sheetFrame(title, body, actions, { compact = false } = {}) {
     <div class="sheet-body">${body}${S.error ? `<div class="err" role="alert">${esc(S.error)}</div>` : ""}</div>
     <div class="sheet-actions">${actions}</div></div></div>`;
 }
-/* Today's lifting workout (the latest one if there are several), so + Lifting carries on with it. */
-function todaysLift() {
-  const t = ymd(today());
-  return S.workouts.filter(w => !w.sample && !isCardio(w) && w.date === t).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0] || null;
+/* A day's lifting workout (the latest one if there are several), so logging lifts for that day carries on with it. */
+function liftOn(date, exceptId) {
+  return S.workouts.filter(w => !w.sample && !isCardio(w) && w.date === date && w.id !== exceptId).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0] || null;
 }
-function openLift() {
-  const w = todaysLift();
-  if (!w) return openSheet("lift", null);
-  openSheet("lift", w); S.draft.cont = true; renderSheet();
+function dayWord(date) {
+  if (date === ymd(today())) return "today";
+  if (date === ymd(addDays(today(), -1))) return "yesterday";
+  const x = parse(date); return `${DOW[x.getDay()]}, ${MON[x.getMonth()]} ${x.getDate()}`;
+}
+/* Opens the lift form for a date: that day's workout if there is one, else a new one.
+   `carry` is exercises already typed into a new form, added on so nothing is lost. */
+function openLift(date = defaultDate(), carry = []) {
+  const w = liftOn(date);
+  if (!w) { openSheet("lift", null); S.draft.date = date; if (carry.length) S.draft.exercises = carry; return renderSheet(); }
+  openSheet("lift", w); S.draft.cont = true;
+  if (carry.length) S.draft.exercises = S.draft.exercises.concat(carry);
+  renderSheet();
   // Start at the last exercise, where the next set goes
   setTimeout(() => { const ex = document.querySelectorAll("#sheetRoot .ex"); if (ex.length) ex[ex.length - 1].scrollIntoView({ block: "start" }); }, 30);
 }
 function addSheet() {
-  const w = todaysLift(), n = w ? (w.exercises || []).reduce((a, x) => a + (x.sets || []).length, 0) : 0;
+  const date = defaultDate(), w = liftOn(date), n = w ? (w.exercises || []).reduce((a, x) => a + (x.sets || []).length, 0) : 0;
   return sheetFrame("Log a workout", `<div class="addgrid">
-      <button type="button" class="addopt" data-act="pick-lift"><b>Lifting</b><span>${w ? `Continue today's workout: ${esc(liftTitle(w))}, ${plural(n, "set")} so far` : "Exercises with their sets, reps and weight"}</span></button>
+      <button type="button" class="addopt" data-act="pick-lift"><b>Lifting</b><span>${w ? `Continue ${date === ymd(today()) ? "today's workout" : `your workout from ${esc(dayWord(date))}`}: ${esc(liftTitle(w))}, ${plural(n, "set")} so far` : "Exercises with their sets, reps and weight"}</span></button>
       <button type="button" class="addopt" data-act="pick-cardio"><b>Cardio</b><span>A run, ride, swim or other session: minutes and distance</span></button>
     </div>`, `<div class="right"><button class="btn ghost" type="button" data-act="close">Cancel</button></div>`, { compact: true });
 }
@@ -2852,8 +2860,9 @@ function liftSheet(d) {
   const custom = new Set();
   S.workouts.forEach(w => (w.exercises || []).forEach(x => { if (!LIB[x.name]) custom.add(x.name); }));
   const names = Object.keys(LIB).concat([...custom]).sort();
-  return sheetFrame(d.cont ? "Today's lifts" : d.id ? "Edit lifts" : "Log lifts", `
-    ${d.cont ? `<div class="cont-note"><span>Adding to the workout you logged today. Add sets or exercises, then save.</span>
+  const dw = d.cont ? dayWord(d.date) : "";
+  return sheetFrame(d.cont ? (dw === "today" ? "Today's lifts" : dw === "yesterday" ? "Yesterday's lifts" : `Lifts · ${esc(dw)}`) : d.id ? "Edit lifts" : "Log lifts", `
+    ${d.cont ? `<div class="cont-note"><span>Adding to the workout you logged ${dw === "today" || dw === "yesterday" ? dw : `on ${esc(dw)}`}. Add sets or exercises, then save.</span>
       <button class="btn small ghost" type="button" data-act="lift-new">Start a separate workout</button></div>` : ""}
     <div class="field"><label for="f-date">Date</label><input class="inp" id="f-date" type="date" value="${esc(d.date)}" max="${ymd(today())}" data-f="date"></div>
     <div class="field" style="margin-top:10px"><span class="lbl">Weight unit</span>
@@ -3168,6 +3177,15 @@ function goalsSheet(d) {
 
 $("sheetRoot").addEventListener("change", e => {
   if (e.target.id === "importFile" && e.target.files && e.target.files[0]) readBackupFile(e.target.files[0]);
+  if (e.target.id === "f-date" && S.sheet === "lift" && e.target.value) {
+    const d = S.draft, date = e.target.value;
+    if (d.id && !d.cont) return; // editing a workout from History: a new date moves it
+    const carry = d.id ? [] : d.exercises.filter(x => (x.name || "").trim());
+    if (liftOn(date, d.id)) {
+      openLift(date, carry);
+      toast(`Opened your workout from ${dayWord(date)}${carry.length ? `, with the ${carry.length === 1 ? "exercise" : "exercises"} you'd entered added` : ""}.`);
+    } else if (d.cont) { openSheet("lift", null); S.draft.date = date; renderSheet(); toast(`No lifts logged ${dayWord(date) === "today" || dayWord(date) === "yesterday" ? dayWord(date) : `on ${dayWord(date)}`} yet, so this is a new workout.`); }
+  }
 });
 $("sheetRoot").addEventListener("input", e => {
   const d = S.draft, t = e.target; if (!d) return;
@@ -3302,7 +3320,7 @@ $("sheetRoot").addEventListener("click", async e => {
   const a = b.dataset;
   if (a.act === "close") return closeSheet();
   if (a.act === "pick-lift") return openLift();
-  if (a.act === "lift-new") return openSheet("lift", null);
+  if (a.act === "lift-new") { const dt = d.date; openSheet("lift", null); S.draft.date = dt; return renderSheet(); }
   if (a.act === "open-share") return openShare();
   if (a.act === "boss-start") return startFight(Number(a.tier));
   if (a.act === "boss-end") return endFight(Number(a.tier));
