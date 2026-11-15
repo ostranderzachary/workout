@@ -1976,7 +1976,7 @@ function levelSheet() {
     <div class="themes">${themeGroups().map(([name, ks]) => `<div class="theme-group" role="group" aria-label="${esc(name)}"><span class="theme-head">${esc(name)}</span>
       <div class="chips">${ks.map(k => `<button type="button" class="chip" data-theme="${k}" aria-pressed="${k === themeKey()}">${esc(THEMES[k].name)}</button>`).join("")}</div></div>`).join("")}</div>
     <p class="note" style="margin:0 0 12px">Pick a theme you follow. It only changes the names; your level and XP stay the same.</p>
-    <div class="lbl">Titles · ${esc(THEMES[themeKey()].name)}</div>
+    <div class="lbl" id="titlesLbl" style="scroll-margin-top:8px">Titles · ${esc(THEMES[themeKey()].name)}</div>
     <ol class="titles">${TITLES.map(([l, t]) => `<li class="${info.level >= l ? "got" : ""}${titleFor(info.level) === t ? " now" : ""}"><span class="num">Lv ${l}</span><span class="t-name"><b>${esc(t)}</b><em>${esc(TITLES.find(x => x[1] === t)[2])}</em></span><small>${info.level >= l ? (titleFor(info.level) === t ? "Current" : "Unlocked") : `${(xpAtLevel(l) - info.total).toLocaleString()} XP to go`}</small></li>`).join("")}</ol>
     ${recent.length ? `<div class="lbl" style="margin-top:14px">Recent XP</div><ul class="acts">${recent.map(x => `<li class="${x.xp < 0 ? "neg" : x.weekly ? "bonus" : ""}"><span>${esc(x.text)}${x.weekly ? "" : ` · ${esc(x.date)}`}</span><span class="num">${x.xp < 0 ? "−" : "+"}${Math.abs(x.xp)} XP</span></li>`).join("")}</ul>` : ""}`,
     `<button class="btn" type="button" data-act="open-share">Share progress</button><div class="right"><button class="btn primary" type="button" data-act="close">Close</button></div>`);
@@ -3330,7 +3330,12 @@ $("sheetRoot").addEventListener("click", async e => {
   if (a.act === "import-merge") return applyImport("merge");
   if (a.act === "import-replace") return applyImport("replace");
   if (a.act === "import-cancel") { S.importPending = null; return renderSheet(); }
-  if (a.theme) { prefs.themeChosen = true; setTheme(a.theme); render(); return renderSheet(); }
+  if (a.theme) {
+    prefs.themeChosen = true; setTheme(a.theme); render(); renderSheet();
+    // Show the new theme's titles straight away, as the first-visit picker does
+    const el = $("titlesLbl"); if (el) el.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    return;
+  }
   if (a.act === "share-send") return sendShare();
   if (a.act === "share-save") { S.shareMsg = savedMsg(await saveShareImages()); return renderSheet(); }
   if (a.act === "pick-cardio") return openSheet("cardio", null);
