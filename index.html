@@ -255,6 +255,14 @@ label.btn { cursor: pointer; display: inline-block; }
 .pick-prev .lv { color: var(--h5); font-weight: 700; }
 .pick-foot .btn { width: 100%; }
 .cont-note { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin: 0 0 12px; padding: 10px 12px; border: 1px solid var(--h3); border-radius: 12px; font-size: 14px; color: var(--fg); }
+.citem { gap: 10px; }
+.citem-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; }
+.citem-top small { text-transform: none; letter-spacing: 0; font-weight: 500; }
+.citem .tags { margin-top: -2px; }
+.citem .field + .field, .citem .row2 + .field { margin-top: 0; }
+/* iOS draws date inputs at their own width and ignores the column; make them fill it like any other field */
+input[type="date"].inp { -webkit-appearance: none; appearance: none; display: block; width: 100%; min-width: 0; max-width: 100%; min-height: 46px; text-align: left; }
+input[type="date"].inp::-webkit-date-and-time-value { text-align: left; }
 .auth-alt { margin-top: 14px; }
 .auth-alt summary { cursor: pointer; color: var(--muted); font-size: 14px; font-weight: 600; }
 .side-only { display: none !important; }
@@ -2772,13 +2780,15 @@ const defaultDate = () => ymd(S.period === "day" ? S.anchor : today());
 function openSheet(kind, w) {
   S.error = ""; S.confirmDel = false; S.sheet = kind;
   if (kind === "lift") S.draft = w && !w.sample ? JSON.parse(JSON.stringify(w)) : { id: null, date: defaultDate(), name: "", unit: prefs.unit || "lb", exercises: [newEx()] };
-  if (kind === "cardio") S.draft = w && !w.sample ? { ...w } : { id: null, kind: "cardio", date: defaultDate(), name: "", activity: prefs.activity || "run", minutes: "", distance: "", distUnit: distUnit() };
+  if (kind === "cardio") S.draft = w && !w.sample
+    ? { id: w.id, kind: "cardio", date: w.date, items: [cItem(w)] } // one session, opened from History
+    : { id: null, kind: "cardio", date: defaultDate(), items: [w ? { ...cItem(w), id: null, createdAt: null } : cItem()] };
   if (kind === "goals") S.draft = JSON.parse(JSON.stringify(S.goals));
   if (kind === "level" || kind === "add" || kind === "share" || kind === "boss" || kind === "account") S.draft = {};
   if (kind === "account") { S.auth = { email: (S.auth || {}).email, sent: (S.auth || {}).sent }; S.confirmOut = false; }
   renderSheet();
   // On touch screens, don't pop the keyboard straight away; let people see the whole form first.
-  if (!matchMedia("(pointer: coarse)").matches) setTimeout(() => { const f = document.querySelector(kind === "lift" ? "#sheetRoot .ex input" : kind === "cardio" ? "#c-min" : null); if (f && !S.draft.id) f.focus(); }, 30);
+  if (!matchMedia("(pointer: coarse)").matches) setTimeout(() => { const f = document.querySelector(kind === "lift" ? "#sheetRoot .ex input" : kind === "cardio" ? "#sheetRoot .citem:last-of-type [data-ci$=':minutes']" : null); if (f && !S.draft.id) f.focus(); }, 30);
 }
 function closeSheet() { S.sheet = null; S.draft = null; S.importPending = null; renderSheet(); if (S.loaded) maybeBossPopup(xpLedger(S.workouts)); }
 
@@ -2814,11 +2824,26 @@ function openLift(date = defaultDate(), carry = []) {
   // Start at the last exercise, where the next set goes
   setTimeout(() => { const ex = document.querySelectorAll("#sheetRoot .ex"); if (ex.length) ex[ex.length - 1].scrollIntoView({ block: "start" }); }, 30);
 }
+/* A day's cardio sessions, oldest first. */
+const cardioOn = date => S.workouts.filter(w => !w.sample && isCardio(w) && w.date === date).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+/* Opens the cardio form for a date with that day's sessions and a fresh activity to fill in.
+   `carry` is new activities already filled in elsewhere in the form, so nothing typed is lost. */
+function openCardio(date = defaultDate(), carry = []) {
+  const ws = cardioOn(date);
+  openSheet("cardio", null);
+  S.draft.date = date;
+  if (ws.length) { S.draft.cont = true; S.draft.items = ws.map(cItem).concat(carry.length ? carry : [cItem()]); }
+  else if (carry.length) S.draft.items = carry;
+  renderSheet();
+  if (ws.length) setTimeout(() => { const it = document.querySelectorAll("#sheetRoot .citem"); if (it.length) it[it.length - 1].scrollIntoView({ block: "start" }); }, 30);
+}
 function addSheet() {
   const date = defaultDate(), w = liftOn(date), n = w ? (w.exercises || []).reduce((a, x) => a + (x.sets || []).length, 0) : 0;
   return sheetFrame("Log a workout", `<div class="addgrid">
       <button type="button" class="addopt" data-act="pick-lift"><b>Lifting</b><span>${w ? `Continue ${date === ymd(today()) ? "today's workout" : `your workout from ${esc(dayWord(date))}`}: ${esc(liftTitle(w))}, ${plural(n, "set")} so far` : "Exercises with their sets, reps and weight"}</span></button>
-      <button type="button" class="addopt" data-act="pick-cardio"><b>Cardio</b><span>A run, ride, swim or other session: minutes and distance</span></button>
+      <button type="button" class="addopt" data-act="pick-cardio"><b>Cardio</b><span>${(() => { const cs = cardioOn(date); return cs.length
+        ? `Continue ${date === ymd(today()) ? "today's cardio" : `your cardio from ${esc(dayWord(date))}`}: ${esc([...new Set(cs.map(c => (CARDIO[c.activity] || CARDIO.run)[0]))].join(", "))}`
+        : "A run, ride, swim or other session: minutes and distance"; })()}</span></button>
     </div>`, `<div class="right"><button class="btn ghost" type="button" data-act="close">Cancel</button></div>`, { compact: true });
 }
 function delActions(saveLabel) {
@@ -2884,23 +2909,37 @@ function liftSheet(d) {
     delActions(d.id ? "Save changes" : "Save workout"));
 }
 
+/* One cardio activity in the form. Saved, each one is its own session. */
+const cItem = w => w ? { id: w.id || null, activity: w.activity || "run", minutes: w.minutes ?? "", distance: w.distance || "", distUnit: w.distUnit || distUnit(),
+  stories: w.stories || "", name: w.name || "", createdAt: w.createdAt || null }
+  : { id: null, activity: prefs.activity || "run", minutes: "", distance: "", distUnit: distUnit(), stories: "", name: "", createdAt: null };
+const cBlank = it => !it.id && [it.minutes, it.distance, it.stories, it.name].every(v => String(v ?? "").trim() === "");
 function cardioSheet(d) {
-  const a = CARDIO[d.activity] || CARDIO.run;
-  return sheetFrame(d.id ? "Edit cardio" : "Log cardio", `
-    <div class="field"><span class="lbl">Activity</span><div class="chips">${C_IDS.map(k =>
-      `<button type="button" class="chip" data-activity="${k}" aria-pressed="${d.activity === k}">${esc(CARDIO[k][0])}</button>`).join("")}</div></div>
-    <div class="tags" style="margin-top:8px">${a[1].map(m => `<span class="tag p">${esc(MUSCLES[m])}</span>`).join("")}${a[2].map(m => `<span class="tag s">${esc(MUSCLES[m])}</span>`).join("")}</div>
-    <div class="row2" style="margin-top:12px">
-      <div class="field"><label for="c-min">Minutes <small>±5</small></label>${stepper(`<input class="inp num" id="c-min" type="number" inputmode="numeric" min="0" placeholder="30" value="${esc(d.minutes)}" data-f="minutes">`, 5, "minutes by 5")}</div>
-      ${d.activity === "stairs"
-        ? `<div class="field"><label for="c-stories">Stories climbed <small>±5</small></label>${stepper(`<input class="inp num" id="c-stories" type="number" inputmode="numeric" min="0" step="1" placeholder="0" value="${esc(d.stories ?? "")}" data-f="stories">`, 5, "stories by 5")}</div>`
-        : `<div class="field"><label for="c-dist">Distance · optional <small>±0.5</small></label><div class="withunit">${stepper(`<input class="inp num" id="c-dist" type="number" inputmode="decimal" min="0" step="any" placeholder="0" value="${esc(d.distance)}" data-f="distance">`, 0.5, "distance by 0.5")}
-        ${["mi", "km"].map(u => `<button type="button" class="tag ${d.distUnit === u ? "p" : ""}" data-dunit="${u}">${u}</button>`).join("")}</div></div>`}
-    </div>
-    <div class="row2" style="margin-top:10px">
-      <div class="field"><label for="c-date">Date</label><input class="inp" id="c-date" type="date" value="${esc(d.date)}" max="${ymd(today())}" data-f="date"></div>
-      <div class="field"><label for="c-name">Name</label><input class="inp" id="c-name" type="text" placeholder="${esc(a[0])}" value="${esc(d.name)}" data-f="name"></div>
-    </div>`,
+  const dw = d.cont ? dayWord(d.date) : "";
+  const title = d.cont ? (dw === "today" ? "Today's cardio" : dw === "yesterday" ? "Yesterday's cardio" : `Cardio · ${esc(dw)}`) : d.id ? "Edit cardio" : "Log cardio";
+  const items = d.items, many = items.length > 1;
+  return sheetFrame(title, `
+    ${d.cont ? `<div class="cont-note"><span>Your cardio from ${dw === "today" || dw === "yesterday" ? dw : esc(dw)} is below. Fill in the new activity at the bottom, or change any of them, then save.</span></div>` : ""}
+    <div class="field"><label for="c-date">Date</label><input class="inp" id="c-date" type="date" value="${esc(d.date)}" max="${ymd(today())}" data-f="date"></div>
+    ${items.map((it, i) => {
+      const a = CARDIO[it.activity] || CARDIO.run, at = it.createdAt ? new Date(it.createdAt) : null;
+      const sub = it.id ? `logged${at ? ` ${at.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : ""}` : many ? "new" : "";
+      return `<div class="ex citem">
+        <div class="citem-top"><span class="lbl">Activity ${i + 1}${sub ? ` <small>· ${sub}</small>` : ""}</span>
+          ${many ? `<button class="x" type="button" data-crm="${i}" aria-label="Remove activity ${i + 1}">${XSVG}</button>` : ""}</div>
+        <div class="chips">${C_IDS.map(k => `<button type="button" class="chip" data-activity="${k}" data-i="${i}" aria-pressed="${it.activity === k}">${esc(CARDIO[k][0])}</button>`).join("")}</div>
+        <div class="tags">${a[1].map(m => `<span class="tag p">${esc(MUSCLES[m])}</span>`).join("")}${a[2].map(m => `<span class="tag s">${esc(MUSCLES[m])}</span>`).join("")}</div>
+        <div class="row2">
+          <div class="field"><label for="c-min-${i}">Minutes <small>±5</small></label>${stepper(`<input class="inp num" id="c-min-${i}" type="number" inputmode="numeric" min="0" placeholder="30" value="${esc(it.minutes)}" data-ci="${i}:minutes">`, 5, "minutes by 5")}</div>
+          ${it.activity === "stairs"
+            ? `<div class="field"><label for="c-stories-${i}">Stories climbed <small>±5</small></label>${stepper(`<input class="inp num" id="c-stories-${i}" type="number" inputmode="numeric" min="0" step="1" placeholder="0" value="${esc(it.stories ?? "")}" data-ci="${i}:stories">`, 5, "stories by 5")}</div>`
+            : `<div class="field"><label for="c-dist-${i}">Distance · optional <small>±0.5</small></label><div class="withunit">${stepper(`<input class="inp num" id="c-dist-${i}" type="number" inputmode="decimal" min="0" step="any" placeholder="0" value="${esc(it.distance)}" data-ci="${i}:distance">`, 0.5, "distance by 0.5")}
+            ${["mi", "km"].map(u => `<button type="button" class="tag ${it.distUnit === u ? "p" : ""}" data-cunit="${u}" data-i="${i}">${u}</button>`).join("")}</div></div>`}
+        </div>
+        <div class="field"><label for="c-name-${i}">Name · optional</label><input class="inp" id="c-name-${i}" type="text" placeholder="${esc(a[0])}" value="${esc(it.name)}" data-ci="${i}:name"></div>
+      </div>`;
+    }).join("")}
+    <button class="btn small" type="button" data-act="c-add" style="margin-top:12px">+ Add activity</button>`,
     delActions(d.id ? "Save changes" : "Save cardio"));
 }
 
@@ -3177,6 +3216,16 @@ function goalsSheet(d) {
 
 $("sheetRoot").addEventListener("change", e => {
   if (e.target.id === "importFile" && e.target.files && e.target.files[0]) readBackupFile(e.target.files[0]);
+  if (e.target.id === "c-date" && S.sheet === "cardio" && e.target.value) {
+    const d = S.draft, date = e.target.value;
+    if (d.id) return; // editing one session from History: a new date moves it
+    const carry = d.items.filter(it => !it.id && !cBlank(it));
+    const on = dayWord(date) === "today" || dayWord(date) === "yesterday" ? dayWord(date) : `on ${dayWord(date)}`;
+    if (cardioOn(date).length) {
+      openCardio(date, carry);
+      toast(`Opened your cardio from ${dayWord(date)}${carry.length ? `, with what you'd entered added` : ""}.`);
+    } else if (d.cont) { openCardio(date, carry); toast(`No cardio logged ${on} yet, so this is a new session.`); }
+  }
   if (e.target.id === "f-date" && S.sheet === "lift" && e.target.value) {
     const d = S.draft, date = e.target.value;
     if (d.id && !d.cont) return; // editing a workout from History: a new date moves it
@@ -3190,6 +3239,7 @@ $("sheetRoot").addEventListener("change", e => {
 $("sheetRoot").addEventListener("input", e => {
   const d = S.draft, t = e.target; if (!d) return;
   if (t.dataset.f) d[t.dataset.f] = t.value;
+  if (t.dataset.ci && d.items) { const [i, f] = t.dataset.ci.split(":"); d.items[+i][f] = t.value; }
   if (t.dataset.goal) {
     const k = t.dataset.goal;
     if (k === "bw") d.bwInput = t.value;
@@ -3225,7 +3275,7 @@ function stepStart(input) {
     if (past) { const st = past.sets[Math.min(+j, past.sets.length - 1)]; if (st && st[k] !== "" && st[k] != null) return Number(st[k]); }
     return k === "reps" ? 8 : null;
   }
-  if (input.dataset.f === "minutes") return 30;
+  if (input.dataset.f === "minutes" || (input.dataset.ci || "").endsWith(":minutes")) return 30;
   if (input.dataset.goal === "bw") return wtUnit() === "kg" ? 70 : 160;
   return null;
 }
@@ -3251,6 +3301,31 @@ function refocus(id) {
   el.focus(); if (el.select) try { el.select(); } catch {}
 }
 
+async function saveCardio(d) {
+  const items = d.items.filter(it => !cBlank(it) || d.items.length === 1);
+  const bad = items.findIndex(it => !((Number(it.minutes) || 0) > 0));
+  if (bad >= 0) { S.error = items.length > 1 ? `Enter the minutes for activity ${d.items.indexOf(items[bad]) + 1}.` : "Enter how many minutes the session took."; return renderSheet(); }
+  if (!items.length && !(d.removed || []).length) { S.error = "Enter how many minutes the session took."; return renderSheet(); }
+  const now = Date.now();
+  const ws = items.map((it, i) => ({
+    id: it.id || `c${(now + i).toString(36)}${Math.random().toString(36).slice(2, 6)}`, kind: "cardio", date: d.date, name: (it.name || "").trim(), activity: it.activity,
+    minutes: Number(it.minutes) || 0, distance: it.activity === "stairs" ? 0 : Number(it.distance) || 0, distUnit: it.distUnit,
+    stories: it.activity === "stairs" ? Math.max(0, Math.round(Number(it.stories) || 0)) : 0, createdAt: it.createdAt || now + i }));
+  if (ws.length) { prefs.activity = ws[ws.length - 1].activity; savePrefs(); }
+  try {
+    const before = xpLedger(S.workouts);
+    let list = S.workouts;
+    for (const id of d.removed || []) { const r = await Store.remove(id, list); list = Array.isArray(r) ? r : list.filter(x => x.id !== id); }
+    for (const w of ws) {
+      const old = list.find(x => x.id === w.id);
+      if (old && ["date", "name", "activity", "minutes", "distance", "distUnit", "stories", "createdAt"].every(k => (old[k] ?? "") === (w[k] ?? ""))) continue; // unchanged
+      const r = await Store.save(w, list); list = Array.isArray(r) ? r : list.filter(x => x.id !== w.id).concat([w]);
+    }
+    S.workouts = list;
+    S.anchor = parse(d.date); closeSheet(); render();
+    rewardXP(before, xpLedger(S.workouts), []);
+  } catch (ex) { S.error = ex && ex.message && Store.mode === "local" ? ex.message : "Couldn't save the workout. Check your connection and try again."; renderSheet(); }
+}
 async function saveDraft() {
   const d = S.draft;
   let w;
@@ -3277,14 +3352,8 @@ async function saveDraft() {
     return;
   }
   if (!d.date) { S.error = "Pick a date for this workout."; return renderSheet(); }
-  if (S.sheet === "cardio") {
-    const minutes = Number(d.minutes) || 0;
-    if (minutes <= 0) { S.error = "Enter how many minutes the session took."; return renderSheet(); }
-    prefs.activity = d.activity; savePrefs();
-    w = { id: d.id || `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, kind: "cardio", date: d.date, name: (d.name || "").trim(), activity: d.activity,
-      minutes, distance: d.activity === "stairs" ? 0 : Number(d.distance) || 0, distUnit: d.distUnit,
-      stories: d.activity === "stairs" ? Math.max(0, Math.round(Number(d.stories) || 0)) : 0, createdAt: d.createdAt || Date.now() };
-  } else {
+  if (S.sheet === "cardio") return saveCardio(d);
+  {
     const exercises = d.exercises.map(x => ({
       name: x.name.trim(), p: x.p, s: x.s,
       sets: x.sets.filter(st => String(st.reps).trim() !== "").map(st => ({ reps: Number(st.reps) || 0, weight: Number(st.weight) || 0 }))
@@ -3338,13 +3407,26 @@ $("sheetRoot").addEventListener("click", async e => {
   }
   if (a.act === "share-send") return sendShare();
   if (a.act === "share-save") { S.shareMsg = savedMsg(await saveShareImages()); return renderSheet(); }
-  if (a.act === "pick-cardio") return openSheet("cardio", null);
+  if (a.act === "pick-cardio") return openCardio();
   if (a.act === "save") return saveDraft();
   if (a.act === "goals-reset") { S.draft = { ...JSON.parse(JSON.stringify(DEFAULT_GOALS)), bwInput: d.bwInput }; return renderSheet(); }
   if (a.preset) { S.draft = { ...presetGoals(a.preset), bwInput: d.bwInput }; return renderSheet(); }
   if (a.unit) { d.unit = a.unit; prefs.unit = a.unit; savePrefs(); return renderSheet(); }
-  if (a.dunit) { d.distUnit = a.dunit; prefs.dist = a.dunit; savePrefs(); return renderSheet(); }
-  if (a.activity) { d.activity = a.activity; return renderSheet(); }
+  if (a.cunit) { d.items[+a.i].distUnit = a.cunit; prefs.dist = a.cunit; savePrefs(); return renderSheet(); }
+  if (a.activity && d.items) { d.items[+a.i].activity = a.activity; return renderSheet(); }
+  if (a.act === "c-add") {
+    const last = d.items[d.items.length - 1];
+    d.items.push({ ...cItem(), activity: last ? last.activity : prefs.activity || "run" });
+    renderSheet();
+    const it = document.querySelectorAll("#sheetRoot .citem"); if (it.length) it[it.length - 1].scrollIntoView({ block: "start", behavior: "smooth" });
+    return;
+  }
+  if (a.crm != null) {
+    const [gone] = d.items.splice(+a.crm, 1);
+    if (gone && gone.id) d.removed = (d.removed || []).concat([gone.id]);
+    if (!d.items.length) d.items.push(cItem());
+    return renderSheet();
+  }
   if (a.act === "addex") { d.exercises.push(newEx()); renderSheet(); return refocus(`ex-${d.exercises.length - 1}`); }
   if (a.rmex !== undefined) { d.exercises.splice(+a.rmex, 1); if (!d.exercises.length) d.exercises.push(newEx()); return renderSheet(); }
   if (a.addset !== undefined) { const x = d.exercises[a.addset]; x.sets.push(newSet(x.sets[x.sets.length - 1])); renderSheet(); return refocus(`r-${a.addset}-${x.sets.length - 1}`); }
@@ -3388,7 +3470,6 @@ $("history").addEventListener("click", e => {
   const w = data().find(x => x.id === b.dataset.w); if (!w) return;
   if (isCardio(w)) {
     openSheet("cardio", w);
-    if (w.sample) { Object.assign(S.draft, { name: w.name, activity: w.activity, minutes: w.minutes, distance: w.distance, distUnit: w.distUnit }); renderSheet(); }
   } else if (w.sample) { openSheet("lift", null); S.draft.name = w.name; S.draft.exercises = JSON.parse(JSON.stringify(w.exercises)); renderSheet(); }
   else openSheet("lift", w);
 });
@@ -3400,7 +3481,7 @@ document.addEventListener("click", e => {
   const b = e.target.closest("[data-open], #banner [data-act], #onboard [data-act], #summary [data-act], #bossCard [data-act]"); if (!b) return;
   const k = b.dataset.open || b.dataset.act;
   if (k === "log") openLift();
-  if (k === "cardio") openSheet("cardio", null);
+  if (k === "cardio") openCardio();
   if (k === "goals") openSheet("goals", null);
   if (k === "weight") { openSheet("goals", null); setTimeout(() => { const el = $("bwLbl"); if (el) el.scrollIntoView({ block: "start", behavior: "smooth" }); }, 60); }
   if (k === "level") openSheet("level", null);
