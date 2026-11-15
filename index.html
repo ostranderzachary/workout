@@ -1385,6 +1385,41 @@ function fightState(b) {
   return r.over ? { kind: "lost", t: r.t, f } : { kind: "active", t: r.t, f, end: r.end };
 }
 const timeLeft = ms => { const m = Math.max(0, Math.round(ms / 60000)), h = Math.floor(m / 60); return h ? `${h}h ${m % 60}m left` : `${m}m left`; };
+/* One-time repair. Saving Goals used to drop the saved boss fights, which took away boss wins and their XP.
+   The workouts (with the time each was logged) are still there, so for every unlocked boss with no fight on
+   record, look for a 24-hour stretch of workouts after it unlocked that meets the challenge, and record that
+   fight again. Runs once per device, after the account's data has loaded. */
+// Checked once for each set of data: this browser's, each signed-in account's, and the artifact's
+const fightsKey = () => Store.mode === "cloud" && Store.user ? Store.user.id : Store.mode;
+async function repairFights() {
+  const done = prefs.fightsChecked && typeof prefs.fightsChecked === "object" ? prefs.fightsChecked : {};
+  if (done[fightsKey()] || S.repairing || !S.loaded) return;
+  if (Store.mode === "cloud" && Store.syncing) { setTimeout(repairFights, 800); return; }
+  if (Store.mode === "cloud" && !(Store.cache && Store.cache.syncedAt)) return;
+  S.repairing = true;
+  const orig = S.goals, real = S.workouts.filter(w => !w.sample && w.createdAt).sort((a, b) => a.createdAt - b.createdAt);
+  const fights = (orig.bossFights || []).slice(), added = [], skip = new Set();
+  try {
+    for (let guard = 0; guard < 60; guard++) {
+      S.goals = { ...orig, bossFights: fights };
+      const L = xpLedger(S.workouts);
+      const b = (L.bosses || []).find(x => x.unlockDate && !x.defeatDate && !skip.has(x.tier) && !fights.some(f => f.tier === x.tier));
+      if (!b) break;
+      const from = parse(b.unlockDate).getTime();
+      const f = real.filter(w => w.createdAt >= from).map(w => ({ tier: b.tier, start: w.createdAt - 1000, restored: true })).find(f => fightResult(f, real).won);
+      if (f) { fights.push(f); added.push(b); } else skip.add(b.tier);
+    }
+  } finally { S.goals = orig; }
+  const key = fightsKey();
+  prefs.fightsChecked = { ...done, [key]: 1 }; savePrefs();
+  S.repairing = false;
+  if (!added.length) return;
+  try {
+    await saveFights(fights);
+    render();
+    toast(`Restored ${added.length === 1 ? "your boss win" : `${added.length} boss wins`}: ${added.map(b => b.name).join(", ")}. Sorry they went missing.`);
+  } catch { const d = { ...prefs.fightsChecked }; delete d[key]; prefs.fightsChecked = d; savePrefs(); }
+}
 async function saveFights(list) {
   const g = { ...S.goals, bossFights: list.slice(-100) };
   await Store.saveGoals(g); S.goals = normGoals(g);
@@ -3637,7 +3672,7 @@ async function saveDraft() {
   const d = S.draft;
   let w;
   if (S.sheet === "goals") {
-    const g = { per: "week", sets: Object.fromEntries(M_IDS.map(m => [m, Math.max(0, Number(d.sets[m]) || 0)])), cardio: Math.max(0, Number(d.cardio) || 0),
+    const g = { ...S.goals, per: "week", sets: Object.fromEntries(M_IDS.map(m => [m, Math.max(0, Number(d.sets[m]) || 0)])), cardio: Math.max(0, Number(d.cardio) || 0),
       distance: Math.max(0, Number(d.distance) || 0), stairs: Math.max(0, Math.round(Number(d.stairs) || 0)), days: Math.min(7, Math.max(0, Math.round(Number(d.days) || 0))) };
     // Keep a dated history so past weeks are still judged by the goals that applied then.
     const prev = S.goals, entry = { from: ymd(today()), sets: g.sets, cardio: g.cardio, distance: g.distance, stairs: g.stairs, days: g.days };
@@ -3832,8 +3867,8 @@ $("sheetRoot").addEventListener("focusin", e => {
 
 render();
 Store.init(
-  list => { S.workouts = list; S.loaded = true; render(); maybeTour(); },
-  g => { S.goals = normGoals(g); S.goalsSaved = !!g; render(); },
+  list => { S.workouts = list; S.loaded = true; render(); maybeTour(); setTimeout(repairFights, 0); },
+  g => { S.goals = normGoals(g); S.goalsSaved = !!g; render(); setTimeout(repairFights, 0); },
   msg => { $("sync").textContent = msg; }
 );
 })();
