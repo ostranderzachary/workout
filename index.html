@@ -241,6 +241,17 @@ label.btn { cursor: pointer; display: inline-block; }
 @keyframes tourIn { from { opacity: 0; translate: 0 8px; } }
 @keyframes tourInC { from { opacity: 0; transform: translate(-50%, -46%); } }
 @media (prefers-reduced-motion: reduce) { .tour-card, .tour-spot { animation: none; transition: none; } }
+/* First visit: choose a title theme (can't be dismissed without choosing) */
+.overlay.pick-overlay { z-index: 72; align-items: center; background: rgba(5, 7, 10, .8); }
+.sheet.pick { max-width: 560px; display: flex; flex-direction: column; overflow: hidden; }
+.sheet.pick .sheet-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.sheet.pick .sheet-actions { flex: none; }
+.pick-intro { margin: 0 0 14px; color: var(--muted); font-size: 15px; line-height: 1.5; }
+.pick-foot { display: grid; gap: 10px; width: 100%; }
+.pick-prev { min-height: 42px; font-size: 13px; color: var(--muted); line-height: 1.45; }
+.pick-prev b { color: var(--fg); }
+.pick-prev .lv { color: var(--h5); font-weight: 700; }
+.pick-foot .btn { width: 100%; }
 .auth-alt { margin-top: 14px; }
 .auth-alt summary { cursor: pointer; color: var(--muted); font-size: 14px; font-weight: 600; }
 .side-only { display: none !important; }
@@ -593,6 +604,7 @@ button.tag { cursor: pointer; }
 <div id="celebrate"></div>
 <div id="bossPop"></div>
 <div id="tour"></div>
+<div id="themePick"></div>
 <div class="toast" id="toast" role="status" hidden></div>
 
 <script>
@@ -2118,6 +2130,52 @@ function renderBossUI() {
   maybeBossPopup(L);
 }
 /* Announce each newly unlocked boss once per device, when nothing else is on screen. */
+/* ---------- First visit: pick a title theme ---------- */
+const needsTheme = () => !prefs.themeChosen && prefs.theme == null;
+function maybeThemePick(after) {
+  if (!needsTheme()) { if (after) after(); return false; }
+  S.pick = { sel: null, after };
+  document.body.style.overflow = "hidden";
+  $("themePick").innerHTML = `<div class="overlay pick-overlay"><div class="sheet pick" role="dialog" aria-modal="true" aria-labelledby="pickH" aria-describedby="pickD">
+    <div class="sheet-head"><h3 id="pickH">Choose your title theme</h3></div>
+    <div class="sheet-body">
+      <p class="pick-intro" id="pickD">As you level up you earn a new title every 10 levels. Pick the world you want to rise through. You can change it any time by tapping your level.</p>
+      <div class="themes">${themeGroups().map(([name, ks]) => `<div class="theme-group" role="group" aria-label="${esc(name)}"><span class="theme-head">${esc(name)}</span>
+        <div class="chips">${ks.map(k => `<button type="button" class="chip" data-pick="${k}" aria-pressed="false">${esc(THEMES[k].name)}</button>`).join("")}</div></div>`).join("")}</div>
+    </div>
+    <div class="sheet-actions"><div class="pick-foot">
+      <p class="pick-prev" id="pickPrev" aria-live="polite">Tap a theme to see where it starts and where it ends.</p>
+      <button class="btn primary" type="button" data-pick-ok disabled>Choose a theme</button>
+    </div></div>
+  </div></div>`;
+  if (!matchMedia("(pointer: coarse)").matches) setTimeout(() => { const c = document.querySelector("#themePick [data-pick]"); if (c) c.focus(); }, 40);
+  return true;
+}
+$("themePick").addEventListener("click", e => {
+  const chip = e.target.closest("[data-pick]");
+  if (chip) {
+    // Update in place so the list keeps its scroll position
+    const k = chip.dataset.pick, T = THEMES[k].titles, mid = T.find(t => t[0] === 50) || T[5];
+    S.pick.sel = k;
+    document.querySelectorAll("#themePick [data-pick]").forEach(b => b.setAttribute("aria-pressed", String(b === chip)));
+    $("pickPrev").innerHTML = `<b>${esc(THEMES[k].name)}</b>: start as <span class="lv">Lv 1</span> <b>${esc(T[0][1])}</b>, reach <span class="lv">Lv 50</span> <b>${esc(mid[1])}</b>, top out at <span class="lv">Lv 100</span> <b>${esc(T[T.length - 1][1])}</b>.`;
+    const ok = document.querySelector("#themePick [data-pick-ok]");
+    ok.disabled = false;
+    const lvl = levelInfo(xpLedger(S.workouts).total).level;
+    ok.textContent = lvl > 1 ? `Use ${THEMES[k].name}` : `Start as ${T[0][1]}`;
+    return;
+  }
+  if (e.target.closest("[data-pick-ok]") && S.pick && S.pick.sel) {
+    const { sel, after } = S.pick;
+    prefs.themeChosen = true; setTheme(sel); // setTheme saves prefs
+    S.pick = null; $("themePick").innerHTML = ""; document.body.style.overflow = "";
+    render();
+    toast(`Title theme: ${THEMES[sel].name}. You're ${titleFor(levelInfo(xpLedger(S.workouts).total).level)}.`);
+    if (after) after();
+    else if (S.loaded) maybeBossPopup(xpLedger(S.workouts));
+  }
+});
+
 /* ---------- First-run tour: welcome, goals, levels and title themes, boss fights ---------- */
 const TOUR_ICONS = {
   hello: `<svg viewBox="0 0 24 24"><path d="M6 7v10M18 7v10M3 9.5v5M21 9.5v5M6 12h12"/></svg>`,
@@ -2132,7 +2190,7 @@ const TOUR = [
   { icon: "goals", target: "header [data-open=goals]", title: "Set your weekly goals",
     body: "Choose how many <b>sets each muscle</b> should get every week, plus your <b>cardio time, distance and stairs</b>. Each muscle on the heat map turns brighter green as it gets closer to its goal, and meeting goals earns bonus XP every week." },
   { icon: "level", target: "#lvlChip", title: "Level up and earn titles",
-    body: "Every workout earns <b>XP</b>, and each level takes a little more than the last. Every 10 levels unlocks a new <b>title</b>. Tap your level to pick a <b>title theme</b>: Game of Thrones, Marvel, Naruto, military ranks and more." },
+    body: () => `Every workout earns <b>XP</b>, and each level takes a little more than the last. Every 10 levels unlocks a new <b>title</b>. ${needsTheme() ? "Right after this tour you'll pick your <b>title theme</b>" : "Tap your level to change your <b>title theme</b>"}: Game of Thrones, Marvel, Naruto, military ranks and more.` },
   { icon: "boss", target: "#bossBtn", boss: true, title: "Take on boss fights",
     body: "Every 5 levels a <b>boss</b> appears: a long run, a big stair climb, a high set count or a heavy lifting day. Start the fight when you're ready and finish it <b>within 24 hours</b> to win a big XP reward." },
   { icon: "account", target: "#acctBtn", account: true, title: "Sign in to sync",
@@ -2142,15 +2200,20 @@ const TOUR = [
 // Steps that apply here: sign-in is only offered on the web, to people not signed in yet.
 const tourSteps = () => TOUR.filter(t => !t.when || t.when());
 function startTour(i = 0) { $("bossPop").innerHTML = ""; window.scrollTo(0, 0); S.tour = i; renderTour(); if (!matchMedia("(pointer: coarse)").matches) setTimeout(() => { const b = document.querySelector("#tour [data-tour=next]"); if (b) b.focus(); }, 40); }
-function endTour() {
+function endTour(after) {
   S.tour = null; $("tour").innerHTML = "";
   if (!prefs.tourDone) { prefs.tourDone = true; savePrefs(); }
+  if (maybeThemePick(after)) return;
+  if (after) return;
   if (S.loaded) maybeBossPopup(xpLedger(S.workouts));
 }
 function maybeTour() {
-  if (prefs.tourDone || S.tour != null || S.tourAsked) return;
+  if (S.tour != null || S.tourAsked) return;
   S.tourAsked = true;
-  setTimeout(() => { if (!S.sheet && !$("celebrate").innerHTML) startTour(0); }, 500);
+  setTimeout(() => {
+    if (S.sheet || $("celebrate").innerHTML) return;
+    if (!prefs.tourDone) startTour(0); else maybeThemePick();
+  }, 500);
 }
 function renderTour() {
   const root = $("tour");
@@ -2173,7 +2236,7 @@ function renderTour() {
       <div class="tour-ico${st.boss ? " boss" : ""}">${TOUR_ICONS[st.icon]}</div>
       <p class="tour-step">${i ? `Step ${i} of ${steps.length - 1}` : "Quick tour"}</p>
       <h3 id="tourH">${st.title}</h3>
-      <p class="tour-body" id="tourB">${st.body}</p>
+      <p class="tour-body" id="tourB">${typeof st.body === "function" ? st.body() : st.body}</p>
       <div class="tour-foot">
         <span class="tour-dots" aria-hidden="true">${steps.map((_, k) => `<i class="${k === i ? "on" : ""}"></i>`).join("")}</span>
         <span class="tour-btns">${last ? "" : `<button type="button" class="tour-skip" data-tour="skip">Skip</button>`}${i ? `<button type="button" class="btn small" data-tour="back">Back</button>` : ""}
@@ -2186,7 +2249,7 @@ $("tour").addEventListener("click", e => {
   const b = e.target.closest("[data-tour]"); if (!b) return;
   const k = b.dataset.tour;
   const n = tourSteps().length;
-  if (k === "signin") { endTour(); return openSheet("account", null); }
+  if (k === "signin") return endTour(() => openSheet("account", null));
   if (k === "skip" || (k === "next" && S.tour >= n - 1)) return endTour();
   S.tour = Math.max(0, Math.min(n - 1, S.tour + (k === "next" ? 1 : -1)));
   renderTour();
@@ -2209,7 +2272,7 @@ document.addEventListener("keydown", e => {
 addEventListener("resize", () => { if (S.tour != null) renderTour(); });
 
 function maybeBossPopup(L) {
-  if (!S.loaded || S.sheet || S.tour != null || $("celebrate").innerHTML || $("bossPop").innerHTML) return;
+  if (!S.loaded || S.sheet || S.tour != null || S.pick || $("celebrate").innerHTML || $("bossPop").innerHTML) return;
   const seen = prefs.bossSeen || [], b = activeBosses(L).find(x => !seen.includes(x.tier));
   if (!b) return;
   $("bossPop").innerHTML = `<div class="overlay boss-pop" role="dialog" aria-modal="true" aria-labelledby="bossPopH"><div class="boss-window">
@@ -3225,7 +3288,7 @@ $("sheetRoot").addEventListener("click", async e => {
   if (a.act === "import-merge") return applyImport("merge");
   if (a.act === "import-replace") return applyImport("replace");
   if (a.act === "import-cancel") { S.importPending = null; return renderSheet(); }
-  if (a.theme) { setTheme(a.theme); render(); return renderSheet(); }
+  if (a.theme) { prefs.themeChosen = true; setTheme(a.theme); render(); return renderSheet(); }
   if (a.act === "share-send") return sendShare();
   if (a.act === "share-save") { S.shareMsg = savedMsg(await saveShareImages()); return renderSheet(); }
   if (a.act === "pick-cardio") return openSheet("cardio", null);
