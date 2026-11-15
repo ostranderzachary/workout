@@ -73,7 +73,13 @@ The **History** tab has an XP chart for the selected range:
 - workout XP in green, weekly bonuses stacked on top, and missed-day penalties below the zero line
 - your total for the range and your best day or week
 
-Tap a bar for its breakdown.
+Tap a bar to list where its XP came from: today's bar is listed to start with. The list shows:
+
+- each workout, broken down into the 25 XP for logging it and each exercise's sets, or the cardio minutes. Notes appear when the 40-set or 180-minute caps apply.
+- each weekly bonus, boss reward and missed-day penalty
+- a total that matches the bar
+
+Tap a workout in the list to open it. This week's bonuses appear on today's bar until the week ends.
 
 Saving a workout shows the XP earned. Reaching a new level or title brings up a celebration. Tap the level card to see the title ladder and recent XP.
 

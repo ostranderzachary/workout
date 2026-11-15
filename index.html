@@ -298,6 +298,26 @@ input[type="date"].inp::-webkit-date-and-time-value { text-align: left; }
 .lb-gap { text-align: center; color: var(--muted); font-size: 18px; line-height: 1; padding: 2px 0; }
 .lb-empty { padding: 22px 12px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 14px; }
 .lb-mine { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; font-size: 14px; }
+/* XP line items under the History chart */
+.xp-items { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.xi-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+.xi-head b { font-family: var(--font-display); font-size: 18px; text-transform: uppercase; letter-spacing: .02em; }
+.xi-head .num { font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--h5); }
+.xi-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.xi { background: var(--bg); border-radius: 12px; overflow: hidden; }
+.xi-main { width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 10px 12px; border: 0; background: none; color: var(--fg); text-align: left; font: inherit; }
+button.xi-main { cursor: pointer; }
+.xi-main .badge { margin: 0; }
+.xi-t { display: grid; gap: 1px; min-width: 0; }
+.xi-t b { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.xi-t small { font-size: 12px; color: var(--muted); }
+.xi-xp { font-weight: 700; color: var(--h5); }
+.xi-xp.neg { color: var(--danger); }
+.xi-sub { list-style: none; margin: 0; padding: 0 12px 10px 12px; display: grid; gap: 2px; font-size: 12px; color: var(--muted); }
+.xi-sub li { display: flex; justify-content: space-between; gap: 10px; padding-left: 10px; border-left: 2px solid var(--line); }
+.badge.bonus { background: var(--h5); border-color: var(--h5); color: #0b1a0f; }
+.badge.boss { background: var(--boss); border-color: var(--boss); color: #0d0b1f; }
+.badge.pen { background: transparent; border-color: var(--danger); color: var(--danger); }
 .auth-alt { margin-top: 14px; }
 .auth-alt summary { cursor: pointer; color: var(--muted); font-size: 14px; font-weight: 600; }
 .side-only { display: none !important; }
@@ -2140,7 +2160,9 @@ function renderXpChart(r) {
   const every = Math.ceil(buckets.length / (by === "day" && buckets.length <= 7 ? 7 : 6));
   const xLabel = (b, i) => by === "day" ? (buckets.length <= 7 ? DOW[b.d.getDay()].slice(0, 1) : String(b.d.getDate())) : by === "week" ? MON[addDays(b.d, 3).getMonth()] : MON[b.d.getMonth()] + (b.d.getMonth() === 0 || i === 0 ? ` ${String(b.d.getFullYear()).slice(2)}` : "");
   const tipOf = b => `${labelOf(b)}: ${b.work + b.bonus + b.pen} XP` + (b.bonus || b.pen ? ` (${b.work} from workouts${b.bonus ? `, +${b.bonus} bonus` : ""}${b.pen ? `, −${-b.pen} penalty` : ""})` : "");
-  const selB = buckets.find(b => b.k === S.xpSel);
+  S.xpRange = r;
+  let selB = buckets.find(b => b.k === S.xpSel);
+  if (!selB) selB = buckets.find(b => b.k === keyOf(today()) && (b.work || b.bonus || b.pen)) || [...buckets].reverse().find(b => b.work || b.bonus || b.pen);
   const bars = buckets.map((b, i) => {
     const x = (L + slot * i + (slot - bw) / 2).toFixed(1), parts = [];
     if (b.work) parts.push(`<rect class="xb-work" x="${x}" y="${Y(b.work).toFixed(1)}" width="${bw.toFixed(1)}" height="${(Y(0) - Y(b.work)).toFixed(1)}" rx="2"/>`);
@@ -2148,7 +2170,7 @@ function renderXpChart(r) {
     if (b.pen) parts.push(`<rect class="xb-pen" x="${x}" y="${Y(0).toFixed(1)}" width="${bw.toFixed(1)}" height="${(Y(b.pen) - Y(0)).toFixed(1)}" rx="2"/>`);
     const tip = tipOf(b);
     const lab = i % every === 0 ? `<text class="w-tick" x="${(L + slot * i + slot / 2).toFixed(1)}" y="${H - 8}" text-anchor="middle">${esc(xLabel(b, i))}</text>` : "";
-    return `<g class="xb-g${S.xpSel === b.k ? " sel" : ""}" data-k="${b.k}" data-tip="${esc(tip)}"><title>${esc(tip)}</title><rect class="xb-hit" x="${(L + slot * i).toFixed(1)}" y="${T}" width="${slot.toFixed(1)}" height="${ih}"/>${parts.join("")}</g>${lab}`;
+    return `<g class="xb-g${selB && selB.k === b.k ? " sel" : ""}" data-k="${b.k}" data-tip="${esc(tip)}"><title>${esc(tip)}</title><rect class="xb-hit" x="${(L + slot * i).toFixed(1)}" y="${T}" width="${slot.toFixed(1)}" height="${ih}"/>${parts.join("")}</g>${lab}`;
   }).join("");
   const has = k => buckets.some(b => b[k]);
   $("xpChart").innerHTML = `<p class="xp-sum num"><b>${total.toLocaleString()} XP</b> ${esc(S.period === "all" ? "in total" : S.period === "day" ? "on this day" : `in this ${S.period}`)} · best ${unitWord}: ${esc(labelOf(best).replace(/^Week of /, ""))} (${(best.work + best.bonus + best.pen).toLocaleString()} XP)</p>
@@ -2157,7 +2179,48 @@ function renderXpChart(r) {
       ${bars}
     </svg></div>
     <p class="chart-readout" id="xpReadout" aria-live="polite">${esc(selB ? tipOf(selB) : "Tap a bar to see its details.")}</p>
-    <p class="xp-legend"><span><i class="xb-work"></i>Workouts</span>${has("bonus") ? `<span><i class="xb-bonus"></i>Bonuses and bosses</span>` : ""}${has("pen") ? `<span><i class="xb-pen"></i>Penalties</span>` : ""}<span class="note" style="margin:0">One bar per ${unitWord}.</span></p>`;
+    <p class="xp-legend"><span><i class="xb-work"></i>Workouts</span>${has("bonus") ? `<span><i class="xb-bonus"></i>Bonuses and bosses</span>` : ""}${has("pen") ? `<span><i class="xb-pen"></i>Penalties</span>` : ""}<span class="note" style="margin:0">One bar per ${unitWord}. Tap one to list its XP.</span></p>
+    ${selB ? xpItemsHTML(selB, by, labelOf(selB), keyOf) : ""}`;
+}
+/* Where each XP in a bar came from: every workout (broken down into its parts), bonus, boss reward and penalty. */
+function xpParts(w) {
+  if (isCardio(w)) {
+    const m = Number(w.minutes) || 0, counted = Math.min(XP.maxMin, m);
+    return [["Logging the session", XP.session], [`${fmt(m)} min × ${XP.perMin} XP${m > XP.maxMin ? ` (the first ${XP.maxMin} count)` : ""}`, Math.round(counted * XP.perMin)]];
+  }
+  let left = XP.maxSets;
+  const rows = [["Logging the workout", XP.workout]];
+  for (const x of w.exercises || []) {
+    const sets = x.sets || [], counted = sets.slice(0, Math.max(0, left));
+    left -= counted.length;
+    const xp = counted.reduce((a, st) => a + setXP(st.weight, w.unit), 0);
+    rows.push([`${x.name} · ${plural(sets.length, "set")}${counted.length < sets.length ? ` (${counted.length} count: ${XP.maxSets} sets per workout)` : ""}`, xp]);
+  }
+  return rows;
+}
+function xpItemsHTML(b, by, label, keyOf) {
+  const inB = ds => keyOf(parse(ds)) === b.k;
+  const ws = S.workouts.filter(w => !w.sample && inB(w.date)).sort((x, y) => x.date.localeCompare(y.date) || (x.createdAt || 0) - (y.createdAt || 0));
+  const es = xpLedger(S.workouts).entries.filter(e => inB(e.date));
+  const sign = n => `${n < 0 ? "−" : "+"}${Math.abs(n).toLocaleString()}`;
+  const when = w => { const t = w.createdAt ? new Date(w.createdAt) : null; return [by === "day" ? "" : shortDate(w.date), t ? t.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : ""].filter(Boolean).join(" · "); };
+  const lines = ws.map(w => {
+    const a = isCardio(w) ? CARDIO[w.activity] || CARDIO.run : null;
+    const title = a ? (w.name || a[0]) + (Number(w.distance) > 0 ? ` · ${fmt(Number(w.distance))} ${w.distUnit || "mi"}` : w.stories ? ` · ${w.stories} stories` : "") : liftTitle(w);
+    return `<li class="xi"><button type="button" class="xi-main" data-w="${esc(w.id)}" aria-label="${esc(title)}: ${sign(xpFor(w))} XP. Open this workout">
+        <span class="badge${a ? " cardio" : ""}">${a ? "Cardio" : "Lift"}</span><span class="xi-t"><b>${esc(title)}</b><small>${esc(when(w))}</small></span><span class="xi-xp num">${sign(xpFor(w))}</span></button>
+      <ul class="xi-sub">${xpParts(w).map(([t, x]) => `<li><span>${esc(t)}</span><span class="num">${sign(x)}</span></li>`).join("")}</ul></li>`;
+  }).concat(es.map(e => {
+    const kind = e.boss ? ["boss", "Boss"] : e.xp < 0 ? ["pen", "Penalty"] : ["bonus", "Bonus"];
+    const note = e.boss ? (by === "day" ? "" : shortDate(e.date)) : e.label + (e.date === ymd(today()) && !e.boss ? " · so far" : "");
+    return `<li class="xi"><div class="xi-main"><span class="badge ${kind[0]}">${kind[1]}</span><span class="xi-t"><b>${esc(e.text)}</b>${note ? `<small>${esc(note)}</small>` : ""}</span><span class="xi-xp num${e.xp < 0 ? " neg" : ""}">${sign(e.xp)}</span></div></li>`;
+  }));
+  const total = b.work + b.bonus + b.pen;
+  return `<div class="xp-items" id="xpItems">
+      <div class="xi-head"><b>${esc(by === "day" ? label : by === "week" ? label : label)}</b><span class="num">${sign(total)} XP</span></div>
+      ${lines.length ? `<ul class="xi-list">${lines.join("")}</ul>` : `<p class="note" style="margin:6px 0 0">No XP ${by === "day" ? "on this day" : `in this ${by}`}.</p>`}
+      ${es.some(e => !e.boss && e.date === ymd(today())) ? `<p class="note" style="margin:8px 0 0">This week's bonuses show on today until the week ends.</p>` : ""}
+    </div>`;
 }
 function chartTap(containerId, selector, readoutId, remember) {
   $(containerId).addEventListener("click", e => {
@@ -2167,7 +2230,12 @@ function chartTap(containerId, selector, readoutId, remember) {
     $(readoutId).textContent = g.dataset.tip;
   });
 }
-chartTap("xpChart", "[data-k]", "xpReadout", g => { S.xpSel = g.dataset.k; });
+$("xpChart").addEventListener("click", e => {
+  const g = e.target.closest("[data-k]");
+  if (g) { S.xpSel = g.dataset.k; renderXpChart(S.xpRange); return; }
+  const wb = e.target.closest("[data-w]"); if (!wb) return;
+  const w = S.workouts.find(x => x.id === wb.dataset.w); if (w) openSheet(isCardio(w) ? "cardio" : "lift", w);
+});
 chartTap("weightTrend", "[data-date]", "wReadout", g => { S.wSel = g.dataset.date; });
 chartTap("liftGauges", "[data-seg]", "segReadout", () => {});
 function niceStep(max) { const raw = max / 4, mag = 10 ** Math.floor(Math.log10(raw)), n = raw / mag; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * mag; }
