@@ -4,7 +4,7 @@ A mobile-friendly workout tracker. Log lifts and cardio, set daily goals, and se
 
 ## Features
 
-- **Quick tour:** the first time Forged opens, four short cards explain goals, levels and title themes, and boss fights, each pointing at the button it describes. Skip it any time, and replay it from the Level screen (**Take the quick tour again**).
+- **Quick tour:** the first time Forged opens, short cards explain goals, levels and title themes, boss fights and signing in, each pointing at the button it describes. The sign-in card offers **Sign in** or **Not now**, and is left out for people already signed in. Skip it any time, and replay it from the Level screen (**Take the quick tour again**).
 
 - **Log workouts:** date, optional name, and exercises with reps and weight for each set (lb or kg). About 50 common exercises come with their muscles already mapped. For a new exercise, tap the muscles it works; the app remembers them.
 - **Heat map:** switch between Day, Week, Month, Year and All, and step back through earlier periods. Tap a muscle to see which exercises worked it.

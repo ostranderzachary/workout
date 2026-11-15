@@ -2123,7 +2123,8 @@ const TOUR_ICONS = {
   hello: `<svg viewBox="0 0 24 24"><path d="M6 7v10M18 7v10M3 9.5v5M21 9.5v5M6 12h12"/></svg>`,
   goals: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></svg>`,
   level: `<svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg>`,
-  boss: `<svg viewBox="0 0 24 24"><path d="M4 18h16M5 15L3 7l5 4 4-6 4 6 5-4-2 8z"/></svg>`
+  boss: `<svg viewBox="0 0 24 24"><path d="M4 18h16M5 15L3 7l5 4 4-6 4 6 5-4-2 8z"/></svg>`,
+  account: `<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>`
 };
 const TOUR = [
   { icon: "hello", title: "Welcome to Forged",
@@ -2133,8 +2134,13 @@ const TOUR = [
   { icon: "level", target: "#lvlChip", title: "Level up and earn titles",
     body: "Every workout earns <b>XP</b>, and each level takes a little more than the last. Every 10 levels unlocks a new <b>title</b>. Tap your level to pick a <b>title theme</b>: Game of Thrones, Marvel, Naruto, military ranks and more." },
   { icon: "boss", target: "#bossBtn", boss: true, title: "Take on boss fights",
-    body: "Every 5 levels a <b>boss</b> appears: a long run, a big stair climb, a high set count or a heavy lifting day. Start the fight when you're ready and finish it <b>within 24 hours</b> to win a big XP reward." }
+    body: "Every 5 levels a <b>boss</b> appears: a long run, a big stair climb, a high set count or a heavy lifting day. Start the fight when you're ready and finish it <b>within 24 hours</b> to win a big XP reward." },
+  { icon: "account", target: "#acctBtn", account: true, title: "Sign in to sync",
+    body: "Sign in with <b>Google</b> or your <b>email</b> to back up your workouts and use Forged on your phone and computer. It's optional: without an account, everything stays in this browser.",
+    when: () => !inClaude() && Store.mode !== "cloud" }
 ];
+// Steps that apply here: sign-in is only offered on the web, to people not signed in yet.
+const tourSteps = () => TOUR.filter(t => !t.when || t.when());
 function startTour(i = 0) { $("bossPop").innerHTML = ""; window.scrollTo(0, 0); S.tour = i; renderTour(); if (!matchMedia("(pointer: coarse)").matches) setTimeout(() => { const b = document.querySelector("#tour [data-tour=next]"); if (b) b.focus(); }, 40); }
 function endTour() {
   S.tour = null; $("tour").innerHTML = "";
@@ -2149,7 +2155,7 @@ function maybeTour() {
 function renderTour() {
   const root = $("tour");
   if (S.tour == null) { root.innerHTML = ""; return; }
-  const i = S.tour, st = TOUR[i], last = i === TOUR.length - 1;
+  const steps = tourSteps(), i = Math.min(S.tour, steps.length - 1), st = steps[i], last = i === steps.length - 1;
   const el = st.target ? document.querySelector(st.target) : null;
   const r = el && el.offsetParent !== null ? el.getBoundingClientRect() : null;
   const vw = innerWidth, vh = innerHeight, W = Math.min(vw - 32, 380), pad = 6;
@@ -2165,21 +2171,24 @@ function renderTour() {
   root.innerHTML = `<div class="tour" role="dialog" aria-modal="true" aria-labelledby="tourH" aria-describedby="tourB">${spot}
     <div class="tour-card${place === "center" ? " center" : place === "above" ? " above" : ""}${st.boss ? " is-boss" : ""}" style="${style}">${tip}
       <div class="tour-ico${st.boss ? " boss" : ""}">${TOUR_ICONS[st.icon]}</div>
-      <p class="tour-step">${i ? `Step ${i} of ${TOUR.length - 1}` : "Quick tour"}</p>
+      <p class="tour-step">${i ? `Step ${i} of ${steps.length - 1}` : "Quick tour"}</p>
       <h3 id="tourH">${st.title}</h3>
       <p class="tour-body" id="tourB">${st.body}</p>
       <div class="tour-foot">
-        <span class="tour-dots" aria-hidden="true">${TOUR.map((_, k) => `<i class="${k === i ? "on" : ""}"></i>`).join("")}</span>
+        <span class="tour-dots" aria-hidden="true">${steps.map((_, k) => `<i class="${k === i ? "on" : ""}"></i>`).join("")}</span>
         <span class="tour-btns">${last ? "" : `<button type="button" class="tour-skip" data-tour="skip">Skip</button>`}${i ? `<button type="button" class="btn small" data-tour="back">Back</button>` : ""}
-          <button type="button" class="btn primary" data-tour="next">${last ? "Let's go" : i ? "Next" : "Show me"}</button></span>
+          ${st.account ? `<button type="button" class="btn small" data-tour="skip">Not now</button><button type="button" class="btn primary" data-tour="signin">Sign in</button>`
+            : `<button type="button" class="btn primary" data-tour="next">${last ? "Let's go" : i ? "Next" : "Show me"}</button>`}</span>
       </div>
     </div></div>`;
 }
 $("tour").addEventListener("click", e => {
   const b = e.target.closest("[data-tour]"); if (!b) return;
   const k = b.dataset.tour;
-  if (k === "skip" || (k === "next" && S.tour === TOUR.length - 1)) return endTour();
-  S.tour = Math.max(0, Math.min(TOUR.length - 1, S.tour + (k === "next" ? 1 : -1)));
+  const n = tourSteps().length;
+  if (k === "signin") { endTour(); return openSheet("account", null); }
+  if (k === "skip" || (k === "next" && S.tour >= n - 1)) return endTour();
+  S.tour = Math.max(0, Math.min(n - 1, S.tour + (k === "next" ? 1 : -1)));
   renderTour();
   if (matchMedia("(pointer: coarse)").matches) return;
   const f = document.querySelector(`#tour [data-tour=${k === "back" && S.tour === 0 ? "next" : k}]`) || document.querySelector("#tour [data-tour=next]");
