@@ -1393,77 +1393,6 @@ function fightState(b) {
   return r.over ? { kind: "lost", t: r.t, f } : { kind: "active", t: r.t, f, end: r.end };
 }
 const timeLeft = ms => { const m = Math.max(0, Math.round(ms / 60000)), h = Math.floor(m / 60); return h ? `${h}h ${m % 60}m left` : `${m}m left`; };
-/* One-time repair. Saving Goals used to drop the saved boss fights, which took away boss wins and their XP.
-   The workouts (with the time each was logged) are still there, so for every unlocked boss with no fight on
-   record, look for a 24-hour stretch of workouts after it unlocked that meets the challenge, and record that
-   fight again. Runs once per device, after the account's data has loaded. */
-// Checked once for each set of data: this browser's, each signed-in account's, and the artifact's.
-// (Version 2: the first version could record a fight around the workout that unlocked the boss, which didn't count.)
-const fightsKey = () => Store.mode === "cloud" && Store.user ? Store.user.id : Store.mode;
-/* Finds a 24-hour stretch of workouts, all logged after boss `b` unlocked, that beats it, and returns that fight
-   if adding it really brings the win back (checked with the full XP ledger). `fights` are the other fights on record. */
-function findBossWin(b, fights) {
-  const orig = S.goals, real = S.workouts.filter(w => !w.sample && w.createdAt).sort((x, y) => x.createdAt - y.createdAt);
-  try {
-    S.goals = { ...orig, bossFights: fights };
-    const L = xpLedger(S.workouts), day = b.unlockDate, need = xpAtLevel(b.level);
-    // XP before the unlock day, then that day's workouts in the order they were logged: the boss appeared after the one that crossed the line
-    let cum = S.workouts.filter(w => !w.sample && w.date < day).reduce((n, w) => n + xpFor(w), 0) + L.entries.filter(e => e.date < day).reduce((n, e) => n + e.xp, 0);
-    let after = cum >= need ? parse(day).getTime() - 1 : null;
-    if (after == null) for (const w of real.filter(w => w.date === day)) { cum += xpFor(w); after = w.createdAt; if (cum >= need) break; }
-    if (after == null) after = parse(day).getTime() - 1;
-    for (const w of real.filter(w => w.createdAt > after)) {
-      const f = { tier: b.tier, start: w.createdAt - 1000, restored: true };
-      if (!fightResult(f, real).won) continue;
-      S.goals = { ...orig, bossFights: fights.concat([f]) };
-      if ((xpLedger(S.workouts).bosses || []).some(x => x.tier === b.tier && x.defeatDate)) return f;
-    }
-    return null;
-  } finally { S.goals = orig; }
-}
-async function repairFights() {
-  const done = prefs.fightsChecked2 && typeof prefs.fightsChecked2 === "object" ? prefs.fightsChecked2 : {};
-  if (done[fightsKey()] || S.repairing || !S.loaded) return;
-  if (Store.mode === "cloud" && Store.syncing) { setTimeout(repairFights, 800); return; }
-  if (Store.mode === "cloud" && !(Store.cache && Store.cache.syncedAt)) return;
-  S.repairing = true;
-  const orig = S.goals, key = fightsKey(), added = [];
-  let fights = (orig.bossFights || []).slice(), cleaned = false;
-  try {
-    // Drop restored fights that don't bring a win back (left by the first version of this repair)
-    S.goals = { ...orig, bossFights: fights };
-    const credited = new Set((xpLedger(S.workouts).bosses || []).filter(b => b.defeatDate).map(b => b.tier));
-    const kept = fights.filter(f => !f.restored || credited.has(f.tier));
-    cleaned = kept.length !== fights.length; fights = kept;
-    const skip = new Set();
-    for (let guard = 0; guard < 60; guard++) {
-      S.goals = { ...orig, bossFights: fights };
-      const b = (xpLedger(S.workouts).bosses || []).find(x => x.unlockDate && !x.defeatDate && !skip.has(x.tier) && !fights.some(f => f.tier === x.tier));
-      S.goals = orig;
-      if (!b) break;
-      const f = findBossWin(b, fights);
-      if (f) { fights = fights.concat([f]); added.push(b); } else skip.add(b.tier);
-    }
-  } finally { S.goals = orig; }
-  prefs.fightsChecked2 = { ...done, [key]: 1 }; savePrefs();
-  S.repairing = false;
-  if (!added.length && !cleaned) return;
-  try {
-    await saveFights(fights);
-    render();
-    if (added.length) toast(`Restored ${added.length === 1 ? "your boss win" : `${added.length} boss wins`}: ${added.map(b => b.name).join(", ")}. Sorry they went missing.`);
-  } catch { const d = { ...prefs.fightsChecked2 }; delete d[key]; prefs.fightsChecked2 = d; savePrefs(); }
-}
-// "Already beat it?" on a waiting boss: look for the win in your workouts and restore it
-async function recheckBoss(tier) {
-  const L = xpLedger(S.workouts), b = (L.bosses || []).find(x => x.tier === tier);
-  if (!b || b.defeatDate) return;
-  const others = (S.goals.bossFights || []).filter(f => !(f.restored && f.tier === tier));
-  const f = findBossWin(b, others);
-  if (!f) return toast(`No win found: there's no 24-hour stretch of workouts after ${b.name} appeared (${shortDate(b.unlockDate)}) that meets the challenge.`);
-  try { await saveFights(others.concat([f])); render(); if (S.sheet === "boss") renderSheet(); toast(`Found it: your win over ${b.name} is back (+${b.reward.toLocaleString()} XP).`); }
-  catch { toast("Couldn't save that. Try again."); }
-}
 async function saveFights(list) {
   const g = { ...S.goals, bossFights: list.slice(-100) };
   await Store.saveGoals(g); S.goals = normGoals(g);
@@ -2568,8 +2497,7 @@ function bossSheet() {
            <p class="note num" style="margin:6px 0 0"><b class="fight-live">Fight on · ${esc(timeLeft(st.end - Date.now()))}</b> · ${esc(pr.text)} so far. Log workouts as you go; the boss falls the moment you reach it.</p>
            <div class="btn-row" style="margin-top:8px"><button class="btn small ghost danger" type="button" data-act="boss-end" data-tier="${b.tier}">End fight early</button></div>`
         : `${st.kind === "lost" ? `<p class="note num" style="margin:0 0 8px">Last fight fell short: ${esc(pr.text)}.</p>` : ""}
-           <div class="btn-row"><button class="btn small boss-accept" type="button" data-act="boss-start" data-tier="${b.tier}"${busy ? " disabled" : ""}>Start 24-hour fight</button>${busy ? `<span class="note" style="margin:0">Finish your current fight first.</span>` : ""}</div>
-           <p class="note" style="margin:8px 0 0">Already beat it and the win went missing? <button class="linkbtn" type="button" data-act="boss-recheck" data-tier="${b.tier}">Check my workouts</button></p>`}
+           <div class="btn-row"><button class="btn small boss-accept" type="button" data-act="boss-start" data-tier="${b.tier}"${busy ? " disabled" : ""}>Start 24-hour fight</button>${busy ? `<span class="note" style="margin:0">Finish your current fight first.</span>` : ""}</div>`}
     </div>`;
   };
   return sheetFrame("Boss fights", `
@@ -3780,7 +3708,6 @@ $("sheetRoot").addEventListener("click", async e => {
   if (a.act === "open-share") return openShare();
   if (a.act === "boss-start") return startFight(Number(a.tier));
   if (a.act === "boss-end") return endFight(Number(a.tier));
-  if (a.act === "boss-recheck") return recheckBoss(Number(a.tier));
   if (a.act === "export") return exportBackup();
   if (a.act === "tour") { closeSheet(); return startTour(0); }
   if (a.act && a.act.startsWith("auth-")) return accountAction(a.act);
@@ -3913,8 +3840,8 @@ $("sheetRoot").addEventListener("focusin", e => {
 
 render();
 Store.init(
-  list => { S.workouts = list; S.loaded = true; render(); maybeTour(); setTimeout(repairFights, 0); },
-  g => { S.goals = normGoals(g); S.goalsSaved = !!g; render(); setTimeout(repairFights, 0); },
+  list => { S.workouts = list; S.loaded = true; render(); maybeTour(); },
+  g => { S.goals = normGoals(g); S.goalsSaved = !!g; render(); },
   msg => { $("sync").textContent = msg; }
 );
 })();

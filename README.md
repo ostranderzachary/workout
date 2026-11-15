@@ -129,7 +129,7 @@ Four types take turns, and each comes back harder:
 
 Each reward equals the XP of the next two levels, plus 5% more for every boss before it. Rewards keep pace with the steeper level costs and keep growing: about 1,100 XP at level 5, 2,200 at 10, 14,650 at 50 and 39,200 at 100.
 
-A boss beaten later on the same day it appeared counts too. If a win ever goes missing, tap **Check my workouts** on that boss: Forged looks for 24 hours of workouts, after the boss appeared, that meet the challenge, and restores the win if it finds them.
+A boss beaten later on the same day it appeared counts too.
 
 A new boss is announced with a popup. The crown **Boss** button in the header (and **Bosses** in the desktop sidebar) shows a badge while one is waiting. The Today tab shows the boss with a **Start fight** button, and during a fight, the time left and your progress.
 
