@@ -318,6 +318,30 @@ button.xi-main { cursor: pointer; }
 .badge.bonus { background: var(--h5); border-color: var(--h5); color: #0b1a0f; }
 .badge.boss { background: var(--boss); border-color: var(--boss); color: #0d0b1f; }
 .badge.pen { background: transparent; border-color: var(--danger); color: var(--danger); }
+/* Exercise picker */
+.ex-pick { display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; cursor: pointer; }
+.ex-pick span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.ex-pick.empty span { color: var(--muted); font-weight: 500; }
+.ex-pick svg { width: 18px; height: 18px; flex: none; fill: none; stroke: var(--muted); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.overlay.xpk-overlay { z-index: 30; }
+.sheet.xpk { max-width: 520px; display: flex; flex-direction: column; overflow: hidden; height: min(92vh, 680px); height: min(92dvh, 680px); }
+.sheet.xpk .sheet-head { flex: none; }
+.sheet.xpk .sheet-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.xpk-search { flex: none; margin-bottom: 10px; }
+.xpk-search .inp { -webkit-appearance: none; appearance: none; }
+.xp-head { margin: 14px 0 4px; }
+.xp-head:first-child { margin-top: 0; }
+.xp-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.xp-row { width: 100%; display: grid; gap: 1px; text-align: left; padding: 10px 12px; border: 0; border-radius: 10px; background: none; color: var(--fg); font: inherit; cursor: pointer; }
+.xp-row b { font-size: 15px; font-weight: 600; }
+.xp-row small { font-size: 12px; color: var(--muted); }
+.xp-row:hover, .xp-row:active { background: var(--bg); }
+.xp-row.cur { background: var(--bg); outline: 1px solid var(--h3); }
+.xp-row.add b { color: var(--h5); }
+@media (max-width: 599px) {
+  .sheet.xpk { height: 100%; }
+  .xpk-search { margin: 0; padding: 10px max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px)); border-bottom: 1px solid var(--line); }
+}
 .auth-alt { margin-top: 14px; }
 .auth-alt summary { cursor: pointer; color: var(--muted); font-size: 14px; font-weight: 600; }
 .side-only { display: none !important; }
@@ -674,6 +698,7 @@ button.tag { cursor: pointer; }
 <div id="bossPop"></div>
 <div id="tour"></div>
 <div id="themePick"></div>
+<div id="exPick"></div>
 <div class="toast" id="toast" role="status" hidden></div>
 
 <script>
@@ -2961,9 +2986,9 @@ function openSheet(kind, w) {
   if (kind === "account") { S.auth = { email: (S.auth || {}).email, sent: (S.auth || {}).sent }; S.confirmOut = false; }
   renderSheet();
   // On touch screens, don't pop the keyboard straight away; let people see the whole form first.
-  if (!matchMedia("(pointer: coarse)").matches) setTimeout(() => { const f = document.querySelector(kind === "lift" ? "#sheetRoot .ex input" : kind === "cardio" ? "#sheetRoot .citem:last-of-type [data-ci$=':minutes']" : null); if (f && !S.draft.id) f.focus(); }, 30);
+  if (!matchMedia("(pointer: coarse)").matches) setTimeout(() => { const f = document.querySelector(kind === "lift" ? "#sheetRoot .ex .ex-pick" : kind === "cardio" ? "#sheetRoot .citem:last-of-type [data-ci$=':minutes']" : null); if (f && !S.draft.id) f.focus(); }, 30);
 }
-function closeSheet() { S.sheet = null; S.draft = null; S.importPending = null; renderSheet(); if (S.loaded) maybeBossPopup(xpLedger(S.workouts)); }
+function closeSheet() { if (S.exPick) closeExPick(); S.sheet = null; S.draft = null; S.importPending = null; renderSheet(); if (S.loaded) maybeBossPopup(xpLedger(S.workouts)); }
 
 /* An input with − and + buttons either side, so numbers can be set without the keyboard.
    `step` is the amount per tap. */
@@ -3027,6 +3052,104 @@ function delActions(saveLabel) {
     `<div class="right"><button class="btn ghost" type="button" data-act="close">Cancel</button><button class="btn primary" type="button" data-act="save">${saveLabel}</button></div>`;
 }
 
+/* ---------- Exercise picker: tap the exercise box to browse (your recent ones first, then by muscle group),
+   search to narrow, or add what you typed as a new exercise ---------- */
+const EX_GROUPS = [["Chest", ["chest"]], ["Back", ["lats", "traps", "lowerback"]], ["Shoulders", ["shoulders"]], ["Arms", ["biceps", "triceps", "forearms"]],
+  ["Legs", ["quads", "hamstrings", "glutes", "adductors", "calves"]], ["Core", ["abs", "obliques"]]];
+const exGroupOf = c => { const m = (c.p && c.p[0]) || (c.s && c.s[0]); const g = EX_GROUPS.find(([, ms]) => ms.includes(m)); return g ? g[0] : "Other"; };
+/* Every exercise you can pick: the built-in list plus your own, each with its muscles; `recent` is yours, latest first. */
+function exChoices() {
+  const mine = new Map();
+  for (const w of S.workouts) {
+    if (w.sample || isCardio(w)) continue;
+    for (const x of w.exercises || []) {
+      const name = (x.name || "").trim(); if (!name) continue;
+      const k = name.toLowerCase(), cur = mine.get(k), at = `${w.date} ${String(w.createdAt || 0).padStart(15, "0")}`;
+      if (!cur || at > cur.at) mine.set(k, { name, p: x.p || [], s: x.s || [], at });
+    }
+  }
+  const all = new Map(Object.entries(LIB).map(([name, [pp, ss]]) => [name.toLowerCase(), { name, p: pp, s: ss }]));
+  for (const [k, c] of mine) if (!all.has(k)) all.set(k, { name: c.name, p: c.p, s: c.s, own: true });
+  const recent = [...mine.entries()].sort((a, b) => b[1].at.localeCompare(a[1].at)).map(([k]) => all.get(k));
+  return { all: [...all.values()].sort((a, b) => a.name.localeCompare(b.name)), recent };
+}
+/* Puts an exercise into the form with its muscles: built-in ones know theirs, your own reuse what you chose before,
+   and a brand-new one starts blank so you can pick them. */
+function setExName(x, name) {
+  const wasKnown = !!LIB[x.name];
+  x.name = name;
+  const prior = S.workouts.flatMap(w => (w.sample ? [] : w.exercises || [])).find(y => (y.name || "").trim().toLowerCase() === name.toLowerCase());
+  if (LIB[name]) { x.p = LIB[name][0].slice(); x.s = LIB[name][1].slice(); }
+  else if (prior) { x.p = (prior.p || []).slice(); x.s = (prior.s || []).slice(); }
+  else if (wasKnown || !(x.p.length || x.s.length)) { x.p = []; x.s = []; }
+}
+// A new exercise's name as it will be saved: tidy spaces, and capitalise each word if it was typed all in lowercase
+const exNewName = q => { const n = q.trim().replace(/\s+/g, " "); return n === n.toLowerCase() ? n.replace(/(^|[\s-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase()) : n; };
+function exRowHTML(c, cur, used) {
+  const mus = c.p.map(m => MUSCLES[m]).join(", ");
+  return `<li><button type="button" class="xp-row${cur ? " cur" : ""}" data-name="${esc(c.name)}"><b>${esc(c.name)}</b><small>${esc(mus || "Your exercise")}${used ? " · in this workout" : ""}</small></button></li>`;
+}
+function exListHTML() {
+  const st = S.exPick, d = S.draft, { all, recent } = exChoices();
+  const curName = ((d.exercises[st.i] || {}).name || "").trim().toLowerCase();
+  const used = new Set(d.exercises.filter((_, k) => k !== st.i).map(x => (x.name || "").trim().toLowerCase()).filter(Boolean));
+  const row = c => exRowHTML(c, c.name.toLowerCase() === curName, used.has(c.name.toLowerCase()));
+  const q = st.q.trim().replace(/\s+/g, " "), ql = q.toLowerCase();
+  if (ql) {
+    // Names that start with what you typed first, then names that contain it
+    const hits = all.filter(c => c.name.toLowerCase().includes(ql)).sort((a, b) => (a.name.toLowerCase().startsWith(ql) ? 0 : 1) - (b.name.toLowerCase().startsWith(ql) ? 0 : 1) || a.name.localeCompare(b.name));
+    const exact = all.some(c => c.name.toLowerCase() === ql);
+    return (hits.length ? `<ul class="xp-list">${hits.map(row).join("")}</ul>` : `<p class="note" style="margin:4px 0 10px">No exercise matches “${esc(q)}”.</p>`)
+      + (exact ? "" : `<ul class="xp-list"><li><button type="button" class="xp-row add" data-new="${esc(exNewName(q))}"><b>Add “${esc(exNewName(q))}” as a new exercise</b><small>You'll choose the muscles it works next. Forged remembers it.</small></button></li></ul>`);
+  }
+  const groups = EX_GROUPS.map(([g]) => [g, all.filter(c => exGroupOf(c) === g)]).concat([["Other", all.filter(c => exGroupOf(c) === "Other")]]).filter(([, cs]) => cs.length);
+  return (recent.length ? `<div class="lbl xp-head">Your exercises · latest first</div><ul class="xp-list">${recent.slice(0, 8).map(row).join("")}</ul>` : "")
+    + groups.map(([g, cs]) => `<div class="lbl xp-head">${esc(g)}</div><ul class="xp-list">${cs.map(row).join("")}</ul>`).join("")
+    + `<p class="note" style="margin:14px 0 0">Not here? Type its name in the search box to add it.</p>`;
+}
+function openExPick(i) {
+  if (!S.draft || !S.draft.exercises || !S.draft.exercises[i]) return;
+  S.exPick = { i, q: "" };
+  $("exPick").innerHTML = `<div class="overlay xpk-overlay" data-xpk="bg"><div class="sheet xpk" role="dialog" aria-modal="true" aria-labelledby="xpkH">
+      <div class="sheet-head"><h3 id="xpkH">Exercise ${i + 1}</h3><button class="x" type="button" data-xpk="close" aria-label="Close">${XSVG}</button></div>
+      <div class="xpk-search"><input class="inp" id="xpkQ" type="search" inputmode="search" enterkeyhint="done" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Search, or type a new exercise" aria-label="Search exercises"></div>
+      <div class="sheet-body" id="xpkList">${exListHTML()}</div>
+    </div></div>`;
+  // On a computer, start typing straight away; on a phone, leave the keyboard down so the list is visible.
+  if (!matchMedia("(pointer: coarse)").matches) setTimeout(() => { const f = $("xpkQ"); if (f) f.focus(); }, 30);
+  else setTimeout(() => { const c = document.querySelector("#xpkList .xp-row.cur"); if (c) c.scrollIntoView({ block: "center" }); }, 30);
+}
+function closeExPick() { S.exPick = null; $("exPick").innerHTML = ""; }
+function chooseEx(name) {
+  const st = S.exPick, d = S.draft; if (!st || !d || !d.exercises[st.i]) return closeExPick();
+  const i = st.i, x = d.exercises[i];
+  setExName(x, name.trim().replace(/\s+/g, " "));
+  closeExPick(); renderSheet();
+  // A brand-new exercise needs its muscles: bring that part into view
+  const needs = !LIB[x.name] && !(x.p.length || x.s.length), el = $(needs ? `mus-${i}` : `ex-${i}`);
+  if (el) el.scrollIntoView({ block: needs ? "center" : "nearest", behavior: "smooth" });
+  if (needs) toast(`Added “${x.name}”. Tap the muscles it works.`);
+}
+$("exPick").addEventListener("click", e => {
+  const row = e.target.closest(".xp-row");
+  if (row) return chooseEx(row.dataset.new != null ? row.dataset.new : row.dataset.name);
+  const k = e.target.closest("[data-xpk]");
+  if (k && (k.dataset.xpk === "close" || e.target === k)) closeExPick();
+});
+$("exPick").addEventListener("input", e => {
+  if (e.target.id !== "xpkQ" || !S.exPick) return;
+  S.exPick.q = e.target.value;
+  const list = $("xpkList"); list.innerHTML = exListHTML(); list.scrollTop = 0;
+});
+$("exPick").addEventListener("keydown", e => {
+  if (e.key !== "Enter" || e.target.id !== "xpkQ" || !S.exPick) return;
+  e.preventDefault();
+  // Enter takes the only match, or adds what was typed when nothing matches; with several matches, tap one
+  const hits = [...document.querySelectorAll("#xpkList .xp-row:not(.add)")], add = document.querySelector("#xpkList .xp-row.add");
+  if (!S.exPick.q.trim()) return e.target.blur();
+  if (hits.length === 1) hits[0].click(); else if (!hits.length && add) add.click(); else e.target.blur();
+});
+
 function musclesHTML(x, i) {
   if (LIB[x.name] || !x.name.trim()) return (x.p.length || x.s.length
     ? `<div class="tags">${x.p.map(m => `<span class="tag p">${esc(MUSCLES[m])}</span>`).join("")}${x.s.map(m => `<span class="tag s">${esc(MUSCLES[m])}</span>`).join("")}</div>` : "") + bestLine(x.name);
@@ -3056,9 +3179,6 @@ function renderSheet() {
 }
 
 function liftSheet(d) {
-  const custom = new Set();
-  S.workouts.forEach(w => (w.exercises || []).forEach(x => { if (!LIB[x.name]) custom.add(x.name); }));
-  const names = Object.keys(LIB).concat([...custom]).sort();
   const dw = d.cont ? dayWord(d.date) : "";
   return sheetFrame(d.cont ? (dw === "today" ? "Today's lifts" : dw === "yesterday" ? "Yesterday's lifts" : `Lifts · ${esc(dw)}`) : d.id ? "Edit lifts" : "Log lifts", `
     ${d.cont ? `<div class="cont-note"><span>Adding to the workout you logged ${dw === "today" || dw === "yesterday" ? dw : `on ${esc(dw)}`}. Add sets or exercises, then save.</span>
@@ -3066,9 +3186,9 @@ function liftSheet(d) {
     <div class="field"><label for="f-date">Date</label><input class="inp" id="f-date" type="date" value="${esc(d.date)}" max="${ymd(today())}" data-f="date"></div>
     <div class="field" style="margin-top:10px"><span class="lbl">Weight unit</span>
       <div class="tags">${["lb", "kg"].map(u => `<button type="button" class="tag ${d.unit === u ? "p" : ""}" data-unit="${u}">${u}</button>`).join("")}</div></div>
-    <datalist id="exnames">${names.map(n => `<option value="${esc(n)}"></option>`).join("")}</datalist>
     ${d.exercises.map((x, i) => `<div class="ex">
-        <div class="ex-top"><div class="field"><label for="ex-${i}">Exercise ${i + 1}</label><input class="inp" id="ex-${i}" list="exnames" placeholder="Search or type a new one" value="${esc(x.name)}" data-ex="${i}" autocomplete="off"></div>
+        <div class="ex-top"><div class="field"><span class="lbl" id="exl-${i}">Exercise ${i + 1}</span>
+          <button type="button" class="inp ex-pick${x.name.trim() ? "" : " empty"}" id="ex-${i}" data-pickex="${i}" aria-haspopup="dialog" aria-labelledby="exl-${i} ex-${i}"><span>${esc(x.name.trim() || "Choose an exercise")}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></div>
         <button class="x" type="button" data-rmex="${i}" aria-label="Remove exercise">${XSVG}</button></div>
         <div id="mus-${i}">${musclesHTML(x, i)}</div>
         <div class="sets"><div class="set lbl"><span></span><span>Reps</span><span>Weight (${esc(d.unit)}) ±${weightStep(d.unit)}</span><span></span></div>
@@ -3565,15 +3685,6 @@ $("sheetRoot").addEventListener("input", e => {
     else { d.sets[k] = t.value; $(`gw-${k}`).textContent = `${fmt(perDay(t.value))}/day`; }
   }
   if (t.dataset.set) { const [i, j, k] = t.dataset.set.split(":"); d.exercises[i].sets[j][k] = t.value; }
-  if (t.dataset.ex !== undefined) {
-    const x = d.exercises[t.dataset.ex], wasKnown = !!LIB[x.name];
-    x.name = t.value;
-    const prior = S.workouts.flatMap(w => w.exercises || []).find(y => y.name.toLowerCase() === t.value.trim().toLowerCase());
-    if (LIB[x.name]) { x.p = LIB[x.name][0].slice(); x.s = LIB[x.name][1].slice(); }
-    else if (prior) { x.p = (prior.p || []).slice(); x.s = (prior.s || []).slice(); }
-    else if (wasKnown) { x.p = []; x.s = []; }
-    const box = $(`mus-${t.dataset.ex}`); if (box) box.innerHTML = musclesHTML(x, +t.dataset.ex);
-  }
 });
 
 /* Starting value when + is tapped on an empty field: the same set last time you did this exercise,
@@ -3743,7 +3854,8 @@ $("sheetRoot").addEventListener("click", async e => {
     if (!d.items.length) d.items.push(cItem());
     return renderSheet();
   }
-  if (a.act === "addex") { d.exercises.push(newEx()); renderSheet(); return refocus(`ex-${d.exercises.length - 1}`); }
+  if (a.pickex != null) return openExPick(+a.pickex);
+  if (a.act === "addex") { d.exercises.push(newEx()); renderSheet(); const el = $(`ex-${d.exercises.length - 1}`); if (el) el.scrollIntoView({ block: "center" }); return openExPick(d.exercises.length - 1); }
   if (a.rmex !== undefined) { d.exercises.splice(+a.rmex, 1); if (!d.exercises.length) d.exercises.push(newEx()); return renderSheet(); }
   if (a.addset !== undefined) { const x = d.exercises[a.addset]; x.sets.push(newSet(x.sets[x.sets.length - 1])); renderSheet(); return refocus(`r-${a.addset}-${x.sets.length - 1}`); }
   if (a.rmset) { const [i, j] = a.rmset.split(":").map(Number); d.exercises[i].sets.splice(j, 1); return renderSheet(); }
@@ -3764,7 +3876,7 @@ $("sheetRoot").addEventListener("click", async e => {
 });
 document.addEventListener("keydown", e => {
   if (e.key !== "Escape") return;
-  if ($("celebrate").innerHTML) $("celebrate").innerHTML = ""; else if (S.sheet) closeSheet();
+  if ($("celebrate").innerHTML) $("celebrate").innerHTML = ""; else if (S.exPick) closeExPick(); else if (S.sheet) closeSheet();
 });
 
 /* ---------- Main interactions ---------- */
