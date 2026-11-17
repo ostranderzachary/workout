@@ -1745,6 +1745,45 @@ const THEMES = {
     [90, "Admiral", "Four stars, leading the service."],
     [100, "Commandant", "Commandant of the Coast Guard, the highest post in the service."]
   ] },
+  martialartists: { name: "Martial artists", titles: [
+    [1, "Jean-Claude Van Damme", "The Muscles from Brussels, famous for his high kicks and splits."],
+    [10, "Tony Jaa", "Muay Thai star known for doing his own breathtaking stunts."],
+    [20, "Jet Li", "A national wushu champion in China as a teenager, before the films."],
+    [30, "Donnie Yen", "Brought Wing Chun to a new generation by playing Ip Man."],
+    [40, "Jackie Chan", "An acrobatic fighter who has done his own stunts for decades."],
+    [50, "Royce Gracie", "Won the first UFC with Brazilian jiu-jitsu against much bigger men."],
+    [60, "Chuck Norris", "Karate champion turned action star, and an internet legend."],
+    [70, "Mas Oyama", "Founder of Kyokushin karate, famed for fighting bulls bare-handed."],
+    [80, "Ip Man", "Wing Chun grandmaster and Bruce Lee's teacher."],
+    [90, "Morihei Ueshiba", "Founder of aikido, known to his students as O-Sensei."],
+    [100, "Bruce Lee", "Founder of Jeet Kune Do and the most famous martial artist of all. Be water, my friend."]
+  ] },
+  famouswarriors: { name: "Famous warriors", titles: [
+    [1, "Spartacus", "A gladiator who escaped and led an army of slaves against Rome."],
+    [10, "Boudica", "Queen of the Iceni, who led a revolt against Roman Britain."],
+    [20, "William Wallace", "Scottish knight who led the fight for Scotland's freedom."],
+    [30, "Joan of Arc", "A teenage peasant who led France's armies to victory."],
+    [40, "Tomoe Gozen", "A legendary female samurai, famed as an archer and swordswoman."],
+    [50, "Richard the Lionheart", "English king renowned as a fearless crusader."],
+    [60, "Miyamoto Musashi", "Said to be undefeated in more than 60 duels; wrote The Book of Five Rings."],
+    [70, "Leonidas", "Spartan king who held the pass at Thermopylae with his 300."],
+    [80, "Hannibal", "Crossed the Alps with war elephants to bring the fight to Rome."],
+    [90, "Genghis Khan", "Founded the Mongol Empire, which grew into the largest connected land empire in history."],
+    [100, "Alexander the Great", "Never lost a battle, and built an empire from Greece to India."]
+  ] },
+  greatsouls: { name: "Immortal Great Souls", titles: [
+    [1, "Char", "The first rank of a Great Soul. Its mana is coal."],
+    [10, "Cinder", "The second rank, with copper mana."],
+    [20, "Emberling", "The third rank, with iron mana."],
+    [30, "Tomb Spark", "Bronze mana. The rank Scorio reaches in Bastion."],
+    [40, "Flame Vault", "Silver mana. Scorio's rank in The Rascor Plains."],
+    [50, "Dread Blaze", "The sixth rank, with gold mana."],
+    [60, "Pyre Lord", "Emerald mana. Scorio reaches it in LastRock."],
+    [70, "Blood Baron", "Sapphire mana. Scorio's rank in The Lost Cube."],
+    [80, "Charnel Duke", "Ruby mana, the highest rank named so far."],
+    [90, "Imperator", "One of the Great Souls who have ruled Bastion since its founding."],
+    [100, "Scorio", "The series' hero: stubborn, angry and loyal, and never the weapon others want him to be."]
+  ] },
   belts: { name: "Martial arts belts", titles: [
     [1, "White Belt", "Day one on the mat. Show up and learn the basics."],
     [10, "Yellow Belt", "The fundamentals are starting to stick."],
@@ -1761,12 +1800,12 @@ const THEMES = {
 };
 /* How the theme picker groups the themes. Any theme left out here lands under "More". */
 const THEME_GROUPS = [
-  ["Fantasy and sci-fi", ["got", "redrising", "starwars", "disney"]],
+  ["Fantasy and sci-fi", ["got", "redrising", "starwars", "disney", "greatsouls"]],
   ["Mythology", ["greek", "norse", "egyptian"]],
   ["Anime", ["solo", "dbz", "naruto", "hxh", "aot"]],
   ["Comics", ["marvel", "marvelvillains", "dc", "dcvillains"]],
   ["Military", ["military", "navy", "airforce", "marines", "spaceforce", "coastguard"]],
-  ["Warriors and martial arts", ["warriors", "belts"]]
+  ["Warriors and martial arts", ["warriors", "famouswarriors", "martialartists", "belts"]]
 ];
 function themeGroups() {
   const listed = new Set(THEME_GROUPS.flatMap(([, ks]) => ks));
