@@ -389,6 +389,23 @@ button.pl-row { cursor: pointer; }
 .cal-sum { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
 .cal-sum b { color: var(--fg); }
 .cal-log { margin-top: 10px; }
+/* Workout summary */
+.sum-when { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin: 0 0 12px; font-size: 14px; color: var(--muted); }
+.sum-ex { background: var(--bg); border-radius: 12px; padding: 12px; margin-top: 8px; }
+.sum-ex-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sum-name { font-size: 16px; font-weight: 700; color: var(--fg); text-decoration-color: var(--line); }
+.sum-tag { font-style: normal; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; border: 1px solid var(--line); color: var(--muted); border-radius: 4px; padding: 1px 6px; }
+.sum-tag.rec { background: var(--h5); border-color: var(--h5); color: #0b1a0f; }
+.sum-mus { margin: 3px 0 0; font-size: 12px; color: var(--muted); }
+.sum-sets { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.sum-sets li { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); border-radius: 8px; padding: 4px 9px; font-size: 14px; }
+.sum-sets .n { font-family: var(--font-display); color: var(--muted); font-size: 12px; }
+.sum-cmp { margin: 8px 0 0; font-size: 14px; }
+.sum-cmp small { color: var(--muted); font-size: 12px; }
+.sum-cmp .up, .sum-cmp .down { font-weight: 700; }
+.sum-cmp .up { color: var(--h5); } .sum-cmp .down { color: var(--danger); }
+.sum-xp { padding: 6px 0 0; font-size: 13px; }
+.sum-xp li.tot { color: var(--fg); font-weight: 700; border-left-color: var(--h3); }
 .auth-alt { margin-top: 14px; }
 .auth-alt summary { cursor: pointer; color: var(--muted); font-size: 14px; font-weight: 600; }
 .side-only { display: none !important; }
@@ -2320,7 +2337,7 @@ $("calendar").addEventListener("click", e => {
   const lg = e.target.closest("[data-callog]");
   if (lg && S.calSel) return lg.dataset.callog === "lift" ? openLift(S.calSel) : openCardio(S.calSel);
   const wb = e.target.closest("[data-w]");
-  if (wb) { const w = S.workouts.find(x => x.id === wb.dataset.w); if (w) openSheet(isCardio(w) ? "cardio" : "lift", w); }
+  if (wb) { const w = S.workouts.find(x => x.id === wb.dataset.w); if (w) openWorkout(w); }
 });
 // Swipe the grid sideways to change month on a phone
 (() => {
@@ -2433,7 +2450,7 @@ $("xpChart").addEventListener("click", e => {
   const g = e.target.closest("[data-k]");
   if (g) { S.xpSel = g.dataset.k; renderXpChart(S.xpRange); return; }
   const wb = e.target.closest("[data-w]"); if (!wb) return;
-  const w = S.workouts.find(x => x.id === wb.dataset.w); if (w) openSheet(isCardio(w) ? "cardio" : "lift", w);
+  const w = S.workouts.find(x => x.id === wb.dataset.w); if (w) openWorkout(w);
 });
 chartTap("weightTrend", "[data-date]", "wReadout", g => { S.wSel = g.dataset.date; });
 // After the details appear under the ring, scroll just enough to show them if they're off screen
@@ -3169,7 +3186,7 @@ function openSheet(kind, w) {
     ? { id: w.id, kind: "cardio", date: w.date, items: [cItem(w)] } // one session, opened from History
     : { id: null, kind: "cardio", date: defaultDate(), items: [w ? { ...cItem(w), id: null, createdAt: null } : cItem()] };
   if (kind === "goals") S.draft = JSON.parse(JSON.stringify(S.goals));
-  if (kind === "level" || kind === "add" || kind === "share" || kind === "boss" || kind === "account" || kind === "leaderboard") S.draft = {};
+  if (kind === "level" || kind === "add" || kind === "share" || kind === "boss" || kind === "account" || kind === "leaderboard" || kind === "summary") S.draft = {};
   if (kind === "leaderboard") { S.lb = { tab: (S.lb && S.lb.tab) || "week", data: {}, name: "", renaming: false, confirmLeave: false }; /* fresh scores each time it opens */ setTimeout(() => lbLoad(S.lb.tab), 0); }
   if (kind === "account") { S.auth = { email: (S.auth || {}).email, sent: (S.auth || {}).sent }; S.confirmOut = false; }
   renderSheet();
@@ -3238,6 +3255,87 @@ function delActions(saveLabel) {
     ? `<span class="confirm">Delete this workout? <button class="btn small danger" type="button" data-act="del-yes">Delete</button><button class="btn small ghost" type="button" data-act="del-no">Keep</button></span>`
     : `<button class="btn ghost danger" type="button" data-act="del">Delete</button>`) : "") +
     `<div class="right"><button class="btn ghost" type="button" data-act="close">Cancel</button><button class="btn primary" type="button" data-act="save">${saveLabel}</button></div>`;
+}
+
+/* ---------- Workout summary: a read-only look at a saved workout, compared with last time, with Edit to change it ---------- */
+function openWorkout(w) {
+  if (!w) return;
+  if (w.sample) { // examples: start a real workout from them, as before
+    if (isCardio(w)) return openSheet("cardio", w);
+    openSheet("lift", null); S.draft.name = w.name; S.draft.exercises = JSON.parse(JSON.stringify(w.exercises)); return renderSheet();
+  }
+  S.sumId = w.id; openSheet("summary", null);
+}
+const longDate = ds => { const d = parse(ds); return `${DOW[d.getDay()]}, ${MON[d.getMonth()]} ${d.getDate()}${d.getFullYear() !== new Date().getFullYear() ? `, ${d.getFullYear()}` : ""}`; };
+const sumDelta = (n, unitFn) => n > 0 ? `<span class="up">+${unitFn(n)}</span>` : `<span class="down">−${unitFn(-n)}</span>`;
+function liftSummary(w) {
+  const sets = (w.exercises || []).reduce((a, x) => a + (x.sets || []).length, 0);
+  const vol = (w.exercises || []).reduce((a, x) => a + (x.sets || []).reduce((b, st) => b + (Number(st.reps) || 0) * toLb(st.weight, w.unit), 0), 0);
+  let records = 0;
+  const cards = (w.exercises || []).map(x => {
+    const name = (x.name || "").trim(); if (!name) return "";
+    const ss = exSessions(name), i = ss.findIndex(z => z.w.id === w.id), cur = ss[i], prev = i > 0 ? ss[i - 1] : null;
+    const weighted = cur && (cur.topLb > 0 || (prev && prev.topLb > 0));
+    // Record: beat every earlier session of this exercise
+    const before = i > 0 ? ss.slice(0, i) : [], beat = cur && before.length && (weighted ? cur.topLb > Math.max(...before.map(z => z.topLb)) : cur.topReps > Math.max(...before.map(z => z.topReps)));
+    if (beat) records++;
+    const tag = !cur ? "" : beat ? `<i class="sum-tag rec">New record</i>` : !before.length ? `<i class="sum-tag">First time</i>` : "";
+    let cmp = "";
+    if (cur && prev) {
+      const dTop = weighted ? cur.topLb - prev.topLb : cur.topReps - prev.topReps, dReps = cur.top.reps - prev.top.reps, dVol = cur.volume - prev.volume;
+      const what = weighted ? (dTop ? `${sumDelta(dTop, v => showWt(v))} on your top set` : dReps ? `${sumDelta(dReps, v => plural(v, "rep"))} on your top set` : dVol ? `${sumDelta(dVol, v => compactWt(v))} volume` : "Same as last time")
+        : (dTop ? `${sumDelta(dTop, v => plural(v, "rep"))} in your best set` : cur.reps !== prev.reps ? `${sumDelta(cur.reps - prev.reps, v => plural(v, "rep"))} in total` : "Same as last time");
+      cmp = `<p class="sum-cmp">${what} <small>· last time ${esc(shortDate(prev.date))}: ${esc(prev.sets.map(setText).join(" · "))}${weighted ? ` ${wtUnit()}` : ""}</small></p>`;
+    }
+    const mus = [...(x.p || []).map(m => MUSCLES[m]), ...(x.s || []).map(m => `${MUSCLES[m]} (helper)`)].join(", ");
+    return `<div class="sum-ex">
+      <div class="sum-ex-head"><button type="button" class="linkbtn sum-name" data-prog="${esc(name)}">${esc(name)}</button>${tag}</div>
+      ${mus ? `<p class="sum-mus">${esc(mus)}</p>` : ""}
+      <ol class="sum-sets">${(x.sets || []).map((st, j) => { const lb = toLb(st.weight, w.unit);
+        return `<li><span class="n">${j + 1}</span><span class="num">${lb > 0 ? `${esc(showWt(lb))} × ${Number(st.reps) || 0}` : `${Number(st.reps) || 0} reps`}</span></li>`; }).join("")}</ol>
+      ${cmp}</div>`;
+  }).join("");
+  const tiles = [["Sets", String(sets)], ["Volume", vol > 0 ? compactWt(vol) : "–"], ["XP", `+${xpFor(w)}`], ["Records", String(records)]];
+  return { tiles, body: cards };
+}
+function cardioSummary(w) {
+  const a = CARDIO[w.activity] || CARDIO.run, min = Number(w.minutes) || 0, dist = toUnit(Number(w.distance) || 0, w.distUnit || "mi"), st = Number(w.stories) || 0;
+  const rate = rateText(w.activity, min, dist);
+  const tiles = [["Time", hm(min)], w.activity === "stairs" ? ["Stories", String(st)] : ["Distance", dist ? `${fmt(dist)} ${distUnit()}` : "–"], [RATE[w.activity] === "speed" ? "Speed" : "Pace", rate || "–"], ["XP", `+${xpFor(w)}`]];
+  // Last session of the same activity
+  const prev = S.workouts.filter(x => !x.sample && isCardio(x) && x.activity === w.activity && x.id !== w.id && (x.date < w.date || (x.date === w.date && (x.createdAt || 0) < (w.createdAt || 0))))
+    .sort((x, y) => y.date.localeCompare(x.date) || (y.createdAt || 0) - (x.createdAt || 0))[0];
+  let cmp = "";
+  if (prev) {
+    const pm = Number(prev.minutes) || 0, pd = toUnit(Number(prev.distance) || 0, prev.distUnit || "mi"), ps = Number(prev.stories) || 0, bits = [];
+    if (min !== pm) bits.push(`${sumDelta(min - pm, v => hm(v))} time`);
+    if (w.activity === "stairs" ? st !== ps : Math.abs(dist - pd) > 0.001) bits.push(w.activity === "stairs" ? `${sumDelta(st - ps, v => plural(v, "story").replace("storys", "stories"))}` : `${sumDelta(Math.round((dist - pd) * 100) / 100, v => `${fmt(v)} ${distUnit()}`)}`);
+    if (RATE[w.activity] && dist > 0 && pd > 0 && min > 0 && pm > 0) {
+      if (RATE[w.activity] === "pace") { const dp = Math.round((min / dist - pm / pd) * 60); const pace = v => v < 60 ? `${v} sec/${distUnit()}` : `${mss(v / 60)} /${distUnit()}`;
+        if (dp) bits.push(dp < 0 ? `<span class="up">${pace(-dp)} faster</span>` : `<span class="down">${pace(dp)} slower</span>`); }
+      else { const dv = Math.round((dist / (min / 60) - pd / (pm / 60)) * 10) / 10; if (dv) bits.push(dv > 0 ? `<span class="up">${fmt(dv)} ${distUnit() === "km" ? "km/h" : "mph"} faster</span>` : `<span class="down">${fmt(-dv)} ${distUnit() === "km" ? "km/h" : "mph"} slower</span>`); }
+    }
+    const pr = rateText(prev.activity, pm, pd);
+    cmp = `<div class="sum-ex"><div class="sum-ex-head"><b>Compared with last ${esc(a[0].toLowerCase())}</b></div>
+      <p class="sum-cmp">${bits.length ? bits.join(" · ") : "Same as last time"} <small>· ${esc(shortDate(prev.date))}: ${esc([hm(pm), w.activity === "stairs" ? `${ps} stories` : pd ? `${fmt(pd)} ${distUnit()}` : "", pr || ""].filter(Boolean).join(" · "))}</small></p></div>`;
+  } else cmp = `<div class="sum-ex"><div class="sum-ex-head"><b>Your first ${esc(a[0].toLowerCase())}</b><i class="sum-tag">First time</i></div></div>`;
+  const mus = [...a[1].map(m => MUSCLES[m]), ...a[2].map(m => `${MUSCLES[m]} (helper)`)].join(", ");
+  return { tiles, body: `${cmp}<div class="sum-ex"><div class="sum-ex-head"><b>Muscles worked</b></div><p class="sum-mus" style="margin:0">${esc(mus)}</p></div>` };
+}
+function summarySheet() {
+  const w = S.workouts.find(x => x.id === S.sumId);
+  if (!w) return sheetFrame("Workout", `<p class="note">This workout isn't there any more.</p>`, `<div class="right"><button class="btn primary" type="button" data-act="close">Close</button></div>`);
+  const cardio = isCardio(w), a = cardio ? CARDIO[w.activity] || CARDIO.run : null;
+  const title = cardio ? (w.name || a[0]) : (w.name || liftTitle(w));
+  const t = w.createdAt ? new Date(w.createdAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
+  const { tiles, body } = cardio ? cardioSummary(w) : liftSummary(w);
+  return sheetFrame(esc(title), `
+    <p class="sum-when"><span class="badge${cardio ? " cardio" : ""}">${cardio ? esc(a[0]) : "Lift"}</span>${esc(longDate(w.date))}${t ? ` · logged ${esc(t)}` : ""}</p>
+    <div class="prog-tiles sum-tiles">${tiles.map(([k, v]) => `<div class="stat"><span>${esc(k)}</span><b class="num">${esc(v)}</b></div>`).join("")}</div>
+    ${body}
+    <div class="lbl" style="margin-top:14px">XP for this workout</div>
+    <ul class="xi-sub sum-xp">${xpParts(w).map(([tx, x]) => `<li><span>${esc(tx)}</span><span class="num">+${x}</span></li>`).join("")}<li class="tot"><span>Total</span><span class="num">+${xpFor(w)}</span></li></ul>`,
+    `<div class="right"><button class="btn" type="button" data-act="close">Close</button><button class="btn primary" type="button" data-act="sum-edit">Edit</button></div>`);
 }
 
 /* ---------- Exercise progress: every session of one exercise, a chart of how it's moved, and the bests ---------- */
@@ -3339,7 +3437,7 @@ $("exProg").addEventListener("click", e => {
   const m = e.target.closest("[data-metric]"); if (m) { S.prog.metric = m.dataset.metric; S.prog.sel = null; return renderProg(); }
   const g = e.target.closest("[data-pi]"); if (g) { S.prog.sel = +g.dataset.pi; return renderProg(); }
   const row = e.target.closest("button.pl-row[data-w]");
-  if (row) { const w = S.workouts.find(x => x.id === row.dataset.w); closeProg(); if (w) openSheet("lift", w); return; }
+  if (row) { const w = S.workouts.find(x => x.id === row.dataset.w); closeProg(); if (w) openWorkout(w); return; }
   if (e.target.closest("[data-prog-close]") || e.target.dataset.progBg) closeProg();
 });
 
@@ -3463,6 +3561,7 @@ function renderSheet() {
   if (S.sheet === "share") root.innerHTML = shareSheet();
   if (S.sheet === "boss") root.innerHTML = bossSheet();
   if (S.sheet === "account") root.innerHTML = accountSheet();
+  if (S.sheet === "summary") root.innerHTML = summarySheet();
   if (S.sheet === "leaderboard") root.innerHTML = lbSheet();
   // Re-rendering the same form (adding a set, picking an option) keeps your scroll position.
   if (same) { const b = root.querySelector(".sheet-body"), sh = root.querySelector(".sheet"); if (b) b.scrollTop = keep[0]; if (sh) sh.scrollTop = keep[1]; }
@@ -4111,6 +4210,7 @@ $("sheetRoot").addEventListener("click", async e => {
   if (a.act === "boss-start") return startFight(Number(a.tier));
   if (a.act === "boss-end") return endFight(Number(a.tier));
   if (a.act === "export") return exportBackup();
+  if (a.act === "sum-edit") { const w = S.workouts.find(x => x.id === S.sumId); if (w) openSheet(isCardio(w) ? "cardio" : "lift", w); return; }
   if (a.act === "tour") { closeSheet(); return startTour(0); }
   if (a.act && a.act.startsWith("auth-")) return accountAction(a.act);
   if ((a.act && a.act.startsWith("lb-")) || a.lbtab) return lbAction(a);
@@ -4186,11 +4286,7 @@ $("bars").addEventListener("click", e => {
 });
 $("history").addEventListener("click", e => {
   const b = e.target.closest("[data-w]"); if (!b) return;
-  const w = data().find(x => x.id === b.dataset.w); if (!w) return;
-  if (isCardio(w)) {
-    openSheet("cardio", w);
-  } else if (w.sample) { openSheet("lift", null); S.draft.name = w.name; S.draft.exercises = JSON.parse(JSON.stringify(w.exercises)); renderSheet(); }
-  else openSheet("lift", w);
+  openWorkout(data().find(x => x.id === b.dataset.w));
 });
 document.addEventListener("click", e => {
   const gap = e.target.closest("#summary .gap");
