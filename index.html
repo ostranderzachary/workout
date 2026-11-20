@@ -365,6 +365,30 @@ button.pl-row { cursor: pointer; }
 .pl-best { font-style: normal; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #0b1a0f; background: var(--h5); border-radius: 4px; padding: 1px 6px; }
 .pl-sets { font-size: 13px; color: var(--muted); }
 .best-line .linkbtn { color: var(--h4); }
+/* History calendar */
+.cal-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.cal-title { flex: 1; text-align: center; font-family: var(--font-display); font-size: 20px; text-transform: uppercase; letter-spacing: .03em; }
+.cal-head-r { display: flex; align-items: center; gap: 6px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; touch-action: pan-y; }
+.cal-dow { text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); padding-bottom: 2px; }
+.cal-day { position: relative; aspect-ratio: 1; min-height: 38px; border-radius: 10px; border: 0; background: var(--bg); color: var(--fg); font: inherit; display: grid; place-items: center; padding: 0; cursor: pointer; }
+.cal-day.blank { background: none; cursor: default; }
+.cal-day:disabled { opacity: .35; cursor: default; }
+.cal-day .cd-n { font-size: 14px; font-weight: 600; line-height: 1; margin-bottom: 6px; }
+.cal-day.h1 { background: var(--h1); } .cal-day.h2 { background: var(--h2); }
+.cal-day.h3 { background: var(--h3); color: #0b1a0f; } .cal-day.h4 { background: var(--h4); color: #0b1a0f; }
+.cal-day.neg { box-shadow: inset 0 -3px 0 var(--danger); }
+.cal-day.today { box-shadow: inset 0 0 0 2px var(--h5); }
+.cal-day.sel { outline: 2px solid var(--fg); outline-offset: 1px; }
+.cd-marks { position: absolute; left: 0; right: 0; bottom: 6px; display: flex; justify-content: center; gap: 4px; }
+.cd-marks i, .cal-legend i { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+.cd-marks i.l, .cal-legend i.l { background: currentColor; }
+.cd-marks i.c, .cal-legend i.c { border: 1.5px solid currentColor; width: 5px; height: 5px; }
+.cal-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 8px 0 0; font-size: 12px; color: var(--muted); }
+.cal-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.cal-sum { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+.cal-sum b { color: var(--fg); }
+.cal-log { margin-top: 10px; }
 .auth-alt { margin-top: 14px; }
 .auth-alt summary { cursor: pointer; color: var(--muted); font-size: 14px; font-weight: 600; }
 .side-only { display: none !important; }
@@ -687,6 +711,10 @@ button.tag { cursor: pointer; }
       <section class="panel" data-tab="stats">
         <h2>Personal records</h2>
         <div id="records"></div>
+      </section>
+      <section class="panel" data-tab="history" aria-labelledby="calH">
+        <h2 id="calH">Calendar</h2>
+        <div id="calendar"></div>
       </section>
       <section class="panel" data-tab="history">
         <h2 id="xpTitle">XP</h2>
@@ -2003,6 +2031,7 @@ function render() {
   renderRecords();
   renderWeight();
   renderXpChart(r);
+  renderCalendar();
 
   // History
   $("history").innerHTML = c.ws.length ? c.ws.slice(0, 60).map(w => {
@@ -2234,6 +2263,76 @@ function bestLine(name) {
 }
 /* XP over the range on screen: workout XP, weekly bonuses stacked on top, penalties below zero.
    One bar per day up to a month; per week for a year; per month beyond that. */
+/* ---------- History calendar: a month at a glance, shaded by XP, with lifting and cardio marks; tap a day for its details ---------- */
+function renderCalendar() {
+  const el = $("calendar"); if (!el) return;
+  const t = today(), cur = new Date(t.getFullYear(), t.getMonth(), 1);
+  const m0 = S.calMonth || cur; S.calMonth = m0;
+  const y = m0.getFullYear(), mo = m0.getMonth(), n = new Date(y, mo + 1, 0).getDate(), lead = (new Date(y, mo, 1).getDay() + 6) % 7;
+  const isCur = +m0 === +cur, todayK = ymd(t), mk = d => ymd(new Date(y, mo, d));
+  // Per day: lifting and cardio counts, and all XP (workouts, bonuses, boss rewards, penalties), as on the XP chart
+  const by = {}, L = xpLedger(S.workouts), day = k => (by[k] = by[k] || { lift: 0, cardio: 0, xp: 0, work: 0, bonus: 0, pen: 0 });
+  for (const w of S.workouts) { if (w.sample) continue; const d = day(w.date); if (isCardio(w)) d.cardio++; else d.lift++; d.xp += xpFor(w); d.work += xpFor(w); }
+  for (const e of L.entries) { const d = day(e.date); d.xp += e.xp; if (e.xp > 0) d.bonus += e.xp; else d.pen += e.xp; }
+  const keys = Array.from({ length: n }, (_, i) => mk(i + 1)), max = Math.max(1, ...keys.map(k => (by[k] ? by[k].xp : 0)));
+  if (S.calSel === undefined) S.calSel = isCur ? todayK : null;
+  const sel = S.calSel && S.calSel.slice(0, 7) === keys[0].slice(0, 7) ? S.calSel : null;
+  const cells = Array.from({ length: lead }, () => `<span class="cal-day blank" aria-hidden="true"></span>`).concat(keys.map((k, i) => {
+    const d = by[k], future = k > todayK, lv = d && d.xp > 0 ? Math.min(4, Math.ceil((d.xp / max) * 4)) : 0;
+    const parts = d ? [d.lift ? plural(d.lift, "lifting workout") : "", d.cardio ? plural(d.cardio, "cardio session") : "", d.xp ? `${d.xp > 0 ? "+" : "−"}${Math.abs(d.xp).toLocaleString()} XP` : ""].filter(Boolean) : [];
+    const label = `${DOW[parse(k).getDay()]}, ${MON[mo]} ${i + 1}: ${parts.length ? parts.join(", ") : "nothing logged"}${k === todayK ? " (today)" : ""}`;
+    return `<button type="button" class="cal-day${lv ? ` h${lv}` : ""}${d && d.xp < 0 && !d.lift && !d.cardio ? " neg" : ""}${k === todayK ? " today" : ""}${k === sel ? " sel" : ""}" data-cal="${k}"${future ? " disabled" : ""} aria-label="${esc(label)}" aria-pressed="${k === sel}">
+      <span class="cd-n num">${i + 1}</span><span class="cd-marks" aria-hidden="true">${d && d.lift ? `<i class="l"></i>` : ""}${d && d.cardio ? `<i class="c"></i>` : ""}</span></button>`;
+  }));
+  // Month totals
+  const inM = keys.map(k => by[k]).filter(Boolean), wdays = inM.filter(d => d.lift || d.cardio).length;
+  const lifts = inM.reduce((a, d) => a + d.lift, 0), cardios = inM.reduce((a, d) => a + d.cardio, 0), xp = inM.reduce((a, d) => a + d.xp, 0);
+  const sum = wdays ? `<b>${plural(wdays, "workout day")}</b> · ${plural(lifts, "lifting workout")} · ${plural(cardios, "cardio session")} · <b>${xp >= 0 ? "+" : "−"}${Math.abs(xp).toLocaleString()} XP</b>` : `Nothing logged in ${MONTHS[mo]} yet.`;
+  // The selected day
+  let detail = `<p class="note" style="margin:10px 0 0">Tap a day to see what you did.</p>`;
+  if (sel) {
+    const d = by[sel], lab = `${DOW[parse(sel).getDay()]}, ${MON[mo]} ${Number(sel.slice(8))}`;
+    const log = sel <= todayK ? `<div class="btn-row cal-log"><button class="btn small" type="button" data-callog="lift">+ Log lifts</button><button class="btn small" type="button" data-callog="cardio">+ Log cardio</button></div>` : "";
+    detail = d && (d.lift || d.cardio || d.xp)
+      ? xpItemsHTML({ k: sel, work: d.work, bonus: d.bonus, pen: d.pen }, "day", lab, ymd, "calItems") + log
+      : `<div class="xp-items" id="calItems"><div class="xi-head"><b>${esc(lab)}</b></div><p class="note" style="margin:4px 0 0">Nothing logged on this day.</p></div>${log}`;
+  }
+  el.innerHTML = `<div class="cal-head">
+      <button class="iconbtn" type="button" data-calnav="-1" aria-label="Previous month"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <b class="cal-title" aria-live="polite">${MONTHS[mo]} ${y}</b>
+      <span class="cal-head-r">${isCur ? "" : `<button class="btn small ghost" type="button" data-calnav="0">Today</button>`}
+      <button class="iconbtn" type="button" data-calnav="1" aria-label="Next month"${isCur ? " disabled" : ""}><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button></span>
+    </div>
+    <div class="cal-grid" role="group" aria-label="${MONTHS[mo]} ${y}">${["M", "T", "W", "T", "F", "S", "S"].map(d => `<span class="cal-dow" aria-hidden="true">${d}</span>`).join("")}${cells.join("")}</div>
+    <p class="cal-legend"><span><i class="l"></i>Lifting</span><span><i class="c"></i>Cardio</span><span>Brighter = more XP</span></p>
+    <p class="cal-sum num">${sum}</p>
+    ${detail}`;
+}
+function calShift(dir) {
+  const t = today(), cur = new Date(t.getFullYear(), t.getMonth(), 1), m = S.calMonth || cur;
+  const next = dir === 0 ? cur : new Date(m.getFullYear(), m.getMonth() + dir, 1);
+  if (next > cur) return;
+  S.calMonth = next; S.calSel = +next === +cur ? ymd(t) : null; renderCalendar();
+}
+$("calendar").addEventListener("click", e => {
+  const nav = e.target.closest("[data-calnav]"); if (nav) return calShift(Number(nav.dataset.calnav));
+  const c = e.target.closest("[data-cal]"); if (c) { S.calSel = c.dataset.cal; return renderCalendar(); }
+  const lg = e.target.closest("[data-callog]");
+  if (lg && S.calSel) return lg.dataset.callog === "lift" ? openLift(S.calSel) : openCardio(S.calSel);
+  const wb = e.target.closest("[data-w]");
+  if (wb) { const w = S.workouts.find(x => x.id === wb.dataset.w); if (w) openSheet(isCardio(w) ? "cardio" : "lift", w); }
+});
+// Swipe the grid sideways to change month on a phone
+(() => {
+  let x0 = null, y0 = 0;
+  $("calendar").addEventListener("touchstart", e => { if (!e.target.closest(".cal-grid")) return; x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; }, { passive: true });
+  $("calendar").addEventListener("touchend", e => {
+    if (x0 == null) return;
+    const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0; x0 = null;
+    if (Math.abs(dx) > 60 && Math.abs(dy) < 40) calShift(dx < 0 ? 1 : -1);
+  });
+})();
+
 function renderXpChart(r) {
   const days = daysIn(r), by = days <= 31 ? "day" : days <= 371 ? "week" : "month";
   const keyOf = d => by === "day" ? ymd(d) : by === "week" ? ymd(weekStart(d)) : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -2298,7 +2397,7 @@ function xpParts(w) {
   }
   return rows;
 }
-function xpItemsHTML(b, by, label, keyOf) {
+function xpItemsHTML(b, by, label, keyOf, id = "xpItems") {
   const inB = ds => keyOf(parse(ds)) === b.k;
   const ws = S.workouts.filter(w => !w.sample && inB(w.date)).sort((x, y) => x.date.localeCompare(y.date) || (x.createdAt || 0) - (y.createdAt || 0));
   const es = xpLedger(S.workouts).entries.filter(e => inB(e.date));
@@ -2316,7 +2415,7 @@ function xpItemsHTML(b, by, label, keyOf) {
     return `<li class="xi"><div class="xi-main"><span class="badge ${kind[0]}">${kind[1]}</span><span class="xi-t"><b>${esc(e.text)}</b>${note ? `<small>${esc(note)}</small>` : ""}</span><span class="xi-xp num${e.xp < 0 ? " neg" : ""}">${sign(e.xp)}</span></div></li>`;
   }));
   const total = b.work + b.bonus + b.pen;
-  return `<div class="xp-items" id="xpItems">
+  return `<div class="xp-items" id="${id}">
       <div class="xi-head"><b>${esc(by === "day" ? label : by === "week" ? label : label)}</b><span class="num">${sign(total)} XP</span></div>
       ${lines.length ? `<ul class="xi-list">${lines.join("")}</ul>` : `<p class="note" style="margin:6px 0 0">No XP ${by === "day" ? "on this day" : `in this ${by}`}.</p>`}
       ${es.some(e => !e.boss && e.date === ymd(today())) ? `<p class="note" style="margin:8px 0 0">This week's bonuses show on today until the week ends.</p>` : ""}
