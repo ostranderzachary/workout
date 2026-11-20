@@ -338,10 +338,33 @@ button.xi-main { cursor: pointer; }
 .xp-row:hover, .xp-row:active { background: var(--bg); }
 .xp-row.cur { background: var(--bg); outline: 1px solid var(--h3); }
 .xp-row.add b { color: var(--h5); }
+@media (min-width: 600px) { .prog-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (max-width: 599px) {
   .sheet.xpk { height: 100%; }
   .xpk-search { margin: 0; padding: 10px max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px)); border-bottom: 1px solid var(--line); }
 }
+/* Exercise progress page and records list */
+.rec-row { width: 100%; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.rec-row i { font-style: normal; color: var(--muted); margin-left: 8px; }
+.records li { display: block; padding: 6px 0; }
+.overlay.prog-overlay { z-index: 32; }
+.prog-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+.prog-tiles .stat { background: var(--bg); border-radius: 12px; padding: 10px 12px; display: grid; gap: 2px; }
+.prog-tiles .stat span { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.prog-tiles .stat b { font-family: var(--font-display); font-size: 20px; line-height: 1.1; }
+.prog-tiles .stat b.up { color: var(--h5); } .prog-tiles .stat b.down { color: var(--danger); }
+.prog-tiles .stat small { font-size: 12px; color: var(--muted); }
+.prog-tabs { margin: 0 0 10px; }
+.prog-tabs button { font-size: 13px; padding: 8px 2px; }
+.prog-list { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 6px; }
+.pl-row { width: 100%; display: grid; gap: 3px; padding: 10px 12px; border: 0; border-radius: 12px; background: var(--bg); color: var(--fg); font: inherit; text-align: left; }
+button.pl-row { cursor: pointer; }
+.pl-top { display: flex; align-items: center; gap: 8px; }
+.pl-top b { font-size: 14px; }
+.pl-top .num { margin-left: auto; font-size: 13px; color: var(--muted); }
+.pl-best { font-style: normal; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #0b1a0f; background: var(--h5); border-radius: 4px; padding: 1px 6px; }
+.pl-sets { font-size: 13px; color: var(--muted); }
+.best-line .linkbtn { color: var(--h4); }
 .auth-alt { margin-top: 14px; }
 .auth-alt summary { cursor: pointer; color: var(--muted); font-size: 14px; font-weight: 600; }
 .side-only { display: none !important; }
@@ -702,6 +725,7 @@ button.tag { cursor: pointer; }
 <div id="tour"></div>
 <div id="themePick"></div>
 <div id="exPick"></div>
+<div id="exProg"></div>
 <div class="toast" id="toast" role="status" hidden></div>
 
 <script>
@@ -2204,7 +2228,9 @@ const showWt = lb => `${fmt(wtUnit() === "kg" ? lb / LB_PER_KG : lb)} ${wtUnit()
 const shortDate = ds => { const d = parse(ds); return `${MON[d.getMonth()]} ${d.getDate()}`; };
 function bestLine(name) {
   const r = personalRecords(S.workouts)[(name || "").trim().toLowerCase()];
-  return r ? `<p class="best-line">Your best: <b>${esc(showWt(r.lb))}</b> × ${r.reps} · ${esc(shortDate(r.date))}</p>` : "";
+  const done = (name || "").trim() && S.workouts.some(w => !w.sample && (w.exercises || []).some(x => (x.name || "").trim().toLowerCase() === name.trim().toLowerCase()));
+  const link = done ? ` · <button type="button" class="linkbtn" data-prog="${esc(name.trim())}">See progress</button>` : "";
+  return r ? `<p class="best-line">Your best: <b>${esc(showWt(r.lb))}</b> × ${r.reps} · ${esc(shortDate(r.date))}${link}</p>` : done ? `<p class="best-line">${link.slice(3)}</p>` : "";
 }
 /* XP over the range on screen: workout XP, weekly bonuses stacked on top, penalties below zero.
    One bar per day up to a month; per week for a year; per month beyond that. */
@@ -2355,11 +2381,28 @@ function renderWeight() {
 }
 
 function renderRecords() {
-  const rows = Object.values(personalRecords(S.workouts)).sort((a, b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name));
+  const pr = personalRecords(S.workouts), reps = repRecords(S.workouts);
+  // Weighted records, then bodyweight exercises (best reps) that have no weighted record
+  const rows = Object.values(pr).map(r => ({ name: r.name, date: r.date, best: `<b>${esc(showWt(r.lb))}</b> × ${r.reps}` }))
+    .concat(Object.entries(reps).filter(([k]) => !pr[k]).map(([, r]) => ({ name: r.name, date: r.date, best: `<b>${r.reps}</b> reps` })))
+    .sort((a, b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name));
   $("records").innerHTML = rows.length
-    ? `<ul class="acts records">${rows.map(r => `<li><span>${esc(r.name)}</span><span class="num"><b>${esc(showWt(r.lb))}</b> × ${r.reps} <small>${esc(shortDate(r.date))}</small></span></li>`).join("")}</ul>
-       <p class="note">Your heaviest set for each exercise, newest records first.</p>`
-    : `<p class="note" style="margin:0">Log a lift with a weight and your best for that exercise shows up here.</p>`;
+    ? `<ul class="acts records">${rows.map(r => `<li><button type="button" class="rec-row" data-prog="${esc(r.name)}"><span>${esc(r.name)}</span><span class="num">${r.best} <small>${esc(shortDate(r.date))}</small><i aria-hidden="true">›</i></span></button></li>`).join("")}</ul>
+       <p class="note">Your best set for each exercise, newest records first. Tap one to see its progress.</p>`
+    : `<p class="note" style="margin:0">Log a lift and your best for each exercise shows up here.</p>`;
+}
+/* Most reps in a single set, for exercises logged without weight (pull-ups, push-ups and the like) */
+function repRecords(list) {
+  const best = {};
+  for (const w of list) {
+    if (w.sample || isCardio(w)) continue;
+    for (const x of w.exercises || []) for (const st of x.sets || []) {
+      const key = (x.name || "").trim().toLowerCase(), r = Number(st.reps) || 0;
+      if (!key || toLb(st.weight, w.unit) > 0 || r <= 0) continue;
+      if (!best[key] || r > best[key].reps) best[key] = { name: x.name.trim(), reps: r, date: w.date };
+    }
+  }
+  return best;
 }
 
 /* Called after a save: XP toast, plus a celebration when a level (and maybe a title) is reached. */
@@ -3034,7 +3077,7 @@ function openSheet(kind, w) {
   // On touch screens, don't pop the keyboard straight away; let people see the whole form first.
   if (!matchMedia("(pointer: coarse)").matches) setTimeout(() => { const f = document.querySelector(kind === "lift" ? "#sheetRoot .ex .ex-pick" : kind === "cardio" ? "#sheetRoot .citem:last-of-type [data-ci$=':minutes']" : null); if (f && !S.draft.id) f.focus(); }, 30);
 }
-function closeSheet() { if (S.exPick) closeExPick(); S.sheet = null; S.draft = null; S.importPending = null; renderSheet(); if (S.loaded) maybeBossPopup(xpLedger(S.workouts)); }
+function closeSheet() { if (S.exPick) closeExPick(); if (S.prog) closeProg(); S.sheet = null; S.draft = null; S.importPending = null; renderSheet(); if (S.loaded) maybeBossPopup(xpLedger(S.workouts)); }
 
 /* An input with − and + buttons either side, so numbers can be set without the keyboard.
    `step` is the amount per tap. */
@@ -3097,6 +3140,109 @@ function delActions(saveLabel) {
     : `<button class="btn ghost danger" type="button" data-act="del">Delete</button>`) : "") +
     `<div class="right"><button class="btn ghost" type="button" data-act="close">Cancel</button><button class="btn primary" type="button" data-act="save">${saveLabel}</button></div>`;
 }
+
+/* ---------- Exercise progress: every session of one exercise, a chart of how it's moved, and the bests ---------- */
+// Estimated one-rep max (Epley), from sets of 1 to 12 reps
+const e1rm = (lb, reps) => reps >= 1 && reps <= 12 ? (reps === 1 ? lb : lb * (1 + reps / 30)) : 0;
+function exSessions(name) {
+  const key = name.trim().toLowerCase(), out = [];
+  for (const w of S.workouts) {
+    if (w.sample || isCardio(w)) continue;
+    const xs = (w.exercises || []).filter(x => (x.name || "").trim().toLowerCase() === key);
+    if (!xs.length) continue;
+    const sets = xs.flatMap(x => x.sets || []).map(st => ({ reps: Number(st.reps) || 0, lb: toLb(st.weight, w.unit) })).filter(st => st.reps > 0 || st.lb > 0);
+    if (!sets.length) continue;
+    const top = sets.reduce((a, b) => (b.lb > a.lb || (b.lb === a.lb && b.reps > a.reps) ? b : a));
+    out.push({ w, date: w.date, at: w.createdAt || 0, sets, top, topLb: top.lb,
+      e1rm: Math.max(0, ...sets.map(st => e1rm(st.lb, st.reps))), volume: sets.reduce((a, st) => a + st.reps * st.lb, 0),
+      reps: sets.reduce((a, st) => a + st.reps, 0), topReps: Math.max(0, ...sets.map(st => st.reps)) });
+  }
+  return out.sort((a, b) => a.date.localeCompare(b.date) || a.at - b.at);
+}
+const wtNum = lb => wtUnit() === "kg" ? lb / LB_PER_KG : lb;
+const setText = st => st.lb > 0 ? `${fmt(wtNum(st.lb))} × ${st.reps}` : `${st.reps} reps`;
+function progChart(ss, metric) {
+  const val = x => metric === "e1rm" ? wtNum(x.e1rm) : metric === "volume" ? wtNum(x.volume) : metric === "reps" ? x.topReps : metric === "total" ? x.reps : wtNum(x.topLb);
+  const pts = ss.map((x, i) => ({ x, i, v: val(x) })).filter(p => p.v > 0);
+  if (pts.length < 2) return `<p class="note" style="margin:6px 0 0">${pts.length ? "Log this exercise again to see a trend." : "Nothing to chart for this measure yet."}</p>`;
+  const W = 600, H = 220, L = 50, R = 14, T = 14, B = 26, iw = W - L - R, ih = H - T - B;
+  const t = p => parse(p.x.date).getTime() + (p.x.at % 864e5) / 10, t0 = t(pts[0]), t1 = Math.max(t(pts[pts.length - 1]), t0 + 864e5);
+  const lo0 = Math.min(...pts.map(p => p.v)), hi0 = Math.max(...pts.map(p => p.v)), pad = Math.max(1, (hi0 - lo0) * 0.15);
+  const lo = Math.max(0, Math.floor(lo0 - pad)), hi = Math.ceil(hi0 + pad);
+  const X = p => L + ((t(p) - t0) / (t1 - t0)) * iw, Y = v => T + ih - ((v - lo) / (hi - lo)) * ih;
+  const line = pts.map((p, k) => `${k ? "L" : "M"}${X(p).toFixed(1)} ${Y(p.v).toFixed(1)}`).join("");
+  const area = `${line}L${X(pts[pts.length - 1]).toFixed(1)} ${T + ih}L${X(pts[0]).toFixed(1)} ${T + ih}Z`;
+  const ticks = [lo, Math.round((lo + hi) / 2), hi];
+  const bestV = Math.max(...pts.map(p => p.v));
+  return `<div class="wchart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(PROG_METRICS.find(m => m[0] === metric)[1])}, ${pts.length} sessions">
+    ${ticks.map(v => `<line class="w-grid" x1="${L}" x2="${W - R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}"/><text class="w-tick" x="${L - 8}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end">${esc(metric === "volume" ? (v >= 10000 ? `${fmt(v / 1000)}k` : Math.round(v).toLocaleString()) : fmt(v))}</text>`).join("")}
+    <text class="w-tick" x="${L}" y="${H - 8}">${esc(shortDate(pts[0].x.date))}</text>
+    <text class="w-tick" x="${W - R}" y="${H - 8}" text-anchor="end">${esc(shortDate(pts[pts.length - 1].x.date))}</text>
+    <path class="w-area" d="${area}"/><path class="w-line" d="${line}"/>
+    ${pts.map((p, k) => { const tip = progTip(p.x, metric); const cx = X(p).toFixed(1), cy = Y(p.v).toFixed(1);
+      return `<g class="w-g${S.prog.sel === p.i ? " sel" : ""}" data-pi="${p.i}" data-tip="${esc(tip)}"><title>${esc(tip)}</title><circle class="w-hit" cx="${cx}" cy="${cy}" r="16"/><circle class="w-pt${p.v === bestV ? " last" : ""}" cx="${cx}" cy="${cy}" r="${p.v === bestV ? 6 : 4}"/></g>`; }).join("")}
+  </svg></div>`;
+}
+const PROG_METRICS = [["top", "Top weight"], ["e1rm", "Est. 1-rep max"], ["volume", "Volume"], ["reps", "Most reps"], ["total", "Total reps"]];
+function progTip(x, metric) {
+  const d = shortDate(x.date);
+  if (metric === "e1rm") return `${d}: about ${fmt(wtNum(x.e1rm))} ${wtUnit()} (from ${setText(x.sets.reduce((a, b) => (e1rm(b.lb, b.reps) > e1rm(a.lb, a.reps) ? b : a)))})`;
+  if (metric === "volume") return `${d}: ${compactWt(x.volume)} across ${plural(x.sets.length, "set")}`;
+  if (metric === "reps") return `${d}: ${x.topReps} reps in the best set`;
+  if (metric === "total") return `${d}: ${x.reps} reps across ${plural(x.sets.length, "set")}`;
+  return `${d}: top set ${setText(x.top)} ${x.top.lb > 0 ? wtUnit() : ""}`.trim();
+}
+function progHTML() {
+  const st = S.prog, ss = exSessions(st.name), weighted = ss.some(x => x.topLb > 0);
+  const metrics = PROG_METRICS.filter(([k]) => weighted ? ["top", "e1rm", "volume"].includes(k) : ["reps", "total"].includes(k));
+  if (!metrics.some(([k]) => k === st.metric)) st.metric = metrics[0][0];
+  if (!ss.length) return `<p class="note">No sessions of ${esc(st.name)} logged yet.</p>`;
+  const last = ss[ss.length - 1], first = ss[0];
+  // Best ever, and how the top set has moved: against the latest session at least 30 days before the last one, or the first
+  const bestS = ss.reduce((a, b) => (weighted ? (b.topLb > a.topLb || (b.topLb === a.topLb && b.top.reps > a.top.reps)) : b.topReps > a.topReps) ? b : a);
+  const cut = ymd(addDays(parse(last.date), -30)), base = [...ss].reverse().find(x => x.date <= cut) || (ss.length > 1 ? first : null);
+  const metricOf = x => weighted ? x.topLb : x.topReps, diff = base ? metricOf(last) - metricOf(base) : 0;
+  const change = !base ? "First session" : diff === 0 ? `Same as ${shortDate(base.date)}` : `${diff > 0 ? "+" : "−"}${weighted ? showWt(Math.abs(diff)) : plural(Math.abs(diff), "rep")} since ${shortDate(base.date)}`;
+  const bestE = weighted ? Math.max(...ss.map(x => x.e1rm)) : 0;
+  const tiles = [
+    ["Best set", weighted ? `${showWt(bestS.top.lb)} × ${bestS.top.reps}` : `${bestS.topReps} reps`, shortDate(bestS.date)],
+    weighted ? ["Est. 1-rep max", bestE ? showWt(Math.round(bestE)) : "–", "best estimate"] : ["Total reps", ss.reduce((a, x) => a + x.reps, 0).toLocaleString(), "all sessions"],
+    ["Last time", last.top.lb > 0 ? `${showWt(last.top.lb)} × ${last.top.reps}` : `${last.top.reps} reps`, shortDate(last.date)],
+    ["Change", change.split(" since ")[0], base ? (diff === 0 ? "" : `since ${shortDate(base.date)}`) : ""]];
+  const sel = st.sel != null && ss[st.sel] ? ss[st.sel] : null;
+  const canOpen = !S.sheet;
+  return `<div class="prog-tiles">${tiles.map(([k, v, sub]) => `<div class="stat"><span>${esc(k)}</span><b class="num${k === "Change" && diff > 0 ? " up" : k === "Change" && diff < 0 ? " down" : ""}">${esc(v)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</div>`).join("")}</div>
+    <div class="periods prog-tabs" role="tablist" aria-label="Measure" style="grid-template-columns: repeat(${metrics.length}, 1fr)">${metrics.map(([k, n]) => `<button type="button" role="tab" data-metric="${k}" aria-pressed="${k === st.metric}" aria-selected="${k === st.metric}">${n}</button>`).join("")}</div>
+    ${progChart(ss, st.metric)}
+    <p class="chart-readout" id="progReadout" aria-live="polite">${esc(sel ? progTip(sel, st.metric) : ss.length > 1 ? "Tap a point to see that session." : "")}</p>
+    ${st.metric === "e1rm" ? `<p class="note" style="margin:2px 0 0">Estimated from your sets of 1–12 reps (weight × (1 + reps ÷ 30)).</p>` : ""}
+    <div class="lbl" style="margin-top:16px">${plural(ss.length, "session")} since ${esc(shortDate(first.date))} · newest first</div>
+    <ul class="prog-list">${[...ss].reverse().map(x => { const isBest = x === bestS;
+      const body = `<span class="pl-top"><b>${esc(shortDate(x.date))}${x.date.slice(0, 4) !== String(new Date().getFullYear()) ? ` ${x.date.slice(0, 4)}` : ""}</b>${isBest ? `<i class="pl-best">Best</i>` : ""}<span class="num">${weighted ? esc(compactWt(x.volume)) : esc(plural(x.reps, "rep"))}</span></span>
+        <span class="pl-sets num">${esc(x.sets.map(setText).join(" · "))}${weighted ? ` ${wtUnit()}` : ""}</span>`;
+      return `<li>${canOpen ? `<button type="button" class="pl-row" data-w="${esc(x.w.id)}">${body}</button>` : `<div class="pl-row">${body}</div>`}</li>`; }).join("")}</ul>
+    ${canOpen ? `<p class="note" style="margin:8px 0 0">Tap a session to open that workout.</p>` : ""}`;
+}
+function openProg(name) {
+  S.prog = { name, metric: (S.prog && S.prog.metric) || "top", sel: null };
+  $("exProg").innerHTML = `<div class="overlay xpk-overlay prog-overlay" data-prog-bg="1"><div class="sheet xpk prog" role="dialog" aria-modal="true" aria-labelledby="progH">
+      <div class="sheet-head"><h3 id="progH">${esc(name)}</h3><button class="x" type="button" data-prog-close="1" aria-label="Close">${XSVG}</button></div>
+      <div class="sheet-body" id="progBody">${progHTML()}</div></div></div>`;
+}
+function closeProg() { S.prog = null; $("exProg").innerHTML = ""; }
+function renderProg() { const b = $("progBody"); if (b && S.prog) b.innerHTML = progHTML(); }
+document.addEventListener("click", e => {
+  const open = e.target.closest("[data-prog]");
+  if (open && !e.target.closest("#exProg")) { e.preventDefault(); return openProg(open.dataset.prog); }
+});
+$("exProg").addEventListener("click", e => {
+  if (!S.prog) return;
+  const m = e.target.closest("[data-metric]"); if (m) { S.prog.metric = m.dataset.metric; S.prog.sel = null; return renderProg(); }
+  const g = e.target.closest("[data-pi]"); if (g) { S.prog.sel = +g.dataset.pi; return renderProg(); }
+  const row = e.target.closest("button.pl-row[data-w]");
+  if (row) { const w = S.workouts.find(x => x.id === row.dataset.w); closeProg(); if (w) openSheet("lift", w); return; }
+  if (e.target.closest("[data-prog-close]") || e.target.dataset.progBg) closeProg();
+});
 
 /* ---------- Exercise picker: tap the exercise box to browse (your recent ones first, then by muscle group),
    search to narrow, or add what you typed as a new exercise ---------- */
@@ -3922,7 +4068,7 @@ $("sheetRoot").addEventListener("click", async e => {
 });
 document.addEventListener("keydown", e => {
   if (e.key !== "Escape") return;
-  if ($("celebrate").innerHTML) $("celebrate").innerHTML = ""; else if (S.exPick) closeExPick(); else if (S.sheet) closeSheet();
+  if ($("celebrate").innerHTML) $("celebrate").innerHTML = ""; else if (S.prog) closeProg(); else if (S.exPick) closeExPick(); else if (S.sheet) closeSheet();
 });
 
 /* ---------- Main interactions ---------- */

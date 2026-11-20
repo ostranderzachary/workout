@@ -102,7 +102,15 @@ Forged keeps the heaviest set you've logged for each exercise. kg and lb are com
 
 - **While logging:** your best shows under the exercise name, for example "Your best: 185 lb × 5 · Oct 20".
 - **When you beat it:** the save message says so, for example "New record: Bench Press 190 lb". The first time you log an exercise sets its record without announcing one.
-- **On the Stats tab:** all your records are listed, newest first.
+- **On the Stats tab:** all your records are listed, newest first, including bodyweight exercises such as pull-ups (most reps in a set).
+
+## Exercise progress
+
+Tap an exercise in your records, or **See progress** under an exercise while logging, to open its progress page:
+
+- **Summary:** your best set, estimated one-rep max, last time, and how your top set has changed since about a month ago.
+- **Chart:** every session, switchable between top weight, estimated one-rep max (weight × (1 + reps ÷ 30), from sets of 1–12 reps) and volume. Bodyweight exercises chart most reps and total reps instead. Tap a point to see that session, and the best is highlighted.
+- **Every session, newest first:** each with its sets and volume. Tap one to open that workout. Opened from the logging form, the page sits on top of it, so nothing you've entered is lost.
 
 ## Sharing your progress
 
