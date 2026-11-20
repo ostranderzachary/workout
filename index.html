@@ -406,6 +406,26 @@ button.pl-row { cursor: pointer; }
 .sum-cmp .up { color: var(--h5); } .sum-cmp .down { color: var(--danger); }
 .sum-xp { padding: 6px 0 0; font-size: 13px; }
 .sum-xp li.tot { color: var(--fg); font-weight: 700; border-left-color: var(--h3); }
+/* Suggestion for today */
+.sug-card { margin-bottom: 12px; }
+.sug-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.sug-tag { font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--h5); }
+.sug-hide { font-size: 13px; color: var(--muted); }
+.sug-title { margin: 6px 0 0; font-family: var(--font-display); font-size: 26px; text-transform: uppercase; letter-spacing: .02em; line-height: 1.1; }
+.sug-title small { display: block; font-family: var(--font-body); font-size: 14px; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--muted); margin-top: 2px; }
+.sug-why, .sug-ex { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.sug-why li { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; padding: 6px 10px; background: var(--bg); border-radius: 10px; }
+.sug-why li span { color: var(--muted); text-align: right; }
+.sug-ex li { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 14px; padding: 4px 0; border-top: 1px solid var(--line); }
+.sug-ex li:first-child { border-top: 0; }
+.sug-ex-name, .sug-ex-name .linkbtn { font-weight: 600; color: var(--fg); }
+.sug-ex small { color: var(--muted); font-size: 12px; text-align: right; }
+.sug-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
+.sug-alt { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.sug-alt .chip { padding: 5px 12px; font-size: 13px; }
+.sug-msg { margin: 8px 0 0; font-size: 15px; }
+.sug-cardio { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+.sug-cardio .linkbtn { color: var(--h4); font-weight: 600; }
 .auth-alt { margin-top: 14px; }
 .auth-alt summary { cursor: pointer; color: var(--muted); font-size: 14px; font-weight: 600; }
 .side-only { display: none !important; }
@@ -682,6 +702,7 @@ button.tag { cursor: pointer; }
   <div id="banner" data-tab="today"></div>
   <section class="panel player" id="player" aria-label="Your level" data-tab="today"></section>
   <div id="bossCard" data-tab="today"></div>
+  <div id="sugCard" data-tab="today"></div>
   <div id="lbCard" data-tab="today"></div>
   <div id="onboard" data-tab="today"></div>
 
@@ -1989,6 +2010,7 @@ function render() {
 
   renderPlayer();
   renderBossUI();
+  renderSuggest();
   renderOnboard();
   renderSummary({ r, c, days, elapsed, isCurrent, liftTarget, cardioTarget, liftSt, cardioSt, g });
 
@@ -3256,6 +3278,102 @@ function delActions(saveLabel) {
     : `<button class="btn ghost danger" type="button" data-act="del">Delete</button>`) : "") +
     `<div class="right"><button class="btn ghost" type="button" data-act="close">Cancel</button><button class="btn primary" type="button" data-act="save">${saveLabel}</button></div>`;
 }
+
+/* ---------- Suggestion for today: a focus based on this week's goals and what's had time to rest ---------- */
+const SUG_GROUPS = [
+  ["push", "Push", "chest, shoulders and triceps", ["chest", "shoulders", "triceps"]],
+  ["pull", "Pull", "back and biceps", ["lats", "traps", "biceps", "forearms"]],
+  ["legs", "Legs", "quads, hamstrings, glutes and calves", ["quads", "hamstrings", "glutes", "adductors", "calves"]],
+  ["core", "Core", "abs, obliques and lower back", ["abs", "obliques", "lowerback"]]];
+// Built-in picks for a muscle you haven't trained yet
+const SUG_DEFAULT = { chest: "Bench Press", shoulders: "Overhead Press", triceps: "Tricep Pushdown", lats: "Lat Pulldown", traps: "Shrug", biceps: "Barbell Curl",
+  forearms: "Hammer Curl", quads: "Back Squat", hamstrings: "Romanian Deadlift", glutes: "Hip Thrust", adductors: "Adductor Machine", calves: "Calf Raise",
+  abs: "Hanging Leg Raise", obliques: "Russian Twist", lowerback: "Back Extension" };
+const daysAgo = n => n == null ? "not trained yet" : n === 0 ? "trained today" : n === 1 ? "trained yesterday" : `last trained ${n} days ago`;
+function suggestion() {
+  const real = S.workouts.filter(w => !w.sample), t = today(), todayK = ymd(t);
+  const r = rangeFor("week", t, real), c = compute(real, r), g = S.goals;
+  // Each muscle: sets still to go this week, and days since a lift last worked it (as a main or helper muscle)
+  const last = {};
+  for (const w of real) { if (isCardio(w)) continue; for (const x of w.exercises || []) for (const m of [...(x.p || []), ...(x.s || [])]) if (!last[m] || w.date > last[m]) last[m] = w.date; }
+  const ms = M_IDS.map(m => {
+    const goal = Number(g.sets[m]) || 0, done = c.lift[m] ? c.lift[m].v : 0;
+    return { m, goal, done, left: Math.max(0, Math.round((goal - done) * 10) / 10), days: last[m] ? Math.round((t - parse(last[m])) / 864e5) : null };
+  }).filter(x => x.goal > 0);
+  if (!ms.length) return null;
+  const behind = ms.filter(x => x.left > 0);
+  const cardioLeft = Math.max(0, (Number(g.cardio) || 0) - c.minutes);
+  if (!behind.length) return { met: true, cardioLeft };
+  // Only muscles that have had at least two days' rest
+  const rested = behind.filter(x => x.days == null || x.days >= 2), restNote = "had at least two days' rest";
+  if (!rested.length) return { tired: true, cardioLeft };
+  const groups = SUG_GROUPS.map(([k, name, desc, gm]) => {
+    const mus = rested.filter(x => gm.includes(x.m)).sort((a, b) => b.left - a.left);
+    return { k, name, desc, mus, left: mus.reduce((a, x) => a + x.left, 0) };
+  }).filter(x => x.mus.length).sort((a, b) => b.left - a.left);
+  const pick = groups.find(x => x.k === S.sugGroup) || groups[0];
+  // Exercises: for the muscles furthest behind, the one you did most recently for it, else a common choice
+  const recent = new Map();
+  for (const w of [...real].sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0))) {
+    if (isCardio(w)) continue;
+    for (const x of w.exercises || []) { const k = (x.name || "").trim().toLowerCase(); if (k && !recent.has(k)) recent.set(k, { name: x.name.trim(), p: x.p || [], s: x.s || [] }); }
+  }
+  const ex = [];
+  for (const mu of pick.mus) {
+    if (ex.length >= 4) break;
+    if (ex.some(e => e.p.includes(mu.m))) continue;
+    const mine = [...recent.values()].find(e => e.p.includes(mu.m) && !ex.some(x => x.name === e.name));
+    const def = SUG_DEFAULT[mu.m] && LIB[SUG_DEFAULT[mu.m]] ? { name: SUG_DEFAULT[mu.m], p: LIB[SUG_DEFAULT[mu.m]][0], s: LIB[SUG_DEFAULT[mu.m]][1], fresh: true } : null;
+    const e = mine || def; if (e && !ex.some(x => x.name === e.name)) ex.push(e);
+  }
+  return { pick, others: groups.filter(x => x !== pick).slice(0, 3), ex, restNote, cardioLeft, todayK };
+}
+function renderSuggest() {
+  const el = $("sugCard"); if (!el) return;
+  if (!S.loaded || prefs.sugHidden === ymd(today())) { el.innerHTML = ""; return; }
+  const sg = suggestion();
+  if (!sg) { el.innerHTML = ""; return; }
+  const cardioLine = sg.cardioLeft > 0 ? `<p class="sug-cardio">${sg.met || sg.tired ? "Cardio could fit today" : "Or some cardio"}: ${esc(hm(sg.cardioLeft))} to go toward this week's goal. <button class="linkbtn" type="button" data-sug="cardio">Log cardio</button></p>` : "";
+  const head = `<div class="sug-head"><span class="sug-tag">Suggestion for today</span><button class="linkbtn sug-hide" type="button" data-sug="hide">Hide for today</button></div>`;
+  if (sg.met || sg.tired) {
+    el.innerHTML = `<section class="panel sug-card" aria-label="Suggestion for today">${head}
+      <p class="sug-msg">${sg.met ? "Every muscle goal is met this week. A rest day would be well earned, or anything extra you feel like." : "Everything still behind this week was trained in the last two days, so a rest day could be a good call."}</p>${cardioLine}</section>`;
+    return;
+  }
+  const { pick, others, ex, restNote } = sg;
+  el.innerHTML = `<section class="panel sug-card" aria-label="Suggestion for today">${head}
+    <h3 class="sug-title">${esc(pick.name)} <small>${esc(pick.desc)}</small></h3>
+    <p class="note" style="margin:2px 0 8px">These are behind this week's goals and have ${esc(restNote)}. Just an idea: train whatever feels right.</p>
+    <ul class="sug-why">${pick.mus.slice(0, 4).map(x => `<li><b>${esc(MUSCLES[x.m])}</b><span>${esc(plural(x.left, "set"))} to go · ${esc(daysAgo(x.days))}</span></li>`).join("")}</ul>
+    ${ex.length ? `<div class="lbl" style="margin-top:10px">Exercises you could do</div>
+    <ul class="sug-ex">${ex.map(e => { const ss = e.fresh ? [] : exSessions(e.name), l = ss[ss.length - 1];
+      return `<li><span class="sug-ex-name">${l ? `<button type="button" class="linkbtn" data-prog="${esc(e.name)}">${esc(e.name)}</button>` : esc(e.name)}</span><small>${l ? `last time ${esc(setText(l.top))}${l.top.lb > 0 ? ` ${wtUnit()}` : ""} · ${esc(shortDate(l.date))}` : "a common pick for this"}</small></li>`; }).join("")}</ul>` : ""}
+    <div class="sug-actions">${ex.length ? `<button class="btn primary small" type="button" data-sug="start">Start with these</button>` : ""}
+      ${others.length ? `<span class="sug-alt">Other ideas: ${others.map(o => `<button class="chip" type="button" data-sug-group="${o.k}">${esc(o.name)}</button>`).join("")}</span>` : ""}</div>
+    ${cardioLine}</section>`;
+}
+function startSuggestion() {
+  const sg = suggestion(); if (!sg || !sg.ex || !sg.ex.length) return;
+  const unit = prefs.unit || "lb";
+  const carry = sg.ex.map(e => {
+    const x = newEx(); setExName(x, e.name);
+    if (!x.p.length && !x.s.length) { x.p = e.p.slice(); x.s = e.s.slice(); }
+    // Last time's sets as a starting point; change anything before saving
+    const ss = e.fresh ? [] : exSessions(e.name), l = ss[ss.length - 1];
+    if (l) x.sets = l.sets.map(st => ({ reps: st.reps || "", weight: st.lb > 0 ? Math.round((unit === "kg" ? st.lb / LB_PER_KG : st.lb) * 2) / 2 : "" }));
+    return x;
+  });
+  openLift(ymd(today()), carry);
+  toast(`Added ${plural(carry.length, "exercise")} with last time's numbers. Change anything before you save.`);
+}
+$("sugCard").addEventListener("click", e => {
+  const b = e.target.closest("[data-sug], [data-sug-group]"); if (!b) return;
+  if (b.dataset.sugGroup) { S.sugGroup = b.dataset.sugGroup; return renderSuggest(); }
+  const k = b.dataset.sug;
+  if (k === "hide") { prefs.sugHidden = ymd(today()); savePrefs(); toast("Hidden until tomorrow."); return renderSuggest(); }
+  if (k === "start") return startSuggestion();
+  if (k === "cardio") return openCardio(ymd(today()));
+});
 
 /* ---------- Workout summary: a read-only look at a saved workout, compared with last time, with Edit to change it ---------- */
 function openWorkout(w) {

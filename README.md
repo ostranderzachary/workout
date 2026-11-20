@@ -169,6 +169,18 @@ Your own row is highlighted, even if you're outside the top 100, and the top of 
 
 The app reports your XP, matching what you see in Forged, and the database checks every number against what your logged workouts, weekly bonuses and boss fights in that period could earn. Anything above that is capped, and the level is recalculated, so the numbers can't be inflated by editing the app. The setup is in [`supabase/leaderboard.sql`](supabase/leaderboard.sql), run once in the SQL Editor after `schema.sql`.
 
+## Suggestion for today
+
+The Today tab shows an idea for what to train, worked out from your week so far. It's only a suggestion, so train whatever feels right.
+
+- **The focus:** Push, Pull, Legs or Core. It's the group with the most sets still to go toward this week's goals, counting only muscles that have had at least two days' rest. A lift counts as training a muscle whether it's a main or a helper muscle.
+- **Why:** each of those muscles with its sets to go and when it was last trained, for example "Lats: 8 sets to go · last trained 6 days ago".
+- **Exercises you could do:** the ones you did most recently for those muscles, with last time's top set, or a common pick for a muscle you haven't trained. Tap a name to see its progress.
+- **Start with these:** opens the lifting form with those exercises and last time's sets filled in. Change anything before you save. If you've already lifted today, they're added to that workout.
+- **Other ideas** switch to another focus, and a cardio option appears when you're behind on cardio time.
+- **If every muscle goal is met,** or everything behind was trained in the last two days, it suggests a rest day instead.
+- **Hide for today** hides the card until tomorrow.
+
 ## Understanding your progress
 
 - **Get started checklist:** walks new users through setting goals, logging lifts and logging cardio. Each step ticks off when done. You can hide it.
