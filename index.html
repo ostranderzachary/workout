@@ -4218,9 +4218,11 @@ function stepInput(btn) {
   const delta = Number(btn.dataset.d), dec = Math.max(0, (String(btn.dataset.d).split(".")[1] || "").length);
   let v = input.value.trim() === "" ? null : Number(input.value);
   if (v == null || Number.isNaN(v)) {
-    if (delta < 0) return;
+    // An empty field counts as its starting value (the grey 30 in minutes, the set above, last time):
+    // + fills that value in, − steps down from it.
     const start = stepStart(input);
-    v = start != null ? start : delta;
+    if (delta < 0) { if (start == null) return; v = Math.max(0, start + delta); }
+    else v = start != null ? start : delta;
   } else v = Math.max(0, v + delta);
   input.value = String(Number(v.toFixed(dec + (input.dataset.set && input.dataset.set.endsWith("weight") ? 1 : 0))));
   input.dispatchEvent(new Event("input", { bubbles: true }));
