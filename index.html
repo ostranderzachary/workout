@@ -524,6 +524,44 @@ button.pl-row { cursor: pointer; }
 .panel.folded { padding: 10px 14px; }
 .player-actions.split { justify-content: space-between; align-items: center; }
 /* Gym mode */
+.gym-steps { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0 0 14px; padding: 0; }
+.gym-steps button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 6px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.gym-steps button:disabled { opacity: .5; cursor: default; }
+.gym-steps b { width: 20px; height: 20px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 12px; background: var(--bg); color: var(--muted); }
+.gym-steps .cur button { border-color: var(--h5); color: var(--fg); background: var(--bg); }
+.gym-steps .cur b { background: var(--h5); color: #0b1a0f; }
+.gym-steps .past b { background: var(--h3); color: #0b1a0f; }
+.gym-h { margin: 0 0 4px; font-family: var(--font-display); font-size: 26px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; line-height: 1.05; }
+.gym-intro { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
+.gym-sug { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; padding: 12px 14px; border: 1px solid var(--h3); border-radius: 14px; background: var(--bg); }
+.gym-sug b { display: block; font-size: 16px; }
+.gym-sug small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+.gym-empty { margin: 0; padding: 18px 12px; text-align: center; color: var(--muted); font-size: 14px; border: 1px dashed var(--line); border-radius: 14px; }
+.gym-plan { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.gym-pl { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 10px 10px 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); }
+.gym-pl > .n { font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--muted); text-align: center; }
+.gym-pl-name { border: 0; background: transparent; color: var(--fg); padding: 0; font: inherit; font-weight: 700; font-size: 15px; text-align: left; cursor: pointer; }
+.gym-pl small { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; }
+.gym-pl small.ok { color: var(--h5); }
+.gym-pl > [id^="mus-"] { grid-column: 1 / -1; }
+.gym-cnt { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--surface); }
+.gym-cnt button { width: 36px; height: 36px; border: 0; background: transparent; color: var(--fg); font-size: 20px; font-weight: 600; cursor: pointer; }
+.gym-cnt button:disabled { opacity: .3; cursor: default; }
+.gym-cnt span { min-width: 54px; text-align: center; font-size: 12px; color: var(--muted); }
+.gym-cnt span b { color: var(--fg); font-size: 16px; }
+.gym-addex { width: 100%; margin-top: 10px; padding: 12px; border-style: dashed; }
+.gym-rv-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 10px 0 12px; }
+.gym-rv-stats div { padding: 10px 6px; border-radius: 12px; background: var(--bg); text-align: center; }
+.gym-rv-stats b { display: block; font-family: var(--font-display); font-size: 26px; font-weight: 700; line-height: 1.05; }
+.gym-rv-stats small { color: var(--muted); font-size: 12px; }
+.gym-rv { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.gym-rv li { padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; }
+.gym-rv-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.gym-rv-h span { flex: none; color: var(--h5); font-size: 13px; font-weight: 700; }
+.gym-rv p { margin: 4px 0 0; font-size: 14px; }
+.gym-rv small { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; }
+.gym-rv li.skip { opacity: .65; }
+.gym-rv li.skip .gym-rv-h span { color: var(--muted); }
 .gym-enter { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; padding: 12px 14px; border: 1px solid var(--h3); border-radius: 14px; background: var(--bg); }
 .gym-enter span { font-size: 13px; color: var(--muted); }
 .gym-enter b { display: block; color: var(--fg); font-size: 15px; }
@@ -3503,6 +3541,7 @@ function addSheet() {
   const date = defaultDate(), w = liftOn(date), n = w ? (w.exercises || []).reduce((a, x) => a + (x.sets || []).length, 0) : 0;
   return sheetFrame("Log a workout", `<div class="addgrid">
       <button type="button" class="addopt" data-act="pick-lift"><b>Lifting</b><span>${w ? `Continue ${date === ymd(today()) ? "today's workout" : `your workout from ${esc(dayWord(date))}`}: ${esc(liftTitle(w))}, ${plural(n, "set")} so far` : "Exercises with their sets, reps and weight"}</span></button>
+      <button type="button" class="addopt" data-act="pick-gym"><b>Gym mode</b><span>Plan your exercises, then log one set at a time with a rest timer</span></button>
       <button type="button" class="addopt" data-act="pick-cardio"><b>Cardio</b><span>${(() => { const cs = cardioOn(date); return cs.length
         ? `Continue ${date === ymd(today()) ? "today's cardio" : `your cardio from ${esc(dayWord(date))}`}: ${esc([...new Set(cs.map(c => (CARDIO[c.activity] || CARDIO.run)[0]))].join(", "))}`
         : "A run, ride, swim or other session: minutes and distance"; })()}</span></button>
@@ -3685,16 +3724,20 @@ function progression(e, sets) {
     why: hit ? `Up ${fmt(inc)} ${u}: you hit every rep at ${fmt(last)} ${u} on ${shortDate(l.date)}`
       : `Same weight: aim for ${first} on every set (last time ${atTop.map(st => st.reps).join(", ")} at ${fmt(last)} ${u})` };
 }
-function startSuggestion(quiet) {
-  const sg = suggestion(); if (!sg || !sg.ex || !sg.ex.length) return;
-  const ps = planSession(sg.pick, sg.ex); if (!ps.items.length) return;
-  const carry = ps.items.map(it => {
+function suggestedExercises() {
+  const sg = suggestion(); if (!sg || !sg.ex || !sg.ex.length) return null;
+  const ps = planSession(sg.pick, sg.ex); if (!ps.items.length) return null;
+  return { sg, ps, carry: ps.items.map(it => {
     const x = newEx(); setExName(x, it.e.name);
     if (!x.p.length && !x.s.length) { x.p = it.e.p.slice(); x.s = it.e.s.slice(); }
     x.sets = it.rows.map(r => ({ ...r }));
-    x.sug = `${it.text}. ${it.why}.`; // shown in the form; not saved
+    x.sug = `${it.text}. ${it.why}.`; x.sugText = it.text; // shown in the forms; not saved
     return x;
-  });
+  }) };
+}
+function startSuggestion(quiet) {
+  const se = suggestedExercises(); if (!se) return;
+  const { ps, carry } = se;
   openLift(ymd(today()), carry);
   if (!quiet) toast(`Added ${plural(carry.length, "suggested exercise")}, about ${plural(ps.total, "set")}. Change anything before you save; one left without reps is skipped.`);
 }
@@ -3961,11 +4004,23 @@ function openExPick(i) {
   if (!matchMedia("(pointer: coarse)").matches) setTimeout(() => { const f = $("xpkQ"); if (f) f.focus(); }, 30);
   else setTimeout(() => { const c = document.querySelector("#xpkList .xp-row.cur"); if (c) c.scrollIntoView({ block: "center" }); }, 30);
 }
-function closeExPick() { S.exPick = null; $("exPick").innerHTML = ""; }
+function closeExPick() {
+  const st = S.exPick, d = S.draft, x = st && d && d.exercises && d.exercises[st.i];
+  S.exPick = null; $("exPick").innerHTML = "";
+  // In gym mode, a row added for the picker goes away again if nothing was chosen
+  if (S.sheet === "gym" && x && x.gymNew && !x.name.trim()) {
+    d.exercises.splice(st.i, 1);
+    if (!d.exercises.length) d.exercises.push(newEx());
+    d.gymI = Math.min(d.gymI || 0, d.exercises.length - 1);
+    renderSheet();
+  }
+}
 function chooseEx(name) {
   const st = S.exPick, d = S.draft; if (!st || !d || !d.exercises[st.i]) return closeExPick();
-  const i = st.i, x = d.exercises[i];
+  const i = st.i, x = d.exercises[i], before = x.name.trim();
   setExName(x, name.trim().replace(/\s+/g, " "));
+  if (S.sheet === "gym" && (x.gymNew || x.name.trim() !== before)) gymPrepEx(x);
+  delete x.gymNew;
   closeExPick(); renderSheet();
   // A brand-new exercise needs its muscles: bring that part into view
   const needs = !LIB[x.name] && !(x.p.length || x.s.length), el = $(needs ? `mus-${i}` : `ex-${i}`);
@@ -4040,10 +4095,87 @@ function enterGym() {
     x.sets.forEach((st, j) => { if (st.done == null) st.done = !!(same && j < (sx.sets || []).length); });
     if (!x.sets.length) x.sets.push({ reps: "", weight: "", done: false });
   });
-  if (!d.gym) { d.gym = true; const k = d.exercises.findIndex(x => gymNext(x) >= 0); d.gymI = k >= 0 ? k : d.exercises.length - 1; }
+  if (!d.gym) { d.gym = true; d.gymStep = "plan"; const k = d.exercises.findIndex(x => gymNext(x) >= 0); d.gymI = k >= 0 ? k : d.exercises.length - 1; }
   S.sheet = "gym"; S.error = ""; renderSheet();
 }
+/* Gym mode goes in three steps, shown at the top: 1 Plan (what you'll do), 2 Lift (one set at a time), 3 Save (review, then save). */
+const GYM_STEPS = [["plan", "Plan"], ["train", "Lift"], ["review", "Save"]];
+const gymStepOf = d => d.gymStep || "train"; // drafts from before the steps were added were mid-workout
+const gymNamed = d => d.exercises.filter(x => x.name.trim());
+const gymSteps = (d, step) => {
+  const at = GYM_STEPS.findIndex(([k]) => k === step), can = gymNamed(d).length > 0;
+  return `<ol class="gym-steps" aria-label="Gym mode steps">${GYM_STEPS.map(([k, l], n) => `<li class="${n === at ? "cur" : n < at ? "past" : ""}">
+    <button type="button" data-gym="step" data-step="${k}"${n === at ? ' aria-current="step"' : ""}${k !== "plan" && !can ? " disabled" : ""}><b>${n < at ? "✓" : n + 1}</b>${l}</button></li>`).join("")}</ol>`;
+};
 function gymSheet(d) {
+  const step = gymStepOf(d);
+  if (step === "plan") return gymPlanHTML(d);
+  if (step === "review") return gymReviewHTML(d);
+  return gymTrainHTML(d);
+}
+/* Step 1: the exercises and how many sets of each. */
+function gymPlanHTML(d) {
+  const items = d.exercises.map((x, i) => [x, i]).filter(([x]) => x.name.trim() || x.sets.some(st => st.done));
+  const started = d.exercises.some(x => x.sets.some(st => st.done));
+  let sug = "";
+  if (!items.length && d.date === ymd(today()) && prefs.sugHidden !== ymd(today())) {
+    const sg = suggestion();
+    if (sg && sg.pick && sg.ex.length) {
+      const ps = planSession(sg.pick, sg.ex);
+      if (ps.items.length) sug = `<div class="gym-sug"><div><span class="lbl">Today's suggestion</span><b>${esc(sg.pick.name)} · about ${plural(ps.total, "set")}</b><small>${esc(ps.items.map(it => it.e.name).join(", "))}</small></div>
+        <button class="btn small primary" type="button" data-gym="use-sug">Use it</button></div>`;
+    }
+  }
+  const rows = items.map(([x, i], n) => {
+    const done = x.sets.filter(st => st.done).length, ss = exSessions(x.name.trim()), last = ss[ss.length - 1];
+    const sub = done ? `<small class="ok">${done} of ${plural(x.sets.length, "set")} done</small>`
+      : x.sugText ? `<small>Suggested: ${esc(x.sugText)}</small>`
+      : last ? `<small>Last time: ${esc(last.sets.map(st => setText(st)).join(", "))}${last.topLb > 0 ? ` ${esc(wtUnit())}` : ""}</small>` : `<small>New to you</small>`;
+    return `<li class="gym-pl"><span class="n">${n + 1}</span>
+      <div><button type="button" class="gym-pl-name" data-gym="rename" data-i="${i}" aria-label="${esc(x.name)}: tap to change the exercise">${esc(x.name)}</button>${sub}</div>
+      <div class="gym-cnt" role="group" aria-label="Sets of ${esc(x.name)}"><button type="button" data-gym="sets-minus" data-i="${i}" aria-label="One set fewer"${x.sets.length <= Math.max(1, done) ? " disabled" : ""}>−</button><span><b>${x.sets.length}</b> ${x.sets.length === 1 ? "set" : "sets"}</span><button type="button" data-gym="sets-plus" data-i="${i}" aria-label="One more set"${x.sets.length >= 12 ? " disabled" : ""}>+</button></div>
+      <button class="x" type="button" data-gym="rm" data-i="${i}" aria-label="Remove ${esc(x.name)}">${XSVG}</button>
+      ${!LIB[x.name.trim()] && !(x.p.length || x.s.length) ? `<div id="mus-${i}">${musclesHTML(x, i)}</div>` : ""}</li>`;
+  }).join("");
+  const total = items.reduce((a, [x]) => a + x.sets.length, 0);
+  return sheetFrame("Gym mode", `${gymSteps(d, "plan")}
+    <h3 class="gym-h">Plan your workout</h3>
+    <p class="gym-intro">${items.length ? `${plural(items.length, "exercise")}, ${plural(total, "set")}. Change the sets or add more, then ${started ? "carry on" : "start"}. You can still change things as you go.`
+      : "Add the exercises you'll do and how many sets of each. Then you'll go through them one set at a time, with a rest timer."}</p>
+    ${sug}
+    ${items.length ? `<ol class="gym-plan">${rows}</ol>` : sug ? "" : `<p class="gym-empty">No exercises yet.</p>`}
+    <button class="btn gym-addex" type="button" data-gym="add">+ Add exercise</button>`,
+    `<button class="btn ghost" type="button" data-gym="form">Edit as a list</button><div class="right"><button class="btn primary" type="button" data-gym="step" data-step="train"${items.length ? "" : " disabled"}>${started ? "Continue ›" : "Start workout ›"}</button></div>`);
+}
+/* Step 3: what you did, then save. Only ticked sets are saved. */
+function gymReviewHTML(d) {
+  const named = gymNamed(d), g = gymCount(d);
+  const doneW = { unit: d.unit, exercises: named.map(x => ({ sets: x.sets.filter(st => st.done).map(st => ({ reps: Number(st.reps) || 0, weight: Number(st.weight) || 0 })) })) };
+  const xp = g.done ? xpFor(doneW) : 0, nEx = named.filter(x => x.sets.some(st => st.done)).length;
+  const rows = named.map(x => {
+    const done = x.sets.filter(st => st.done), left = x.sets.length - done.length;
+    return `<li class="${done.length ? "" : "skip"}"><div class="gym-rv-h"><b>${esc(x.name)}</b><span>${done.length ? `✓ ${plural(done.length, "set")}` : "Not started"}</span></div>
+      ${done.length ? `<p>${done.map(st => esc(setLine(st, d.unit))).join(" · ")}</p>` : ""}
+      ${left ? `<small>${done.length ? `${plural(left, "planned set")} not done, so ${left === 1 ? "it won't be" : "they won't be"} saved` : "Won't be saved"}</small>` : ""}</li>`;
+  }).join("");
+  return sheetFrame("Gym mode", `${gymSteps(d, "review")}
+    <h3 class="gym-h">Review and save</h3>
+    <p class="gym-intro">${g.done ? "Here's what you ticked. Only these sets are saved." : "Nothing is ticked yet. Go back to Lift and tap Done after each set."}</p>
+    <div class="gym-rv-stats"><div><b class="num">${g.done}</b><small>${g.done === 1 ? "set" : "sets"} done</small></div><div><b class="num">${nEx}</b><small>${nEx === 1 ? "exercise" : "exercises"}</small></div><div><b class="num">+${xp}</b><small>XP from sets</small></div></div>
+    <ul class="gym-rv">${rows}</ul>`,
+    `<button class="btn ghost" type="button" data-gym="step" data-step="train">‹ Back to lifting</button><div class="right"><button class="btn primary" type="button" data-gym="save"${g.done ? "" : " disabled"}>Save workout</button></div>`);
+}
+/* A newly chosen exercise in gym mode gets a set count and starting numbers: the next step up from last time,
+   with as many sets as last time (2–5), or 3 empty sets for one you haven't done. */
+function gymPrepEx(x) {
+  if (x.sets.some(st => st.done)) return;
+  const ss = exSessions(x.name), l = ss[ss.length - 1], n = l ? Math.min(5, Math.max(2, l.sets.length)) : 3;
+  const pr = progression({ name: x.name, fresh: !l }, n);
+  x.sets = pr.rows.map(r => ({ ...r, done: false }));
+  if (l) { x.sug = `${pr.text}. ${pr.why}.`; x.sugText = pr.text; } else { delete x.sug; delete x.sugText; }
+}
+/* Step 2: one exercise at a time. */
+function gymTrainHTML(d) {
   const i = Math.min(Math.max(0, d.gymI || 0), d.exercises.length - 1), x = d.exercises[i], n = d.exercises.length;
   const g = gymCount(d), cur = gymNext(x), name = x.name.trim(), unit = d.unit;
   const ss = name ? exSessions(name) : [], last = ss[ss.length - 1];
@@ -4068,8 +4200,8 @@ function gymSheet(d) {
   const complete = cur < 0 ? `<div class="gym-complete"><p>${name ? `${esc(name)}: all ${plural(x.sets.length, "set")} done` : "All sets done"}</p><div class="btn-row">
       <button class="btn" type="button" data-gym="addset">One more set</button>
       ${nextEx >= 0 ? `<button class="btn primary" type="button" data-gym="goto" data-i="${nextEx}">Next: ${esc(d.exercises[nextEx].name.trim() || `exercise ${nextEx + 1}`)}</button>`
-        : `<button class="btn primary" type="button" data-gym="finish">Finish workout</button>`}</div></div>` : "";
-  return sheetFrame("Gym mode", `<div class="gym-top">${strip}${rest}</div>
+        : `<button class="btn primary" type="button" data-gym="step" data-step="review">Review and save ›</button>`}</div></div>` : "";
+  return sheetFrame("Gym mode", `${gymSteps(d, "train")}<div class="gym-top">${strip}${rest}</div>
     <div class="gym-main">
       <div class="gym-nav"><button class="x" type="button" data-gym="prev" aria-label="Previous exercise"${i ? "" : " disabled"}>‹</button>
         <h3 class="gym-ex">${name ? `${esc(name)}<small>Exercise ${i + 1} of ${n}${x.p.length ? ` · ${esc(x.p.map(m => MUSCLES[m]).join(", "))}` : ""}</small>`
@@ -4082,7 +4214,7 @@ function gymSheet(d) {
       <div class="gym-tools">${cur >= 0 ? `<button class="btn small" type="button" data-gym="addset">+ Add set</button>` : ""}<button class="btn small" type="button" data-gym="addex">+ Add exercise</button>
         <button class="btn small ghost" type="button" data-gym="sound" aria-pressed="${prefs.restSound !== false}">Timer sound: ${prefs.restSound !== false ? "on" : "off"}</button></div>
     </div>`,
-    `<button class="btn ghost" type="button" data-gym="form">Edit as a list</button><div class="right"><button class="btn primary" type="button" data-gym="finish">Finish workout</button></div>`);
+    `<button class="btn ghost" type="button" data-gym="step" data-step="plan">‹ Plan</button><div class="right"><button class="btn primary" type="button" data-gym="step" data-step="review">Finish ›</button></div>`);
 }
 // Scroll the set you're on (or the "all done" box) into view below the timer
 function gymFocus() {
@@ -4094,9 +4226,47 @@ function gymAction(a) {
   if (k === "prev" || k === "next") { d.gymI = Math.min(d.exercises.length - 1, Math.max(0, i + (k === "next" ? 1 : -1))); const sb = document.querySelector("#sheetRoot .sheet-body"); renderSheet(); if (sb) { const nb = document.querySelector("#sheetRoot .sheet-body"); if (nb) nb.scrollTop = 0; } return; }
   if (k === "goto") { d.gymI = +a.i; renderSheet(); const nb = document.querySelector("#sheetRoot .sheet-body"); if (nb) nb.scrollTop = 0; return; }
   if (k === "form") { S.sheet = "lift"; S.error = ""; return renderSheet(); }
-  if (k === "finish") return saveDraft();
+  if (k === "finish") return gymAction({ gym: "step", step: "review" });
+  if (k === "save") return saveDraft();
   if (k === "pick") return openExPick(i);
-  if (k === "addex") { const y = newEx(); y.sets = [{ reps: "", weight: "", done: false }]; d.exercises.push(y); d.gymI = d.exercises.length - 1; renderSheet(); return openExPick(d.gymI); }
+  if (k === "step") {
+    const to = a.step;
+    if (to !== "plan") {
+      if (!gymNamed(d).length) return toast("Add an exercise first.");
+      const bare = gymNamed(d).find(y => !LIB[y.name.trim()] && !(y.p.length || y.s.length));
+      if (bare) return toast(`Tap the muscles “${bare.name.trim()}” works first.`);
+      // Leaving the plan: drop empty rows and start at the first exercise with sets to do
+      if (gymStepOf(d) === "plan") {
+        d.exercises = d.exercises.filter(y => y.name.trim() || y.sets.some(st => st.done));
+        const nx = d.exercises.findIndex(y => gymNext(y) >= 0); d.gymI = nx >= 0 ? nx : d.exercises.length - 1;
+      }
+    }
+    d.gymStep = to; S.error = "";
+    renderSheet();
+    const sb = document.querySelector("#sheetRoot .sheet-body"), sh = document.querySelector("#sheetRoot .sheet"); if (sb) sb.scrollTop = 0; if (sh) sh.scrollTop = 0;
+    if (to === "train") gymFocus();
+    return;
+  }
+  if (k === "use-sug") {
+    const se = suggestedExercises(); if (!se) return;
+    d.exercises = d.exercises.filter(y => y.name.trim() || y.sets.some(st => st.done)).concat(se.carry.map(y => ({ ...y, sets: y.sets.map(st => ({ ...st, done: false })) })));
+    return renderSheet();
+  }
+  if (k === "add") {
+    let j = d.exercises.findIndex(y => !y.name.trim() && !y.sets.some(st => st.done));
+    if (j < 0) { d.exercises.push(newEx()); j = d.exercises.length - 1; }
+    d.exercises[j].sets = [{ reps: "", weight: "", done: false }]; d.exercises[j].gymNew = true;
+    return openExPick(j);
+  }
+  if (k === "rename") return openExPick(+a.i);
+  if (k === "rm") return removeFromForm("ex", +a.i);
+  if (k === "sets-plus" || k === "sets-minus") {
+    const y = d.exercises[+a.i]; if (!y) return;
+    if (k === "sets-plus" && y.sets.length < 12) { const l = y.sets[y.sets.length - 1] || {}; y.sets.push({ reps: l.reps ?? "", weight: l.weight ?? "", done: false }); }
+    if (k === "sets-minus") { const j = y.sets.map(st => !st.done).lastIndexOf(true); if (j >= 0 && y.sets.length > 1) y.sets.splice(j, 1); }
+    return renderSheet();
+  }
+  if (k === "addex") { const y = newEx(); y.sets = [{ reps: "", weight: "", done: false }]; y.gymNew = true; d.exercises.push(y); d.gymI = d.exercises.length - 1; renderSheet(); return openExPick(d.gymI); }
   if (k === "addset") { const lastSet = x.sets[x.sets.length - 1] || {}; x.sets.push({ reps: lastSet.reps ?? "", weight: lastSet.weight ?? "", done: false }); return renderSheet(); }
   if (k === "skip") { const j = gymNext(x); if (j >= 0) removeFromForm("set", i, j); return; }
   if (k === "sound") { prefs.restSound = prefs.restSound === false; savePrefs(); if (prefs.restSound) unlockAudio(); return renderSheet(); }
@@ -4120,7 +4290,7 @@ function gymAction(a) {
     const g = gymCount(d), R = Math.min(600, Math.max(15, Number(prefs.rest) || 90));
     d.rest = g.done < g.total ? { end: Date.now() + R * 1000, total: R, alerted: false } : null;
     renderSheet(); gymFocus();
-    if (g.done >= g.total) toast("Every set is done. Tap Finish workout to save it.");
+    if (g.done >= g.total) toast("Every set is done. Tap Review and save.");
   }
 }
 /* Rest timer: counts down on screen, then vibrates (where the phone allows) and beeps. */
@@ -4175,7 +4345,7 @@ function liftSheet(d) {
   return sheetFrame(d.cont ? (dw === "today" ? "Today's lifts" : dw === "yesterday" ? "Yesterday's lifts" : `Lifts · ${esc(dw)}`) : d.id ? "Edit lifts" : "Log lifts", `
     ${restoredNote()}${d.gym ? (() => { const g = gymCount(d); return `<div class="cont-note"><span><b>Gym mode:</b> ${g.done} of ${plural(g.total, "set")} done. Only the sets you've ticked are saved.</span>
       <button class="btn small" type="button" data-act="gym">Back to gym mode</button></div>`; })()
-      : `<div class="gym-enter"><span><b>Gym mode</b>Log one set at a time, with a rest timer</span><button class="btn small primary" type="button" data-act="gym">Start</button></div>`}${d.cont ? `<div class="cont-note"><span>Adding to the workout you logged ${dw === "today" || dw === "yesterday" ? dw : `on ${esc(dw)}`}. Add sets or exercises, then save.</span>
+      : `<div class="gym-enter"><span><b>Gym mode</b>Plan your exercises, then log one set at a time with a rest timer</span><button class="btn small primary" type="button" data-act="gym">Start</button></div>`}${d.cont ? `<div class="cont-note"><span>Adding to the workout you logged ${dw === "today" || dw === "yesterday" ? dw : `on ${esc(dw)}`}. Add sets or exercises, then save.</span>
       <button class="btn small ghost" type="button" data-act="lift-new">Start a separate workout</button></div>` : ""}
     <div class="field"><label for="f-date">Date</label><input class="inp" id="f-date" type="date" value="${esc(d.date)}" max="${ymd(today())}" data-f="date"></div>
     <div class="field" style="margin-top:10px"><span class="lbl">Weight unit</span>
@@ -4818,6 +4988,7 @@ $("sheetRoot").addEventListener("click", async e => {
   if (a.gymUndo != null) { const x = d.exercises[Math.min(Math.max(0, d.gymI || 0), d.exercises.length - 1)], st = x && x.sets[+a.gymUndo]; if (st) { st.done = false; renderSheet(); gymFocus(); } return; }
   if (a.act === "gym") return enterGym();
   if (a.act === "pick-lift") return openLift();
+  if (a.act === "pick-gym") { openLift(); if (S.sheet === "lift") enterGym(); return; }
   if (a.act === "lift-new") { const dt = d.date; openSheet("lift", null); S.draft.date = dt; return renderSheet(); }
   if (a.act === "open-share") return openShare();
   if (a.act === "boss-start") return startFight(Number(a.tier));
