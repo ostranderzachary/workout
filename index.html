@@ -481,7 +481,13 @@ button.pl-row { cursor: pointer; }
 .t-name em { font-style: normal; font-size: 12px; color: var(--muted); line-height: 1.3; }
 .titles li:not(.got) .t-name em { opacity: .7; }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 40; background: var(--h5); color: #0b1a0f; font-weight: 700; border-radius: 12px; padding: 10px 16px; font-size: 14px; max-width: min(92vw, 480px); box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+.toast.has-act { display: flex; align-items: center; justify-content: space-between; gap: 14px; width: min(92vw, 440px); }
+.toast-act { flex: none; background: #0b1a0f; color: var(--h5); border: 0; border-radius: 8px; padding: 6px 12px; font: inherit; font-weight: 800; cursor: pointer; }
 .overlay.celebrate { z-index: 45; align-items: center; }
+.restored { border-color: var(--h4); }
+[data-swipe] { transition: transform .18s ease, opacity .18s ease; }
+[data-swipe].swiping { transition: none; }
+[data-swipe].swipe-arm { box-shadow: inset -4px 0 0 var(--danger); }
 .cel-card { background: var(--surface); border: 1px solid var(--h3); border-radius: 22px; padding: 28px 24px; width: min(92vw, 360px); text-align: center; display: grid; gap: 10px; justify-items: center; animation: pop .45s cubic-bezier(.2, 1.4, .4, 1); }
 .cel-card h3 { margin: 0; font-family: var(--font-display); font-size: 54px; font-weight: 700; line-height: 1; color: var(--h5); text-transform: uppercase; }
 .cel-xp { margin: 0; font-weight: 700; color: var(--h4); }
@@ -1529,8 +1535,16 @@ async function startFight(tier) {
   catch { toast("Couldn't start the fight. Try again."); }
 }
 async function endFight(tier) {
-  const list = (S.goals.bossFights || []).map(f => (f.tier === tier && !f.endedAt && Date.now() < f.start + FIGHT_MS ? { ...f, endedAt: Date.now() } : f));
-  try { await saveFights(list); render(); if (S.sheet === "boss") renderSheet(); } catch { toast("Couldn't end the fight. Try again."); }
+  let ended = null;
+  const list = (S.goals.bossFights || []).map(f => (f.tier === tier && !f.endedAt && Date.now() < f.start + FIGHT_MS ? (ended = { ...f, endedAt: Date.now() }) : f));
+  try { await saveFights(list); render(); if (S.sheet === "boss") renderSheet(); } catch { return toast("Couldn't end the fight. Try again."); }
+  if (!ended) return;
+  // Undo carries the fight on with the time it had left
+  toast("Fight ended.", { label: "Undo", fn: async () => {
+    if (Date.now() >= ended.start + FIGHT_MS) return toast("That fight's 24 hours are already up.");
+    const back = (S.goals.bossFights || []).map(f => (f.tier === ended.tier && f.start === ended.start ? { tier: f.tier, start: f.start } : f));
+    try { await saveFights(back); render(); if (S.sheet === "boss") renderSheet(); toast("The fight is back on."); } catch { toast("Couldn't bring the fight back. Try again."); }
+  } });
 }
 // Keep countdowns fresh while a fight is running.
 setInterval(() => {
@@ -2090,10 +2104,10 @@ function render() {
       const wd = toUnit(Number(w.distance) || 0, w.distUnit || "mi");
       const st = Number(w.stories) || 0;
       const bits = [`${fmt(Number(w.minutes) || 0)} min`, st ? `${st} ${st === 1 ? "story" : "stories"}` : null, wd ? `${fmt(wd)} ${distUnit()}` : null, rateText(w.activity, Number(w.minutes) || 0, wd)].filter(Boolean);
-      return `<li><button type="button" data-w="${esc(w.id)}">${chip}<span style="min-width:0"><div class="t"><span class="badge cardio">${esc(a[0])}</span>${esc(w.name || a[0])}</div><div class="s num">${w.sample ? "" : `<span class="xp-tag">+${xpFor(w)} XP</span> `}${esc(bits.join(" · "))}</div></span></button></li>`;
+      return `<li${w.sample ? "" : ` data-swipe="w:${esc(w.id)}"`}><button type="button" data-w="${esc(w.id)}">${chip}<span style="min-width:0"><div class="t"><span class="badge cardio">${esc(a[0])}</span>${esc(w.name || a[0])}</div><div class="s num">${w.sample ? "" : `<span class="xp-tag">+${xpFor(w)} XP</span> `}${esc(bits.join(" · "))}</div></span></button></li>`;
     }
     const n = (w.exercises || []).reduce((a, x) => a + (x.sets || []).length, 0);
-    return `<li><button type="button" data-w="${esc(w.id)}">${chip}<span style="min-width:0"><div class="t"><span class="badge">Lift</span>${esc(liftTitle(w))} <span class="num" style="color:var(--muted);font-weight:500">· ${n} sets</span></div>` +
+    return `<li${w.sample ? "" : ` data-swipe="w:${esc(w.id)}"`}><button type="button" data-w="${esc(w.id)}">${chip}<span style="min-width:0"><div class="t"><span class="badge">Lift</span>${esc(liftTitle(w))} <span class="num" style="color:var(--muted);font-weight:500">· ${n} sets</span></div>` +
       `<div class="s">${w.sample ? "" : `<span class="xp-tag">+${xpFor(w)} XP</span> `}${esc((w.exercises || []).map(x => x.name).join(", "))}</div></span></button></li>`;
   }).join("") + (c.ws.length > 60 ? `<li class="empty">Showing the 60 most recent of ${c.ws.length}.</li>` : "")
     : `<li class="empty">No workouts in this range.</li>`;
@@ -2281,9 +2295,17 @@ function levelSheet() {
     `<button class="btn" type="button" data-act="open-share">Share progress</button><div class="right"><button class="btn primary" type="button" data-act="close">Close</button></div>`);
 }
 
-function toast(msg) {
-  const t = $("toast"); t.textContent = msg; t.hidden = false;
-  clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 3500);
+/* A short message at the bottom. `act` adds a button, such as { label: "Undo", fn }, and keeps it up longer. */
+function toast(msg, act) {
+  const t = $("toast"); t.textContent = msg;
+  if (act) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "toast-act"; b.textContent = act.label;
+    b.addEventListener("click", e => { e.stopPropagation(); t.hidden = true; clearTimeout(toast.t); act.fn(); });
+    t.append(b);
+  }
+  t.classList.toggle("has-act", !!act); t.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, act ? 6000 : 3500);
 }
 /* Heaviest set ever logged for each exercise (real workouts only), keyed by lower-case name. */
 function personalRecords(list) {
@@ -3210,8 +3232,40 @@ const newSet = prev => ({ reps: prev ? prev.reps : "", weight: prev ? prev.weigh
 const newEx = () => ({ name: "", p: [], s: [], sets: [newSet()] });
 const defaultDate = () => ymd(S.period === "day" ? S.anchor : today());
 
+/* The open lift or cardio form is saved on this device as you change it, so a reload (iPhone Safari often
+   reloads a page you switch away from) brings it back. It's cleared when you save, delete or close the form. */
+const DRAFT_KEY = "forged.draft", DRAFT_MAX_AGE = 48 * 3600 * 1000;
+const draftKind = () => S.sheet === "lift" || S.sheet === "cardio";
+const draftDirty = () => draftKind() && S.draft && S.draftBase != null && JSON.stringify(S.draft) !== S.draftBase;
+function persistDraft() {
+  if (!draftKind() || !S.draft || S.draftBase == null) return;
+  try {
+    if (draftDirty()) localStorage.setItem(DRAFT_KEY, JSON.stringify({ sheet: S.sheet, draft: S.draft, base: S.draftBase, at: Date.now() }));
+    else localStorage.removeItem(DRAFT_KEY);
+  } catch {}
+}
+function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch {} }
+function reopenDraft(g, restoredAt) {
+  if (S.sheet && S.sheet !== "add") return; // something else is open; don't take it over
+  S.error = ""; S.confirmDel = false; S.sheet = g.sheet; S.draft = g.draft; S.draftBase = g.base; S.restoredAt = restoredAt || null;
+  renderSheet(); persistDraft();
+}
+// After a reload: bring back a form that had unsaved changes (once, when the workouts have loaded)
+function restoreDraft() {
+  if (restoreDraft.done) return; restoreDraft.done = true;
+  let g = null; try { g = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch {}
+  if (!g || !g.draft || (g.sheet !== "lift" && g.sheet !== "cardio")) return;
+  if (!(Date.now() - (g.at || 0) < DRAFT_MAX_AGE)) return clearDraft();
+  reopenDraft(g, g.at);
+}
+const restoredNote = () => {
+  if (!S.restoredAt) return "";
+  const t = new Date(S.restoredAt), dw = dayWord(ymd(t)), time = t.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return `<div class="cont-note restored" role="status"><span>Restored the changes you hadn't saved, from ${esc(dw === "today" ? time : `${dw} at ${time}`)}.</span>
+    <button class="btn small ghost" type="button" data-act="draft-discard">Discard</button></div>`;
+};
 function openSheet(kind, w) {
-  S.error = ""; S.confirmDel = false; S.sheet = kind;
+  S.error = ""; S.confirmDel = false; S.sheet = kind; S.draftBase = null; S.restoredAt = null;
   if (kind === "lift") S.draft = w && !w.sample ? JSON.parse(JSON.stringify(w)) : { id: null, date: defaultDate(), name: "", unit: prefs.unit || "lb", exercises: [newEx()] };
   if (kind === "cardio") S.draft = w && !w.sample
     ? { id: w.id, kind: "cardio", date: w.date, items: [cItem(w)] } // one session, opened from History
@@ -3220,11 +3274,21 @@ function openSheet(kind, w) {
   if (kind === "level" || kind === "add" || kind === "share" || kind === "boss" || kind === "account" || kind === "leaderboard" || kind === "summary") S.draft = {};
   if (kind === "leaderboard") { S.lb = { tab: (S.lb && S.lb.tab) || "week", data: {}, name: "", renaming: false, confirmLeave: false }; /* fresh scores each time it opens */ setTimeout(() => lbLoad(S.lb.tab), 0); }
   if (kind === "account") { S.auth = { email: (S.auth || {}).email, sent: (S.auth || {}).sent }; S.confirmOut = false; }
+  // What the form started as, after any set-up the caller does straight after (a date, carried exercises)
+  if (kind === "lift" || kind === "cardio") { const d0 = S.draft; setTimeout(() => { if (S.draft === d0) S.draftBase = JSON.stringify(d0); }, 0); }
+  clearDraft();
   renderSheet();
   // On touch screens, don't pop the keyboard straight away; let people see the whole form first.
   if (!matchMedia("(pointer: coarse)").matches) setTimeout(() => { const f = document.querySelector(kind === "lift" ? "#sheetRoot .ex .ex-pick" : kind === "cardio" ? "#sheetRoot .citem:last-of-type [data-ci$=':minutes']" : null); if (f && !S.draft.id) f.focus(); }, 30);
 }
-function closeSheet() { if (S.exPick) closeExPick(); if (S.prog) closeProg(); S.sheet = null; S.draft = null; S.importPending = null; renderSheet(); if (S.loaded) maybeBossPopup(xpLedger(S.workouts)); }
+/* `done` is true after saving or deleting. Otherwise closing a form with changes offers Undo to bring it back. */
+function closeSheet(done) {
+  const kept = !done && draftDirty() ? { sheet: S.sheet, draft: S.draft, base: S.draftBase } : null;
+  if (draftKind()) clearDraft();
+  if (S.exPick) closeExPick(); if (S.prog) closeProg(); S.sheet = null; S.draft = null; S.draftBase = null; S.restoredAt = null; S.importPending = null; renderSheet();
+  if (S.loaded) maybeBossPopup(xpLedger(S.workouts));
+  if (kept) toast(`Closed without saving your ${kept.sheet === "lift" ? "lifts" : "cardio"}.`, { label: "Undo", fn: () => reopenDraft(kept) });
+}
 
 /* An input with − and + buttons either side, so numbers can be set without the keyboard.
    `step` is the amount per tap. */
@@ -3282,9 +3346,7 @@ function addSheet() {
 }
 function delActions(saveLabel) {
   const d = S.draft;
-  return (d.id ? (S.confirmDel
-    ? `<span class="confirm">Delete this workout? <button class="btn small danger" type="button" data-act="del-yes">Delete</button><button class="btn small ghost" type="button" data-act="del-no">Keep</button></span>`
-    : `<button class="btn ghost danger" type="button" data-act="del">Delete</button>`) : "") +
+  return (d.id ? `<button class="btn ghost danger" type="button" data-act="del">Delete</button>` : "") +
     `<div class="right"><button class="btn ghost" type="button" data-act="close">Cancel</button><button class="btn primary" type="button" data-act="save">${saveLabel}</button></div>`;
 }
 
@@ -3787,12 +3849,13 @@ function renderSheet() {
   // Re-rendering the same form (adding a set, picking an option) keeps your scroll position.
   if (same) { const b = root.querySelector(".sheet-body"), sh = root.querySelector(".sheet"); if (b) b.scrollTop = keep[0]; if (sh) sh.scrollTop = keep[1]; }
   root.dataset.kind = S.sheet;
+  persistDraft();
 }
 
 function liftSheet(d) {
   const dw = d.cont ? dayWord(d.date) : "";
   return sheetFrame(d.cont ? (dw === "today" ? "Today's lifts" : dw === "yesterday" ? "Yesterday's lifts" : `Lifts · ${esc(dw)}`) : d.id ? "Edit lifts" : "Log lifts", `
-    ${d.cont ? `<div class="cont-note"><span>Adding to the workout you logged ${dw === "today" || dw === "yesterday" ? dw : `on ${esc(dw)}`}. Add sets or exercises, then save.</span>
+    ${restoredNote()}${d.cont ? `<div class="cont-note"><span>Adding to the workout you logged ${dw === "today" || dw === "yesterday" ? dw : `on ${esc(dw)}`}. Add sets or exercises, then save.</span>
       <button class="btn small ghost" type="button" data-act="lift-new">Start a separate workout</button></div>` : ""}
     <div class="field"><label for="f-date">Date</label><input class="inp" id="f-date" type="date" value="${esc(d.date)}" max="${ymd(today())}" data-f="date"></div>
     <div class="field" style="margin-top:10px"><span class="lbl">Weight unit</span>
@@ -3804,7 +3867,7 @@ function liftSheet(d) {
         <div id="mus-${i}">${musclesHTML(x, i)}</div>
         ${x.sug ? `<p class="sug-note"><b>Suggested:</b> ${esc(x.sug)}</p>` : ""}
         <div class="sets"><div class="set lbl"><span></span><span>Reps</span><span>Weight (${esc(d.unit)}) ±${weightStep(d.unit)}</span><span></span></div>
-        ${x.sets.map((st, j) => `<div class="set"><span class="n">${j + 1}</span>
+        ${x.sets.map((st, j) => `<div class="set" data-swipe="set:${i}:${j}"><span class="n">${j + 1}</span>
           ${stepper(`<input class="inp num" id="r-${i}-${j}" type="number" inputmode="numeric" min="0" placeholder="Reps" value="${esc(st.reps)}" data-set="${i}:${j}:reps" aria-label="Set ${j + 1} reps">`, 1, `set ${j + 1} reps`)}
           ${stepper(`<input class="inp num" id="w-${i}-${j}" type="number" inputmode="decimal" min="0" step="any" placeholder="${esc(d.unit)}" value="${esc(st.weight)}" data-set="${i}:${j}:weight" aria-label="Set ${j + 1} weight">`, weightStep(d.unit), `set ${j + 1} weight by ${weightStep(d.unit)} ${d.unit}`)}
           <button class="x" type="button" data-rmset="${i}:${j}" aria-label="Remove set ${j + 1}">${XSVG}</button></div>`).join("")}
@@ -3825,7 +3888,7 @@ function cardioSheet(d) {
   const title = d.cont ? (dw === "today" ? "Today's cardio" : dw === "yesterday" ? "Yesterday's cardio" : `Cardio · ${esc(dw)}`) : d.id ? "Edit cardio" : "Log cardio";
   const items = d.items, many = items.length > 1;
   return sheetFrame(title, `
-    ${d.cont ? `<div class="cont-note"><span>Your cardio from ${dw === "today" || dw === "yesterday" ? dw : esc(dw)} is below. Fill in the new activity at the bottom, or change any of them, then save.</span></div>` : ""}
+    ${restoredNote()}${d.cont ? `<div class="cont-note"><span>Your cardio from ${dw === "today" || dw === "yesterday" ? dw : esc(dw)} is below. Fill in the new activity at the bottom, or change any of them, then save.</span></div>` : ""}
     <div class="field"><label for="c-date">Date</label><input class="inp" id="c-date" type="date" value="${esc(d.date)}" max="${ymd(today())}" data-f="date"></div>
     ${items.map((it, i) => {
       const a = CARDIO[it.activity] || CARDIO.run, at = it.createdAt ? new Date(it.createdAt) : null;
@@ -4362,7 +4425,7 @@ async function saveCardio(d) {
       const r = await Store.save(w, list); list = Array.isArray(r) ? r : list.filter(x => x.id !== w.id).concat([w]);
     }
     S.workouts = list;
-    S.anchor = parse(d.date); closeSheet(); render();
+    S.anchor = parse(d.date); closeSheet(true); render();
     rewardXP(before, xpLedger(S.workouts), []);
   } catch (ex) { S.error = ex && ex.message && Store.mode === "local" ? ex.message : "Couldn't save the workout. Check your connection and try again."; renderSheet(); }
 }
@@ -4387,7 +4450,7 @@ async function saveDraft() {
       S.error = "Enter your body weight as a number above 0, or leave it as it was."; return renderSheet();
     }
     g.bodyweight = bodyweight.slice(-1000);
-    try { await Store.saveGoals(g); S.goals = normGoals(g); S.goalsSaved = true; closeSheet(); render(); }
+    try { await Store.saveGoals(g); S.goals = normGoals(g); S.goalsSaved = true; closeSheet(true); render(); }
     catch (ex) { S.error = ex && ex.message ? ex.message : "Couldn't save your goals. Try again."; renderSheet(); }
     return;
   }
@@ -4417,7 +4480,7 @@ async function saveDraft() {
     const r = await Store.save(w, S.workouts);
     if (Array.isArray(r)) S.workouts = r;
     else S.workouts = S.workouts.filter(x => x.id !== w.id).concat([w]);
-    S.anchor = parse(w.date); closeSheet(); render();
+    S.anchor = parse(w.date); closeSheet(true); render();
     rewardXP(before, xpLedger(S.workouts), records);
   } catch (ex) { S.error = ex && ex.message && Store.mode === "local" ? ex.message : "Couldn't save the workout. Check your connection and try again."; renderSheet(); }
 }
@@ -4464,17 +4527,12 @@ $("sheetRoot").addEventListener("click", async e => {
     const it = document.querySelectorAll("#sheetRoot .citem"); if (it.length) it[it.length - 1].scrollIntoView({ block: "start", behavior: "smooth" });
     return;
   }
-  if (a.crm != null) {
-    const [gone] = d.items.splice(+a.crm, 1);
-    if (gone && gone.id) d.removed = (d.removed || []).concat([gone.id]);
-    if (!d.items.length) d.items.push(cItem());
-    return renderSheet();
-  }
+  if (a.crm != null) return removeFromForm("ci", +a.crm);
   if (a.pickex != null) return openExPick(+a.pickex);
   if (a.act === "addex") { d.exercises.push(newEx()); renderSheet(); const el = $(`ex-${d.exercises.length - 1}`); if (el) el.scrollIntoView({ block: "center" }); return openExPick(d.exercises.length - 1); }
-  if (a.rmex !== undefined) { d.exercises.splice(+a.rmex, 1); if (!d.exercises.length) d.exercises.push(newEx()); return renderSheet(); }
+  if (a.rmex !== undefined) return removeFromForm("ex", +a.rmex);
   if (a.addset !== undefined) { const x = d.exercises[a.addset]; x.sets.push(newSet(x.sets[x.sets.length - 1])); renderSheet(); return refocus(`r-${a.addset}-${x.sets.length - 1}`); }
-  if (a.rmset) { const [i, j] = a.rmset.split(":").map(Number); d.exercises[i].sets.splice(j, 1); return renderSheet(); }
+  if (a.rmset) { const [i, j] = a.rmset.split(":").map(Number); return removeFromForm("set", i, j); }
   if (a.tog) {
     const [i, m] = a.tog.split(":"), x = d.exercises[i];
     if (x.p.includes(m)) { x.p = x.p.filter(y => y !== m); x.s.push(m); }
@@ -4483,13 +4541,53 @@ $("sheetRoot").addEventListener("click", async e => {
     const box = $(`mus-${i}`); if (box) box.innerHTML = musclesHTML(x, +i);
     return;
   }
-  if (a.act === "del") { S.confirmDel = true; return renderSheet(); }
-  if (a.act === "del-no") { S.confirmDel = false; return renderSheet(); }
-  if (a.act === "del-yes") {
-    try { const r = await Store.remove(d.id, S.workouts); if (Array.isArray(r)) S.workouts = r; closeSheet(); render(); }
-    catch { S.error = "Couldn't delete the workout. Check your connection and try again."; renderSheet(); }
+  if (a.act === "del") {
+    const w = S.workouts.find(x => x.id === d.id); if (!w) return closeSheet(true);
+    if (await deleteWorkout(w)) closeSheet(true);
+    else { S.error = "Couldn't delete the workout. Check your connection and try again."; renderSheet(); }
+    return;
   }
+  if (a.act === "draft-discard") { closeSheet(true); return toast("Discarded the unsaved changes."); }
 });
+/* Deletes a saved workout and offers Undo, which saves it back exactly as it was. */
+const workoutLabel = w => `${isCardio(w) ? (CARDIO[w.activity] || CARDIO.run)[0] : liftTitle(w)} · ${shortDate(w.date)}`;
+async function deleteWorkout(w) {
+  try { const r = await Store.remove(w.id, S.workouts); S.workouts = Array.isArray(r) ? r : S.workouts.filter(x => x.id !== w.id); render(); }
+  catch { return false; }
+  toast(`Deleted ${workoutLabel(w)}.`, { label: "Undo", fn: async () => {
+    try { const r = await Store.save(w, S.workouts); S.workouts = Array.isArray(r) ? r : S.workouts.filter(x => x.id !== w.id).concat([w]); render(); toast("Workout restored."); }
+    catch { toast("Couldn't restore the workout. Try again."); }
+  } });
+  return true;
+}
+/* Removing an exercise, set or cardio activity from an open form, with Undo. */
+function removeFromForm(kind, i, j) {
+  const d = S.draft; if (!d) return;
+  let label = "", undo;
+  if (kind === "ex") {
+    const [gone] = d.exercises.splice(i, 1), blank = !d.exercises.length ? newEx() : null;
+    if (blank) d.exercises.push(blank);
+    label = gone.name.trim() || `exercise ${i + 1}`;
+    undo = () => { if (blank) { const k = d.exercises.indexOf(blank); if (k >= 0 && !blank.name.trim()) d.exercises.splice(k, 1); } d.exercises.splice(Math.min(i, d.exercises.length), 0, gone); };
+  } else if (kind === "set") {
+    const x = d.exercises[i]; if (!x) return;
+    const [gone] = x.sets.splice(j, 1);
+    label = `set ${j + 1}${x.name.trim() ? ` of ${x.name.trim()}` : ""}`;
+    undo = () => { if (d.exercises.includes(x)) x.sets.splice(Math.min(j, x.sets.length), 0, gone); };
+  } else {
+    const [gone] = d.items.splice(i, 1), blank = !d.items.length ? cItem() : null;
+    if (gone && gone.id) d.removed = (d.removed || []).concat([gone.id]);
+    if (blank) d.items.push(blank);
+    label = `activity ${i + 1}`;
+    undo = () => {
+      if (blank) { const k = d.items.indexOf(blank); if (k >= 0 && cBlank(blank)) d.items.splice(k, 1); }
+      d.items.splice(Math.min(i, d.items.length), 0, gone);
+      if (gone && gone.id) d.removed = (d.removed || []).filter(x => x !== gone.id);
+    };
+  }
+  renderSheet();
+  toast(`Removed ${label}.`, { label: "Undo", fn: () => { if (S.draft !== d) return; undo(); renderSheet(); } });
+}
 document.addEventListener("keydown", e => {
   if (e.key !== "Escape") return;
   if ($("celebrate").innerHTML) $("celebrate").innerHTML = ""; else if (S.prog) closeProg(); else if (S.exPick) closeExPick(); else if (S.sheet) closeSheet();
@@ -4562,9 +4660,50 @@ $("sheetRoot").addEventListener("focusin", e => {
   setTimeout(() => { if (document.activeElement === e.target) e.target.scrollIntoView({ block: "center", behavior: "smooth" }); }, 320);
 });
 
+/* Swipe left on a set row or a History entry to remove it (Undo is offered). Vertical scrolling is left alone. */
+(() => {
+  let st = null, swallowUntil = 0;
+  const reset = el => { el.classList.remove("swiping", "swipe-arm"); el.style.transform = ""; el.style.opacity = ""; };
+  document.addEventListener("touchstart", e => {
+    const el = e.touches.length === 1 && e.target.closest("[data-swipe]");
+    st = el ? { el, x: e.touches[0].clientX, y: e.touches[0].clientY, dx: 0, on: false } : null;
+  }, { passive: true });
+  document.addEventListener("touchmove", e => {
+    if (!st) return;
+    const t = e.touches[0], dx = t.clientX - st.x, dy = t.clientY - st.y;
+    if (!st.on) {
+      if (Math.abs(dy) > 10 && Math.abs(dy) >= Math.abs(dx)) { st = null; return; }
+      if (!(dx < -12 && Math.abs(dx) > Math.abs(dy) * 1.5)) return;
+      st.on = true; st.el.classList.add("swiping"); if (document.activeElement && st.el.contains(document.activeElement)) document.activeElement.blur();
+    }
+    st.dx = Math.min(0, dx);
+    const far = -st.dx > Math.min(120, st.el.offsetWidth * 0.35);
+    st.el.style.transform = `translateX(${st.dx}px)`; st.el.style.opacity = String(1 - Math.min(0.5, -st.dx / 400));
+    st.el.classList.toggle("swipe-arm", far);
+  }, { passive: true });
+  const end = () => {
+    if (!st) return;
+    const { el, dx, on } = st; st = null;
+    if (!on) return;
+    swallowUntil = performance.now() + 400;
+    el.classList.remove("swiping");
+    if (-dx <= Math.min(120, el.offsetWidth * 0.35)) return reset(el);
+    el.style.transform = "translateX(-110%)"; el.style.opacity = "0";
+    setTimeout(() => {
+      const [k, a, b] = el.dataset.swipe.split(":");
+      if (k === "set") { if (S.sheet === "lift") removeFromForm("set", +a, +b); else reset(el); }
+      else if (k === "w") { const w = S.workouts.find(x => x.id === el.dataset.swipe.slice(2)); if (w) deleteWorkout(w).then(ok => { if (!ok) { reset(el); toast("Couldn't delete the workout. Check your connection and try again."); } }); else reset(el); }
+    }, 160);
+  };
+  document.addEventListener("touchend", end); document.addEventListener("touchcancel", () => { if (st) { reset(st.el); st = null; } });
+  // A swipe shouldn't also count as a tap on what's under the finger
+  document.addEventListener("click", e => { if (performance.now() < swallowUntil && e.target.closest("[data-swipe]")) { e.stopPropagation(); e.preventDefault(); } }, true);
+})();
+// Keep the saved draft up to date as you type (the form isn't redrawn on every keystroke)
+$("sheetRoot").addEventListener("input", () => setTimeout(persistDraft, 0));
 render();
 Store.init(
-  list => { S.workouts = list; S.loaded = true; render(); maybeTour(); },
+  list => { S.workouts = list; S.loaded = true; render(); restoreDraft(); maybeTour(); },
   g => { S.goals = normGoals(g); S.goalsSaved = !!g; render(); },
   msg => { $("sync").textContent = msg; }
 );

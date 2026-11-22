@@ -19,6 +19,11 @@ A mobile-friendly workout tracker. Log lifts and cardio, set daily goals, and se
 - **Keep adding to a day's workout:** if you've already logged lifts today, **+ → Lifting** reopens that workout (the latest one, if there are several) at its last exercise, so you can add sets or exercises and save. The menu shows "Continue today's workout" with the sets so far. In the Day view on an earlier date, it offers that day's workout instead. Tap **Start a separate workout** at the top of the form to log a new session.
 - **Logging lifts for an earlier day:** pick a date in a new lifting form, and if that day already has a lifting workout, it opens. Anything you'd already entered is added to it. Editing a workout from History is different: changing its date moves it.
 - Example workouts are shown until you log your first one. They are never saved.
+- **Nothing gets lost:**
+  - **Drafts:** while the lifting or cardio form is open, your changes are saved on this device as you go. If the page reloads (iPhone Safari often does this when you switch apps), the form comes back with a note: "Restored the changes you hadn't saved, from 6:42 PM", and a **Discard** button. Drafts older than two days are dropped. Saving, deleting or closing the form clears the draft.
+  - **Closed by accident:** closing a form with changes shows "Closed without saving your lifts" with **Undo**, which reopens it as it was. Closing a form you didn't change says nothing.
+  - **Undo instead of "Are you sure?":** deleting a workout happens straight away, with **Undo** for 6 seconds, which saves it back exactly as it was. Removing an exercise, set or cardio activity from a form, and ending a boss fight early, offer Undo too.
+  - **Swipe to remove:** on a phone, swipe a set row in the lifting form, or an entry in History, to the left to remove it (with Undo). A short swipe springs back, and scrolling up and down isn't affected.
 
 ## On your phone
 
