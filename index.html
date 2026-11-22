@@ -481,6 +481,48 @@ button.pl-row { cursor: pointer; }
 .t-name em { font-style: normal; font-size: 12px; color: var(--muted); line-height: 1.3; }
 .titles li:not(.got) .t-name em { opacity: .7; }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 40; background: var(--h5); color: #0b1a0f; font-weight: 700; border-radius: 12px; padding: 10px 16px; font-size: 14px; max-width: min(92vw, 480px); box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+/* Today at a glance */
+.glance { margin-bottom: 12px; padding: 12px 14px; display: grid; gap: 10px; }
+.glance:empty { display: none; }
+.gl-top { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 14px; align-items: center; }
+.gl-ring { position: relative; width: 56px; height: 56px; border: 0; background: transparent; padding: 0; cursor: pointer; color: var(--fg); }
+.gl-ring svg { width: 56px; height: 56px; display: block; }
+.gl-ring circle { fill: none; stroke-width: 6; }
+.gl-ring .bg { stroke: var(--bg); }
+.gl-ring .fg { stroke: var(--h5); stroke-linecap: round; }
+.gl-ring span { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; line-height: 1; }
+.gl-ring small { font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.gl-ring b { font-family: var(--font-display); font-size: 22px; font-weight: 700; }
+.gl-week { display: flex; gap: 6px; }
+.gl-day { display: grid; justify-items: center; gap: 3px; }
+.gl-day i { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--line); display: block; }
+.gl-day.on i { background: var(--h5); border-color: var(--h5); }
+.gl-day.today i { border-color: var(--fg); }
+.gl-day.today.on i { border-color: var(--h5); box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--fg); }
+.gl-day.future i { opacity: .5; border-style: dashed; }
+.gl-day small { font-size: 10px; font-weight: 600; color: var(--muted); }
+.gl-day.today small { color: var(--fg); }
+.gl-meta { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+.gl-meta b { color: var(--fg); }
+.gl-line { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 12px; padding: 10px 12px; font: inherit; font-size: 14px; cursor: pointer; }
+.gl-line .k { flex: none; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.gl-line .v { flex: 1; min-width: 0; }
+.gl-line .chev { flex: none; color: var(--muted); font-size: 18px; line-height: 1; }
+.gl-line.boss { border-color: var(--boss); }
+.gl-line.boss .k { color: var(--boss); }
+.gl-line.warn { border-color: var(--danger); }
+.gl-line.warn .k { color: var(--danger); }
+.gl-xp { color: var(--h5); font-weight: 700; white-space: nowrap; }
+/* Folding Today's cards to one line */
+.head-r { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; }
+.fold-btn { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--muted); display: inline-grid; place-items: center; padding: 0; cursor: pointer; }
+.fold-btn svg, .fold-row svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.fold-row { width: 100%; min-height: 30px; display: flex; align-items: center; gap: 10px; border: 0; background: transparent; color: var(--fg); padding: 0; font: inherit; text-align: left; cursor: pointer; }
+.fold-l { flex: none; font-family: var(--font-display); font-size: 14px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.fold-s { flex: 1; min-width: 0; font-size: 14px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.fold-row svg { flex: none; color: var(--muted); }
+.panel.folded { padding: 10px 14px; }
+.player-actions.split { justify-content: space-between; align-items: center; }
 /* Gym mode */
 .gym-enter { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; padding: 12px 14px; border: 1px solid var(--h3); border-radius: 14px; background: var(--bg); }
 .gym-enter span { font-size: 13px; color: var(--muted); }
@@ -763,6 +805,7 @@ button.tag { cursor: pointer; }
   </header>
 
   <div id="lbCard" data-tab="today"></div>
+  <section class="panel glance" id="glance" aria-label="This week at a glance" data-tab="today"></section>
   <div id="banner" data-tab="today"></div>
   <section class="panel player" id="player" aria-label="Your level" data-tab="today"></section>
   <div id="bossCard" data-tab="today"></div>
@@ -1597,7 +1640,7 @@ async function endFight(tier) {
 // Keep countdowns fresh while a fight is running.
 setInterval(() => {
   if (!S.loaded || !(S.goals.bossFights || []).some(f => !f.endedAt && Date.now() < f.start + FIGHT_MS + 60000)) return;
-  renderBossUI(); if (S.sheet === "boss") renderSheet();
+  renderBossUI(); renderGlance(); if (S.sheet === "boss") renderSheet();
 }, 30000);
 /* Each level takes 100 XP more than the last: level 1→2 is 100 XP, 9→10 is 900 XP. */
 const xpToNext = L => 100 * L;
@@ -2083,6 +2126,7 @@ function render() {
   renderBossUI();
   renderSuggest();
   renderOnboard();
+  renderGlance();
   renderSummary({ r, c, days, elapsed, isCurrent, liftTarget, cardioTarget, liftSt, cardioSt, g });
 
   $("banner").innerHTML = usingSample() && prefs.onboardHidden
@@ -2287,6 +2331,67 @@ function selHTML(sel, per, targetFor, unitWord, hint, st, rangeLabel) {
     `<button class="btn small ghost" type="button" data-clear="1" style="margin-top:8px">Clear selection</button></div>`;
 }
 
+/* ---------- Today at a glance, and folding Today's cards ---------- */
+const FOLD = { player: "Your level", bossCard: "Boss", summary: "Your progress", sugCard: "Suggestion" };
+const isFolded = id => !!(prefs.fold && prefs.fold[id]);
+const CHEV_UP = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>`, CHEV_DOWN = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`;
+const foldBtn = id => `<button type="button" class="fold-btn" data-fold="${id}" aria-label="Fold ${esc(FOLD[id])} to one line" title="Fold">${CHEV_UP}</button>`;
+const foldRow = (id, line) => `<button type="button" class="fold-row" data-unfold="${id}" aria-expanded="false" aria-label="Show ${esc(FOLD[id])}: ${esc(line)}"><span class="fold-l">${esc(FOLD[id])}</span><span class="fold-s">${esc(line)}</span>${CHEV_DOWN}</button>`;
+document.addEventListener("click", e => {
+  const f = e.target.closest("[data-fold], [data-unfold]"); if (!f) return;
+  const id = f.dataset.fold || f.dataset.unfold, fold = !!f.dataset.fold;
+  prefs.fold = { ...(prefs.fold || {}) };
+  if (fold) prefs.fold[id] = true; else delete prefs.fold[id];
+  savePrefs(); render();
+  // Keep your place: focus the control that replaced the one you tapped
+  setTimeout(() => { const n = document.querySelector(`[data-${fold ? "unfold" : "fold"}="${id}"]`); if (n) n.focus({ preventScroll: true }); }, 0);
+});
+/* The strip at the top of Today: level, this week's days, streak, anything urgent, and the next step. */
+function renderGlance() {
+  const el = $("glance"); if (!el) return;
+  if (!S.loaded) { el.innerHTML = ""; return; }
+  const real = S.workouts.filter(w => !w.sample), L = xpLedger(real), info = levelInfo(L.total), wk = L.week;
+  const t = today(), todayK = ymd(t), mon = weekStart(t), trained = new Set(real.map(w => w.date));
+  const days = Array.from({ length: 7 }, (_, k) => ymd(addDays(mon, k)));
+  const nDays = days.filter(k => k <= todayK && trained.has(k)).length;
+  const C = 2 * Math.PI * 24, pct = info.need ? info.into / info.need : 0;
+  const ring = `<button type="button" class="gl-ring" data-open="level" aria-label="Level ${info.level}, ${info.into.toLocaleString()} of ${info.need.toLocaleString()} XP to level ${info.level + 1}">
+    <svg viewBox="0 0 56 56" aria-hidden="true"><circle class="bg" cx="28" cy="28" r="24"/><circle class="fg" cx="28" cy="28" r="24" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - pct)).toFixed(1)}" transform="rotate(-90 28 28)"/></svg>
+    <span><small>Lv</small><b class="num">${info.level}</b></span></button>`;
+  const week = `<div class="gl-week" role="img" aria-label="${plural(nDays, "day")} trained this week">${days.map((k, i) =>
+    `<span class="gl-day${trained.has(k) ? " on" : ""}${k > todayK ? " future" : ""}${k === todayK ? " today" : ""}"><i></i><small>${"MTWTFSS"[i]}</small></span>`).join("")}</div>`;
+  const streak = wk && wk.target && wk.streak >= 1 ? ` · <b>${wk.streak}-week streak</b>` : "";
+  const meta = `<p class="gl-meta">${wk && wk.target ? `<b>${nDays} of ${wk.target}</b> days this week` : `<b>${plural(nDays, "day")}</b> trained this week`}${streak}</p>`;
+  const lines = [];
+  // Urgent: a boss fight that's running
+  for (const b of activeBosses(L)) {
+    const st = fightState(b); if (st.kind !== "active") continue;
+    lines.push(`<button type="button" class="gl-line boss" data-open="boss"><span class="k">Boss fight</span><span class="v">${esc(b.name)} · ${esc(bossProgress(b, st.t).text)} · ${esc(timeLeft(st.end - Date.now()))}</span><span class="chev" aria-hidden="true">›</span></button>`);
+  }
+  // Urgent: a streak that breaks unless you train today (and every day left)
+  if (wk && wk.target && wk.streak >= 1 && wk.days < wk.target && !trained.has(todayK)) {
+    const need = wk.target - wk.days;
+    const when = wk.left === 1 ? "Train today" : wk.left === 2 ? "Train today and tomorrow" : "Train today and every day through Sunday";
+    if (need === wk.left) lines.push(`<button type="button" class="gl-line warn" data-open="add"><span class="k">Streak</span><span class="v">${when} to keep your ${wk.streak}-week streak.</span><span class="chev" aria-hidden="true">›</span></button>`);
+  }
+  // The next step, from the suggestion
+  if (prefs.sugHidden !== todayK) {
+    const sg = suggestion();
+    if (sg && sg.pick) {
+      const ps = planSession(sg.pick, sg.ex), fin = sg.pick.mus.filter(x => (ps.after[x.m] ?? 1) <= 1e-9);
+      const xp = BONUS.muscle * fin.length + (fin.length && sg.behind.every(x => fin.includes(x)) ? BONUS.allMuscles : 0);
+      lines.push(`<button type="button" class="gl-line" data-glance="sug"><span class="k">Next</span><span class="v">${esc(sg.pick.name)} · about ${plural(ps.total, "set")}${xp ? ` · <span class="gl-xp">+${xp} XP</span>` : ""}</span><span class="chev" aria-hidden="true">›</span></button>`);
+    } else if (sg && (sg.met || sg.tired)) {
+      lines.push(`<button type="button" class="gl-line" data-glance="sug"><span class="k">Next</span><span class="v">${sg.met ? "Every muscle goal is met. Rest, or anything extra" : "A rest day could be a good call"}</span><span class="chev" aria-hidden="true">›</span></button>`);
+    }
+  }
+  el.innerHTML = `<div class="gl-top">${ring}<div>${week}${meta}</div></div>${lines.join("")}`;
+}
+$("glance").addEventListener("click", e => {
+  if (!e.target.closest("[data-glance=sug]")) return;
+  if (isFolded("sugCard")) { delete prefs.fold.sugCard; savePrefs(); render(); }
+  const c = $("sugCard"); if (c) c.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+});
 function renderPlayer() {
   const L = xpLedger(S.workouts), info = levelInfo(L.total), nt = nextTitle(info.level), pct = (info.into / info.need) * 100;
   const wk = L.week, lastMon = ymd(addDays(weekStart(today()), -7));
@@ -2305,6 +2410,8 @@ function renderPlayer() {
         : `Last week you earned +${lastNet} XP in weekly bonuses.`}</p>` : ""}`;
   }
   $("lvlChip").innerHTML = `<b class="num">Lv ${info.level}</b><span>${esc(titleFor(info.level))}</span>`;
+  $("player").classList.toggle("folded", isFolded("player"));
+  if (isFolded("player")) { $("player").innerHTML = foldRow("player", `Level ${info.level} · ${titleFor(info.level)} · ${(info.need - info.into).toLocaleString()} XP to go`); return; }
   $("player").innerHTML = `<button type="button" class="player-btn" data-open="level">
       <span class="lvl-badge"><small>Level</small><b class="num">${info.level}</b></span>
       <span class="player-body">
@@ -2315,7 +2422,7 @@ function renderPlayer() {
       <span class="player-more" aria-hidden="true">›</span>
     </button>
     ${info.total === 0 && !L.entries.length ? `<p class="note" style="margin:8px 0 0">Log a workout to earn your first XP. Each set and each minute of cardio counts.</p>` : weekLine}
-    <div class="player-actions"><button class="btn small" type="button" data-open="share">Share progress</button></div>`;
+    <div class="player-actions split">${foldBtn("player")}<button class="btn small" type="button" data-open="share">Share progress</button></div>`;
 }
 
 function levelSheet() {
@@ -2630,13 +2737,17 @@ function renderBossUI() {
   if (!act.length) { $("bossCard").innerHTML = ""; return maybeBossPopup(L); }
   const b = act.find(x => fightState(x).kind === "active") || act[0], st = fightState(b);
   const pr = bossProgress(b, st.t);
+  if (isFolded("bossCard")) {
+    $("bossCard").innerHTML = `<section class="panel boss-card folded">${foldRow("bossCard", st.kind === "active" ? `${b.name}: fight on · ${pr.text} · ${timeLeft(st.end - Date.now())}` : `${b.name} is ready · +${b.reward.toLocaleString()} XP`)}</section>`;
+    return maybeBossPopup(L);
+  }
   const body = st.kind === "active"
     ? `<div class="track big"><span class="fill" style="width:${pr.pct}%;background:var(--boss)"></span></div>
        <div class="boss-foot"><span class="note num" style="margin:0"><b class="fight-live">Fight on · ${esc(timeLeft(st.end - Date.now()))}</b> · ${esc(pr.text)}</span><button class="btn small boss-go" type="button" data-open="boss">View fight</button></div>`
     : `<div class="boss-foot"><span class="note" style="margin:0">${st.kind === "lost" ? `Last fight fell short (${esc(pr.text)}). Try again when you're ready.` : "Start a 24-hour fight when you're ready."}</span>
        <span class="btn-row"><button class="btn small boss-accept" type="button" data-act="boss-start" data-tier="${b.tier}">Start fight</button><button class="btn small boss-go" type="button" data-open="boss">View boss</button></span></div>`;
   $("bossCard").innerHTML = `<section class="panel boss-card" aria-label="Boss available">
-      <div class="boss-head"><span class="boss-tag">Boss · Level ${b.level}</span>${act.length > 1 ? `<span class="note" style="margin:0">+${act.length - 1} more waiting</span>` : ""}</div>
+      <div class="boss-head"><span class="boss-tag">Boss · Level ${b.level}</span><span class="head-r">${act.length > 1 ? `<span class="note" style="margin:0">+${act.length - 1} more waiting</span>` : ""}${foldBtn("bossCard")}</span></div>
       <h3 class="boss-name">${esc(b.name)}</h3>
       <p class="boss-chal">${esc(bossChallenge(b))} · <b>+${b.reward.toLocaleString()} XP</b></p>
       ${body}
@@ -3261,7 +3372,12 @@ function renderSummary({ r, c, days, elapsed, isCurrent, liftTarget, cardioTarge
   const when = S.period === "all" ? "since your first workout" : isCurrent
     ? (left ? `${left} day${left === 1 ? "" : "s"} left in this ${S.period}` : `last day of this ${S.period}`) : "this range is over";
   const breakdown = [on && `${on} on pace`, behind && `${behind} behind`, todo && `${todo} to do`, missed && `${missed} missed`].filter(Boolean).join(" · ");
-  $("summary").innerHTML = `<div class="sum-head"><h2 id="sumH">Your progress · ${esc(r.label)}</h2><span class="note" style="margin:0">${esc(when)}</span></div>
+  $("summary").classList.toggle("folded", isFolded("summary"));
+  if (isFolded("summary")) {
+    $("summary").innerHTML = foldRow("summary", `${met} of ${withGoal.length} muscle goals · ${pctOf(c.minutes, cardioTarget)}% of cardio · ${r.label}`);
+    return;
+  }
+  $("summary").innerHTML = `<div class="sum-head"><h2 id="sumH">Your progress · ${esc(r.label)}</h2><span class="head-r"><span class="note" style="margin:0">${esc(when)}</span>${foldBtn("summary")}</span></div>
     <div class="sum-grid">
       <div class="sum-item"><div class="sum-big"><b class="num">${met}</b> of ${withGoal.length}</div><div class="sum-sub">muscle goals met${breakdown ? ` · ${breakdown}` : ""}</div>
         <div class="track big"><span class="fill" style="width:${withGoal.length ? (met / withGoal.length) * 100 : 0}%;background:var(--h5)"></span></div></div>
@@ -3505,7 +3621,12 @@ function renderSuggest() {
   if (!sg) { el.innerHTML = ""; return; }
   const togo = [sg.cardioLeft > 0 ? hm(sg.cardioLeft) : "", sg.distLeft > 0.05 ? `${fmt(Math.round(toUnit(sg.distLeft, "mi") * 10) / 10)} ${distUnit()}` : ""].filter(Boolean);
   const cardioLine = togo.length ? `<p class="sug-cardio">${sg.met || sg.tired ? "Cardio could fit today" : "Or some cardio"}: ${esc(togo.join(" and "))} to go toward this week's ${togo.length > 1 ? "goals" : "goal"}, <b class="sug-xp">+${BONUS.cardio} XP</b> ${togo.length > 1 ? "for each one met" : "when it's met"}. <button class="linkbtn" type="button" data-sug="cardio">Log cardio</button></p>` : "";
-  const head = `<div class="sug-head"><span class="sug-tag">Suggestion for today</span><button class="linkbtn sug-hide" type="button" data-sug="hide">Hide for today</button></div>`;
+  const head = `<div class="sug-head"><span class="sug-tag">Suggestion for today</span><span class="head-r"><button class="linkbtn sug-hide" type="button" data-sug="hide">Hide for today</button>${foldBtn("sugCard")}</span></div>`;
+  if (isFolded("sugCard")) {
+    const line = sg.met ? "Every muscle goal is met this week" : sg.tired ? "A rest day could be a good call" : (() => { const ps0 = planSession(sg.pick, sg.ex); return `${sg.pick.name}: about ${plural(ps0.total, "set")}`; })();
+    el.innerHTML = `<section class="panel sug-card folded">${foldRow("sugCard", line)}</section>`;
+    return;
+  }
   if (sg.met || sg.tired) {
     el.innerHTML = `<section class="panel sug-card" aria-label="Suggestion for today">${head}
       <p class="sug-msg">${sg.met ? "Every muscle goal is met this week. A rest day would be well earned, or anything extra you feel like." : "Everything still behind this week was trained in the last two days, so a rest day could be a good call."}</p>${sugGameHTML(sg, null)}${cardioLine}</section>`;
@@ -3579,9 +3700,9 @@ function startSuggestion(quiet) {
 }
 $("sugCard").addEventListener("click", e => {
   const b = e.target.closest("[data-sug], [data-sug-group]"); if (!b) return;
-  if (b.dataset.sugGroup) { S.sugGroup = b.dataset.sugGroup; return renderSuggest(); }
+  if (b.dataset.sugGroup) { S.sugGroup = b.dataset.sugGroup; renderSuggest(); return renderGlance(); }
   const k = b.dataset.sug;
-  if (k === "hide") { prefs.sugHidden = ymd(today()); savePrefs(); toast("Hidden until tomorrow."); return renderSuggest(); }
+  if (k === "hide") { prefs.sugHidden = ymd(today()); savePrefs(); toast("Hidden until tomorrow."); renderSuggest(); return renderGlance(); }
   if (k === "start") return startSuggestion();
   if (k === "gym") { startSuggestion(true); if (S.sheet === "lift") enterGym(); return; }
   if (k === "cardio") return openCardio(ymd(today()));

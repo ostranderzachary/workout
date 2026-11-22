@@ -37,7 +37,7 @@ A mobile-friendly workout tracker. Log lifts and cardio, set daily goals, and se
 
 The app is split into four tabs: on a bar at the bottom on phones, and in a sidebar on wider screens.
 
-- **Today:** your level, the get-started checklist and your progress summary.
+- **Today:** the leaderboard card, the at-a-glance strip, your level, the get-started checklist, your progress summary and the suggestion for today.
 - **Maps:** the lifting heat map.
 - **Stats:** cardio gauges, lifting goal bars and the cardio breakdown.
 - **History:** your workout list.
@@ -45,6 +45,19 @@ The app is split into four tabs: on a bar at the bottom on phones, and in a side
 The **+** button in the middle logs lifts or cardio. On phones, forms open full screen and fit the space above the keyboard. The Save button stays pinned at the bottom, and the field you're typing in scrolls into view. Number fields have **− / +** buttons, so you rarely need the keyboard. Each tap changes reps by 1, weight by 5 lb (2.5 kg), cardio minutes by 5 and distance by 0.5. Tapping + on an empty set starts from the set above, or from what you did last time for that exercise. New sets copy the set above.
 
 Wider screens use the same four tabs in a left sidebar, with a **Log workout** button at the top. Each tab lays its panels out in two columns, and the Maps tab uses the full width.
+
+## Today at a glance
+
+A strip just below the leaderboard card shows where your week stands:
+
+- **Level ring:** your level, with the ring filling as you earn XP toward the next one. Tap it for the Level screen.
+- **This week:** seven dots, Monday to Sunday, filled for days you trained. Today is outlined and the days ahead are dashed. Below them: "2 of 4 days this week" (or the days trained, with no days goal) and your streak.
+- **Urgent lines,** shown only when they apply:
+  - **Boss fight:** a running fight with what's left and the time left, for example "Road Wraith · 3.2 of 6.2 mi · 21h 40m left". Tap to open it.
+  - **Streak:** when your streak breaks unless you train every day left this week and you haven't trained today, for example "Train today and every day through Sunday to keep your 2-week streak". Tap to log a workout.
+- **Next:** the suggestion in one line, for example "Pull · about 10 sets · +140 XP". Tap to jump to the full suggestion (it opens if folded). Hidden when you've hidden the suggestion for today.
+
+**Fold cards to one line:** the level card, the boss card, Your progress and the suggestion each have a small ⌃ button that folds them to a single line, such as "Your progress · 4 of 15 muscle goals · 60% of cardio · Nov 16–22". Tap the line to open the card again. Forged remembers which cards you folded (across devices when you're signed in), and the order stays the same.
 
 ## Goals
 
