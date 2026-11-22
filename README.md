@@ -19,6 +19,14 @@ A mobile-friendly workout tracker. Log lifts and cardio, set daily goals, and se
 - **Keep adding to a day's workout:** if you've already logged lifts today, **+ → Lifting** reopens that workout (the latest one, if there are several) at its last exercise, so you can add sets or exercises and save. The menu shows "Continue today's workout" with the sets so far. In the Day view on an earlier date, it offers that day's workout instead. Tap **Start a separate workout** at the top of the form to log a new session.
 - **Logging lifts for an earlier day:** pick a date in a new lifting form, and if that day already has a lifting workout, it opens. Anything you'd already entered is added to it. Editing a workout from History is different: changing its date moves it.
 - Example workouts are shown until you log your first one. They are never saved.
+- **Gym mode:** log as you train, one set at a time. Start it from the top of the lifting form, or with **Gym mode** on the suggestion card.
+  - **One exercise at a time:** its name, the suggestion if there is one, and last time's sets. Move between exercises with ‹ and ›, or by swiping left and right.
+  - **The set you're on is shown large,** with big − / + buttons for reps and weight and a **Done** button. Tick it and the next set starts from what you just did: the same weight, and the same reps unless different reps were planned. Tap a done set to change it, or **Skip this set** (with Undo).
+  - **Rest timer:** ticking a set starts a 90-second rest. **−15s** and **+15s** adjust it, and the next rest starts from your new length. When it ends, it shows "Rest's up", beeps and vibrates. iPhones can't vibrate from a web page, so they only beep. **Timer sound** turns the beep off. Where the browser supports it, the screen stays on in gym mode.
+  - **Progress strip:** for example "Set 7 of 14 · Lat Pulldown 2 of 5", with a bar across the top. On a phone it stays in view as you scroll.
+  - **Only the sets you tick are saved.** Sets already saved in today's workout count as done. **Edit as a list** switches to the normal form, which shows which sets are done (✓) and dims the rest. **Back to gym mode** returns you to where you were.
+  - **Finish workout** saves the ticked sets and opens the workout summary: sets, volume, XP and any new records.
+  - Gym mode is saved as a draft like the form, so a reload brings it back with the sets you've ticked and the rest timer still running.
 - **Nothing gets lost:**
   - **Drafts:** while the lifting or cardio form is open, your changes are saved on this device as you go. If the page reloads (iPhone Safari often does this when you switch apps), the form comes back with a note: "Restored the changes you hadn't saved, from 6:42 PM", and a **Discard** button. Drafts older than two days are dropped. Saving, deleting or closing the form clears the draft.
   - **Closed by accident:** closing a form with changes shows "Closed without saving your lifts" with **Undo**, which reopens it as it was. Closing a form you didn't change says nothing.
@@ -188,6 +196,7 @@ The Today tab shows an idea for what to train, worked out from your week so far.
   - Reps dropped off: the same weight, aiming for the full reps on every set.
   - Bodyweight exercises: one more rep than your best.
   - Exercises new to you: a set count only, with a tip to pick a weight you can manage for 8–12 reps.
+- **Gym mode** next to it starts the same session in gym mode (see Features).
 - **Start this session:** opens the lifting form with those exercises, set counts, reps and weights filled in. Each is marked "Suggested:" with the reason; that note isn't saved. Change anything before you save. A suggested exercise left without reps is skipped when you save. If you've already lifted today, they're added to that workout.
 - **XP within reach:** the parts of the game today's workout can move forward.
   - **A running boss fight:** what's left, the time left and the reward, for example "Boss fight: Road Wraith. 3.2 mi to go, 22h 0m left. Win for +1,100 XP", with a **Log a run** or **Log stairs** button. For a sets boss it says how many sets the suggested session adds.
