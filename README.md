@@ -175,8 +175,14 @@ The Today tab shows an idea for what to train, worked out from your week so far.
 
 - **The focus:** Push, Pull, Legs or Core. It's the group with the most sets still to go toward this week's goals, counting only muscles that have had at least two days' rest. A lift counts as training a muscle whether it's a main or a helper muscle.
 - **Why:** each of those muscles with its sets to go and when it was last trained, for example "Lats: 8 sets to go · last trained 6 days ago".
-- **Exercises you could do:** the ones you did most recently for those muscles, with last time's top set, or a common pick for a muscle you haven't trained. Tap a name to see its progress.
-- **Start with these:** opens the lifting form with those exercises and last time's sets filled in. Change anything before you save. If you've already lifted today, they're added to that workout.
+- **A session you could do:** for those muscles, the exercises you did most recently, or a common pick for one you haven't trained. A muscle that needs more than 5 sets gets a second exercise. Tap a name to see its progress.
+- **How many sets:** the sets still to go are spread across the exercises, 2–5 sets each. Helper muscles count half, so a Lat Pulldown also counts toward biceps. The session is kept to about 18 sets; anything over that is left for another day, and the card says roughly how much.
+- **The next step up,** worked out from last time:
+  - Every set at your top weight hit its reps: about 5 lb more (2.5 lb under 40 lb; 2.5 kg or 1 kg in kilograms). For example "Back Squat 4 × 5 at 230 lb · Up 5 lb: you hit every rep at 225 lb".
+  - Reps dropped off: the same weight, aiming for the full reps on every set.
+  - Bodyweight exercises: one more rep than your best.
+  - Exercises new to you: a set count only, with a tip to pick a weight you can manage for 8–12 reps.
+- **Start this session:** opens the lifting form with those exercises, set counts, reps and weights filled in. Each is marked "Suggested:" with the reason; that note isn't saved. Change anything before you save. A suggested exercise left without reps is skipped when you save. If you've already lifted today, they're added to that workout.
 - **Other ideas** switch to another focus, and a cardio option appears when you're behind on cardio time.
 - **If every muscle goal is met,** or everything behind was trained in the last two days, it suggests a rest day instead.
 - **Hide for today** hides the card until tomorrow.

@@ -416,10 +416,14 @@ button.pl-row { cursor: pointer; }
 .sug-why, .sug-ex { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .sug-why li { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; padding: 6px 10px; background: var(--bg); border-radius: 10px; }
 .sug-why li span { color: var(--muted); text-align: right; }
-.sug-ex li { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 14px; padding: 4px 0; border-top: 1px solid var(--line); }
+.sug-ex li { display: grid; gap: 2px; font-size: 14px; padding: 6px 0; border-top: 1px solid var(--line); }
+.sug-ex-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.sug-ex-top b { font-weight: 700; color: var(--h5); text-align: right; }
+.sug-note { margin: 0; padding: 6px 10px; border-left: 3px solid var(--h5); background: var(--bg); border-radius: 0 8px 8px 0; font-size: 13px; color: var(--muted); }
+.sug-note b { color: var(--h5); }
 .sug-ex li:first-child { border-top: 0; }
 .sug-ex-name, .sug-ex-name .linkbtn { font-weight: 600; color: var(--fg); }
-.sug-ex small { color: var(--muted); font-size: 12px; text-align: right; }
+.sug-ex small { color: var(--muted); font-size: 12px; }
 .sug-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
 .sug-alt { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
 .sug-alt .chip { padding: 5px 12px; font-size: 13px; }
@@ -3289,6 +3293,9 @@ const SUG_GROUPS = [
 const SUG_DEFAULT = { chest: "Bench Press", shoulders: "Overhead Press", triceps: "Tricep Pushdown", lats: "Lat Pulldown", traps: "Shrug", biceps: "Barbell Curl",
   forearms: "Hammer Curl", quads: "Back Squat", hamstrings: "Romanian Deadlift", glutes: "Hip Thrust", adductors: "Adductor Machine", calves: "Calf Raise",
   abs: "Hanging Leg Raise", obliques: "Russian Twist", lowerback: "Back Extension" };
+// A second choice for a muscle that needs more sets than one exercise should carry
+const SUG_ALT = { chest: "Incline Bench Press", shoulders: "Lateral Raise", triceps: "Skull Crusher", lats: "Barbell Row", biceps: "Dumbbell Curl",
+  quads: "Leg Press", hamstrings: "Leg Curl", glutes: "Bulgarian Split Squat" };
 const daysAgo = n => n == null ? "not trained yet" : n === 0 ? "trained today" : n === 1 ? "trained yesterday" : `last trained ${n} days ago`;
 function suggestion() {
   const real = S.workouts.filter(w => !w.sample), t = today(), todayK = ymd(t);
@@ -3318,13 +3325,19 @@ function suggestion() {
     if (isCardio(w)) continue;
     for (const x of w.exercises || []) { const k = (x.name || "").trim().toLowerCase(); if (k && !recent.has(k)) recent.set(k, { name: x.name.trim(), p: x.p || [], s: x.s || [] }); }
   }
-  const ex = [];
+  const ex = [], has = n => ex.some(x => x.name.toLowerCase() === n.toLowerCase());
+  const lib = (n, m) => n && LIB[n] && LIB[n][0].includes(m) && !has(n) ? { name: n, p: LIB[n][0], s: LIB[n][1], fresh: true } : null;
+  const choose = m => [...recent.values()].find(e => e.p.includes(m) && !has(e.name)) || lib(SUG_DEFAULT[m], m) || lib(SUG_ALT[m], m);
+  // One exercise for each muscle that's behind, then a second for any that needs more than 5 sets
   for (const mu of pick.mus) {
     if (ex.length >= 4) break;
     if (ex.some(e => e.p.includes(mu.m))) continue;
-    const mine = [...recent.values()].find(e => e.p.includes(mu.m) && !ex.some(x => x.name === e.name));
-    const def = SUG_DEFAULT[mu.m] && LIB[SUG_DEFAULT[mu.m]] ? { name: SUG_DEFAULT[mu.m], p: LIB[SUG_DEFAULT[mu.m]][0], s: LIB[SUG_DEFAULT[mu.m]][1], fresh: true } : null;
-    const e = mine || def; if (e && !ex.some(x => x.name === e.name)) ex.push(e);
+    const e = choose(mu.m); if (e) ex.push(e);
+  }
+  for (const mu of pick.mus) {
+    if (ex.length >= 5) break;
+    if (mu.left <= 5 || ex.filter(e => e.p.includes(mu.m)).length >= 2) continue;
+    const e = choose(mu.m); if (e) ex.push(e);
   }
   return { pick, others: groups.filter(x => x !== pick).slice(0, 3), ex, restNote, cardioLeft, todayK };
 }
@@ -3340,31 +3353,69 @@ function renderSuggest() {
       <p class="sug-msg">${sg.met ? "Every muscle goal is met this week. A rest day would be well earned, or anything extra you feel like." : "Everything still behind this week was trained in the last two days, so a rest day could be a good call."}</p>${cardioLine}</section>`;
     return;
   }
-  const { pick, others, ex, restNote } = sg;
+  const { pick, others, ex, restNote } = sg, ps = planSession(pick, ex);
   el.innerHTML = `<section class="panel sug-card" aria-label="Suggestion for today">${head}
     <h3 class="sug-title">${esc(pick.name)} <small>${esc(pick.desc)}</small></h3>
     <p class="note" style="margin:2px 0 8px">These are behind this week's goals and have ${esc(restNote)}. Just an idea: train whatever feels right.</p>
     <ul class="sug-why">${pick.mus.slice(0, 4).map(x => `<li><b>${esc(MUSCLES[x.m])}</b><span>${esc(plural(x.left, "set"))} to go · ${esc(daysAgo(x.days))}</span></li>`).join("")}</ul>
-    ${ex.length ? `<div class="lbl" style="margin-top:10px">Exercises you could do</div>
-    <ul class="sug-ex">${ex.map(e => { const ss = e.fresh ? [] : exSessions(e.name), l = ss[ss.length - 1];
-      return `<li><span class="sug-ex-name">${l ? `<button type="button" class="linkbtn" data-prog="${esc(e.name)}">${esc(e.name)}</button>` : esc(e.name)}</span><small>${l ? `last time ${esc(setText(l.top))}${l.top.lb > 0 ? ` ${wtUnit()}` : ""} · ${esc(shortDate(l.date))}` : "a common pick for this"}</small></li>`; }).join("")}</ul>` : ""}
-    <div class="sug-actions">${ex.length ? `<button class="btn primary small" type="button" data-sug="start">Start with these</button>` : ""}
+    ${ps.items.length ? `<div class="lbl" style="margin-top:10px">A session you could do · about ${plural(ps.total, "set")}</div>
+    <ul class="sug-ex">${ps.items.map(it => { const done = !it.e.fresh && exSessions(it.e.name).length;
+      return `<li><div class="sug-ex-top"><span class="sug-ex-name">${done ? `<button type="button" class="linkbtn" data-prog="${esc(it.e.name)}">${esc(it.e.name)}</button>` : esc(it.e.name)}</span><b class="num">${esc(it.text)}</b></div><small>${esc(it.why)}</small></li>`; }).join("")}</ul>
+    ${ps.leftover >= 1 ? `<p class="note" style="margin:6px 0 0">That leaves about ${plural(ps.leftover, "set")} of this week's goals for another day.</p>` : ""}` : ""}
+    <div class="sug-actions">${ps.items.length ? `<button class="btn primary small" type="button" data-sug="start">Start this session</button>` : ""}
       ${others.length ? `<span class="sug-alt">Other ideas: ${others.map(o => `<button class="chip" type="button" data-sug-group="${o.k}">${esc(o.name)}</button>`).join("")}</span>` : ""}</div>
     ${cardioLine}</section>`;
 }
+/* How much to do: sets per exercise to cover what each muscle still needs (helpers count half),
+   2–5 sets an exercise and about 18 in all, each with a next step from last time. */
+const SESSION_MAX = 18;
+function planSession(pick, ex) {
+  const rem = Object.fromEntries(pick.mus.map(x => [x.m, x.left])), totalLeft = pick.mus.reduce((a, x) => a + x.left, 0), out = [];
+  for (const e of ex) {
+    const need = Math.max(0, ...e.p.map(m => rem[m] || 0));
+    if (need <= 0) continue;
+    const sets = Math.min(5, Math.max(2, Math.ceil(need)));
+    for (const m of e.p) if (rem[m] != null) rem[m] -= sets;
+    for (const m of e.s) if (rem[m] != null) rem[m] -= sets / 2;
+    out.push({ e, sets });
+  }
+  let total = out.reduce((a, x) => a + x.sets, 0);
+  while (total > SESSION_MAX) { const big = out.reduce((a, x) => (x.sets > a.sets ? x : a)); if (big.sets <= 2) break; big.sets--; total--; }
+  // What's still to go once this session is done (after any trimming)
+  const after = Object.fromEntries(pick.mus.map(x => [x.m, x.left]));
+  for (const { e, sets } of out) { for (const m of e.p) if (after[m] != null) after[m] -= sets; for (const m of e.s) if (after[m] != null) after[m] -= sets / 2; }
+  const leftover = Math.round(Object.values(after).reduce((a, v) => a + Math.max(0, v), 0));
+  return { items: out.map(x => ({ ...x, ...progression(x.e, x.sets) })), total, totalLeft, leftover };
+}
+/* The next step for an exercise: more weight if every set at the top weight hit its reps last time,
+   the same weight if reps dropped off, one more rep for bodyweight moves. */
+function progression(e, sets) {
+  const ss = e.fresh ? [] : exSessions(e.name), l = ss[ss.length - 1], u = wtUnit();
+  const rows = (reps, weight) => Array.from({ length: sets }, () => ({ reps, weight }));
+  if (!l) return { rows: rows("", ""), text: `${plural(sets, "set")}`, why: "New to you: pick a weight you can manage for 8–12 reps" };
+  if (!(l.topLb > 0)) {
+    const r = l.topReps + 1;
+    return { rows: [{ reps: r, weight: "" }, ...Array.from({ length: sets - 1 }, () => ({ reps: l.topReps, weight: "" }))],
+      text: `${plural(sets, "set")} · aim for ${r} reps`, why: `One more rep than your best last time (${l.topReps}, ${shortDate(l.date)})` };
+  }
+  const atTop = l.sets.filter(st => Math.abs(st.lb - l.topLb) < 0.01), first = atTop[0].reps || 8, hit = atTop.every(st => st.reps >= first);
+  const last = Math.round(wtNum(l.topLb) * 2) / 2, inc = u === "kg" ? (last < 20 ? 1 : 2.5) : (last < 40 ? 2.5 : 5), w = hit ? last + inc : last;
+  return { rows: rows(first, w), text: `${sets} × ${first} at ${fmt(w)} ${u}`,
+    why: hit ? `Up ${fmt(inc)} ${u}: you hit every rep at ${fmt(last)} ${u} on ${shortDate(l.date)}`
+      : `Same weight: aim for ${first} on every set (last time ${atTop.map(st => st.reps).join(", ")} at ${fmt(last)} ${u})` };
+}
 function startSuggestion() {
   const sg = suggestion(); if (!sg || !sg.ex || !sg.ex.length) return;
-  const unit = prefs.unit || "lb";
-  const carry = sg.ex.map(e => {
-    const x = newEx(); setExName(x, e.name);
-    if (!x.p.length && !x.s.length) { x.p = e.p.slice(); x.s = e.s.slice(); }
-    // Last time's sets as a starting point; change anything before saving
-    const ss = e.fresh ? [] : exSessions(e.name), l = ss[ss.length - 1];
-    if (l) x.sets = l.sets.map(st => ({ reps: st.reps || "", weight: st.lb > 0 ? Math.round((unit === "kg" ? st.lb / LB_PER_KG : st.lb) * 2) / 2 : "" }));
+  const ps = planSession(sg.pick, sg.ex); if (!ps.items.length) return;
+  const carry = ps.items.map(it => {
+    const x = newEx(); setExName(x, it.e.name);
+    if (!x.p.length && !x.s.length) { x.p = it.e.p.slice(); x.s = it.e.s.slice(); }
+    x.sets = it.rows.map(r => ({ ...r }));
+    x.sug = `${it.text}. ${it.why}.`; // shown in the form; not saved
     return x;
   });
   openLift(ymd(today()), carry);
-  toast(`Added ${plural(carry.length, "exercise")} with last time's numbers. Change anything before you save.`);
+  toast(`Added ${plural(carry.length, "suggested exercise")}, about ${plural(ps.total, "set")}. Change anything before you save; one left without reps is skipped.`);
 }
 $("sugCard").addEventListener("click", e => {
   const b = e.target.closest("[data-sug], [data-sug-group]"); if (!b) return;
@@ -3699,6 +3750,7 @@ function liftSheet(d) {
           <button type="button" class="inp ex-pick${x.name.trim() ? "" : " empty"}" id="ex-${i}" data-pickex="${i}" aria-haspopup="dialog" aria-labelledby="exl-${i} ex-${i}"><span>${esc(x.name.trim() || "Choose an exercise")}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></div>
         <button class="x" type="button" data-rmex="${i}" aria-label="Remove exercise">${XSVG}</button></div>
         <div id="mus-${i}">${musclesHTML(x, i)}</div>
+        ${x.sug ? `<p class="sug-note"><b>Suggested:</b> ${esc(x.sug)}</p>` : ""}
         <div class="sets"><div class="set lbl"><span></span><span>Reps</span><span>Weight (${esc(d.unit)}) ±${weightStep(d.unit)}</span><span></span></div>
         ${x.sets.map((st, j) => `<div class="set"><span class="n">${j + 1}</span>
           ${stepper(`<input class="inp num" id="r-${i}-${j}" type="number" inputmode="numeric" min="0" placeholder="Reps" value="${esc(st.reps)}" data-set="${i}:${j}:reps" aria-label="Set ${j + 1} reps">`, 1, `set ${j + 1} reps`)}
@@ -4290,7 +4342,8 @@ async function saveDraft() {
   if (!d.date) { S.error = "Pick a date for this workout."; return renderSheet(); }
   if (S.sheet === "cardio") return saveCardio(d);
   {
-    const exercises = d.exercises.map(x => ({
+    // A suggested exercise left with no reps was skipped, so it is dropped rather than blocking the save
+    const exercises = d.exercises.filter(x => !(x.sug && !x.sets.some(st => String(st.reps).trim() !== ""))).map(x => ({
       name: x.name.trim(), p: x.p, s: x.s,
       sets: x.sets.filter(st => String(st.reps).trim() !== "").map(st => ({ reps: Number(st.reps) || 0, weight: Number(st.weight) || 0 }))
     })).filter(x => x.name);
