@@ -67,6 +67,9 @@ header.top {
 .nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }
 .nav .label { font-family: var(--font-display); font-weight: 600; font-size: 22px; letter-spacing: .01em; text-align: center; flex: 1; min-width: 0; }
 .nav .label small { display: block; font-family: var(--font-body); font-size: 12px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+/* Today is always this week: no range bar there */
+body[data-tab="today"] #periods, body[data-tab="today"] #rangeNav { display: none; }
+.now-chip { display: inline-block; margin-top: 6px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--h4); background: transparent; color: var(--h5); font-family: var(--font-body); font-size: 12px; font-weight: 700; letter-spacing: 0; cursor: pointer; }
 .iconbtn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; flex: none; }
 .iconbtn:disabled { opacity: .35; cursor: default; }
 .iconbtn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
@@ -858,7 +861,7 @@ button.tag { cursor: pointer; }
     <button type="button" data-p="year">Year</button>
     <button type="button" data-p="all">All</button>
   </div>
-  <div class="nav">
+  <div class="nav" id="rangeNav">
     <button class="iconbtn" id="prev" type="button" aria-label="Previous"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
     <div class="label" id="rangeLabel"></div>
     <button class="iconbtn" id="next" type="button" aria-label="Next"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
@@ -1493,7 +1496,7 @@ function sampleWorkouts() {
 let prefs = {};
 try { prefs = JSON.parse(localStorage.getItem("musclemap.prefs") || "{}"); } catch {}
 const savePrefs = () => { try { localStorage.setItem("musclemap.prefs", JSON.stringify(prefs)); } catch {} Store.prefsChanged(); };
-const S = { workouts: [], goals: normGoals(null), goalsSaved: false, loaded: false, period: prefs.period || "week", anchor: today(), selLift: null, sheet: null, draft: null, error: "", confirmDel: false };
+const S = { workouts: [], goals: normGoals(null), goalsSaved: false, loaded: false, period: "week", anchor: today(), selLift: null, sheet: null, draft: null, error: "", confirmDel: false };
 const SAMPLE = sampleWorkouts();
 const data = () => (S.workouts.length ? S.workouts : SAMPLE);
 const usingSample = () => S.workouts.length === 0;
@@ -2138,7 +2141,24 @@ function status(v, t, pace, unitWord) {
 }
 const pill = st => `<span class="pill ${st.k}">${esc(st.txt)}</span>`;
 
+/* Today is always this week. Maps, Stats and History each keep their own range (period remembered across visits). */
+const RANGE_TABS = ["maps", "stats", "history"];
+S.ranges = Object.fromEntries(RANGE_TABS.map(t => [t, { period: (prefs.periods && prefs.periods[t]) || prefs.period || "week", anchor: today() }]));
+function useRange() {
+  const cr = S.ranges[document.body.dataset.tab];
+  if (cr) { S.period = cr.period; S.anchor = cr.anchor; } else { S.period = "week"; S.anchor = today(); }
+}
+// In History, the calendar follows the range: changing the range shows its month there too
+function calFollow() {
+  const cr = S.ranges.history; if (document.body.dataset.tab !== "history" || cr.period === "all") return;
+  const r = rangeFor(cr.period, cr.anchor, data()), d = cr.period === "year" && cr.anchor.getFullYear() === today().getFullYear() ? today() : r.end < today() ? r.end : today();
+  const m = new Date(d.getFullYear(), d.getMonth(), 1);
+  if (!S.calMonth || +S.calMonth !== +m) { S.calMonth = m; S.calSel = null; }
+}
+// After saving a workout, the tab you're on (if it has a range) moves to show it
+function rangeTo(d) { const cr = S.ranges[document.body.dataset.tab]; if (cr) cr.anchor = d; }
 function render() {
+  useRange();
   const list = data();
   const r = rangeFor(S.period, S.anchor, list);
   const c = compute(list, r);
@@ -2158,7 +2178,7 @@ function render() {
   const cardioSt = status(c.minutes, cardioTarget, pace, "min");
 
   document.querySelectorAll("#periods button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.p === S.period)));
-  $("rangeLabel").innerHTML = `${esc(r.label)}<small>${esc(r.sub)} · ${days} day${days === 1 ? "" : "s"}</small>`;
+  $("rangeLabel").innerHTML = `${esc(r.label)}<small>${esc(r.sub)} · ${days} day${days === 1 ? "" : "s"}</small>${isCurrent ? "" : `<button type="button" class="now-chip" data-now="1">Back to ${S.period === "day" ? "today" : `this ${S.period}`}</button>`}`;
   const isAll = S.period === "all";
   $("prev").disabled = isAll; $("next").disabled = isAll || r.end >= today();
 
@@ -4931,7 +4951,7 @@ async function saveCardio(d) {
       const r = await Store.save(w, list); list = Array.isArray(r) ? r : list.filter(x => x.id !== w.id).concat([w]);
     }
     S.workouts = list;
-    S.anchor = parse(d.date); closeSheet(true); render();
+    rangeTo(parse(d.date)); closeSheet(true); render();
     rewardXP(before, xpLedger(S.workouts), []);
   } catch (ex) { S.error = ex && ex.message && Store.mode === "local" ? ex.message : "Couldn't save the workout. Check your connection and try again."; renderSheet(); }
 }
@@ -4987,7 +5007,7 @@ async function saveDraft() {
     const r = await Store.save(w, S.workouts);
     if (Array.isArray(r)) S.workouts = r;
     else S.workouts = S.workouts.filter(x => x.id !== w.id).concat([w]);
-    S.anchor = parse(w.date); closeSheet(true); render();
+    rangeTo(parse(w.date)); closeSheet(true); render();
     rewardXP(before, xpLedger(S.workouts), records);
     if (d.gym) openWorkout(S.workouts.find(x => x.id === w.id) || w); // the wrap-up: sets, volume, XP and records
   } catch (ex) { S.error = ex && ex.message && Store.mode === "local" ? ex.message : "Couldn't save the workout. Check your connection and try again."; renderSheet(); }
@@ -5108,12 +5128,16 @@ document.addEventListener("keydown", e => {
 });
 
 /* ---------- Main interactions ---------- */
+// The range bar changes the range of the tab you're on (Maps, Stats or History); each remembers its own.
+const curRange = () => S.ranges[document.body.dataset.tab] || null;
 $("periods").addEventListener("click", e => {
-  const b = e.target.closest("button"); if (!b) return;
-  S.period = b.dataset.p; prefs.period = S.period; savePrefs(); render();
+  const b = e.target.closest("button"), cr = curRange(); if (!b || !cr) return;
+  cr.period = b.dataset.p;
+  prefs.periods = { ...(prefs.periods || {}), [document.body.dataset.tab]: cr.period }; savePrefs(); calFollow(); render();
 });
-$("prev").addEventListener("click", () => { S.anchor = shift(S.period, S.anchor, -1); render(); });
-$("next").addEventListener("click", () => { const n = shift(S.period, S.anchor, 1); S.anchor = n > today() ? today() : n; render(); });
+$("prev").addEventListener("click", () => { const cr = curRange(); if (!cr) return; cr.anchor = shift(cr.period, cr.anchor, -1); calFollow(); render(); });
+$("next").addEventListener("click", () => { const cr = curRange(); if (!cr) return; const n = shift(cr.period, cr.anchor, 1); cr.anchor = n > today() ? today() : n; calFollow(); render(); });
+$("rangeLabel").addEventListener("click", e => { const cr = curRange(); if (!cr || !e.target.closest("[data-now]")) return; cr.anchor = today(); calFollow(); render(); });
 const pick = (key, m) => { S[key] = m && S[key] !== m ? m : null; render(); };
 $("liftBodies").addEventListener("click", e => { const p = e.target.closest("[data-m]"); pick("selLift", p && p.dataset.m); });
 $("bars").addEventListener("click", e => {
@@ -5149,12 +5173,16 @@ document.addEventListener("click", e => {
 /* ---------- Phone layout: tabs, map switch, keyboard ---------- */
 const tabMode = { matches: true }; // tabs are used at every width
 function setTab(t, scroll = true) {
+  const changed = document.body.dataset.tab !== t;
   prefs.tab = t; savePrefs();
   document.body.dataset.tab = t;
   document.querySelectorAll("[data-tabbtn]").forEach(b => { if (b.dataset.tabbtn === t) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
+  if (changed && S.loaded) render();
   if (scroll && tabMode.matches) window.scrollTo(0, 0);
 }
+// Show the selected muscle on the map for the range you were looking at (this week, from Today)
 function showLiftMap() {
+  S.ranges.maps = { period: S.period, anchor: S.anchor };
   if (tabMode.matches) setTab("maps");
   else $("liftH").scrollIntoView({ behavior: "smooth", block: "start" });
 }

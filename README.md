@@ -9,7 +9,7 @@ A mobile-friendly workout tracker. Log lifts and cardio, set daily goals, and se
 
 - **Log workouts:** the date, then exercises with reps and weight for each set (lb or kg). About 50 common exercises come with their muscles already mapped.
 - **Exercise picker:** tap the exercise box to open a list, with no keyboard needed. The exercises you've logged most recently come first, then everything grouped by muscle: Chest, Back, Shoulders, Arms, Legs and Core. A search box at the top narrows the list as you type. If your exercise isn't there, type its name and tap **Add "…" as a new exercise**, then tap the muscles it works. Forged remembers it and lists it under its muscle group from then on. **+ Add exercise** opens the picker straight away.
-- **Heat map:** switch between Day, Week, Month, Year and All, and step back through earlier periods. Tap a muscle to see which exercises worked it.
+- **Heat map:** switch between Day, Week, Month, Year and All, and step back through earlier periods (see **Ranges** below). Tap a muscle to see which exercises worked it.
 - **Sets per muscle:** a set counts 1 for the main muscles and 0.5 for helper muscles. The weekly view marks a 10–20 sets per week target.
 - **Workout summary:** tapping a saved workout, in History, the calendar, the XP list or an exercise's progress page, opens a read-only summary. **Edit** opens the form, where you can change or delete it.
   - **Lifting:** sets, volume, XP and records at the top. Then each exercise with its muscles and sets, a **New record** or **First time** tag, and a comparison with the last time you did it, such as "+5 lb on your top set · last time Nov 17: 185 × 5 · 185 × 5 lb". Bodyweight exercises compare reps. Tap an exercise's name to open its progress page.
@@ -42,6 +42,7 @@ A mobile-friendly workout tracker. Log lifts and cardio, set daily goals, and se
 The app is split into four tabs: on a bar at the bottom on phones, and in a sidebar on wider screens.
 
 - **Today:** the leaderboard card, the at-a-glance strip, your level, the get-started checklist, your progress summary and the suggestion for today.
+- **Ranges:** Today is always about this week, so it has no range bar. Maps, Stats and History each have the Day / Week / Month / Year / All bar and ‹ › arrows at the top, and each remembers its own setting; for example, History can stay on Month while Maps stays on Week. Looking at an earlier range shows a **Back to this week** chip (or day, month or year) under the dates; tap it to return to now. In History, changing the range also moves the calendar to that month. Tapping a muscle under "Most behind" on Today opens the map for this week. Saving a workout while on Maps, Stats or History moves that tab to the workout's date; Today stays on this week.
 - **Maps:** the lifting heat map.
 - **Stats:** cardio gauges, lifting goal bars and the cardio breakdown.
 - **History:** your workout list.
