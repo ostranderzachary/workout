@@ -174,6 +174,7 @@ The app reports your XP, matching what you see in Forged, and the database check
 The Today tab shows an idea for what to train, worked out from your week so far. It's only a suggestion, so train whatever feels right.
 
 - **The focus:** Push, Pull, Legs or Core. It's the group with the most sets still to go toward this week's goals, counting only muscles that have had at least two days' rest. A lift counts as training a muscle whether it's a main or a helper muscle.
+- **Late in the week** (Saturday and Sunday), it favours the goals closest to being met instead: the group with the most muscles 5 sets or less from their goal. Those are the ones a session can still finish, and each finished goal is worth XP. The card says so when this applies.
 - **Why:** each of those muscles with its sets to go and when it was last trained, for example "Lats: 8 sets to go · last trained 6 days ago".
 - **A session you could do:** for those muscles, the exercises you did most recently, or a common pick for one you haven't trained. A muscle that needs more than 5 sets gets a second exercise. Tap a name to see its progress.
 - **How many sets:** the sets still to go are spread across the exercises, 2–5 sets each. Helper muscles count half, so a Lat Pulldown also counts toward biceps. The session is kept to about 18 sets; anything over that is left for another day, and the card says roughly how much.
@@ -183,7 +184,11 @@ The Today tab shows an idea for what to train, worked out from your week so far.
   - Bodyweight exercises: one more rep than your best.
   - Exercises new to you: a set count only, with a tip to pick a weight you can manage for 8–12 reps.
 - **Start this session:** opens the lifting form with those exercises, set counts, reps and weights filled in. Each is marked "Suggested:" with the reason; that note isn't saved. Change anything before you save. A suggested exercise left without reps is skipped when you save. If you've already lifted today, they're added to that workout.
-- **Other ideas** switch to another focus, and a cardio option appears when you're behind on cardio time.
+- **XP within reach:** the parts of the game today's workout can move forward.
+  - **A running boss fight:** what's left, the time left and the reward, for example "Boss fight: Road Wraith. 3.2 mi to go, 22h 0m left. Win for +1,100 XP", with a **Log a run** or **Log stairs** button. For a sets boss it says how many sets the suggested session adds.
+  - **Workout days:** if you haven't trained today and are short of your days goal, what training today earns, for example "Training today reaches your 4-day goal for +50 XP and a 2-week streak (+20 XP)". If the goal is out of reach, it says each day you train still saves 40 XP in missed-day penalties.
+  - **Muscle goals:** which goals the suggested session would finish, for example "This session would meet the lats and biceps goals for +40 XP", plus the +100 XP bonus when it would finish every muscle goal.
+- **Other ideas** switch to another focus. A cardio option appears when you're behind on cardio time or distance, with the +75 XP each goal earns when it's met.
 - **If every muscle goal is met,** or everything behind was trained in the last two days, it suggests a rest day instead.
 - **Hide for today** hides the card until tomorrow.
 

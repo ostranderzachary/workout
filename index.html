@@ -429,6 +429,11 @@ button.pl-row { cursor: pointer; }
 .sug-alt .chip { padding: 5px 12px; font-size: 13px; }
 .sug-msg { margin: 8px 0 0; font-size: 15px; }
 .sug-cardio { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+.sug-game { list-style: none; margin: 0; padding: 0; }
+.sug-game li { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; padding: 6px 0; border-top: 1px solid var(--line); }
+.sug-game li > span { flex: 1; }
+.sug-game li .btn { flex: none; }
+.sug-xp { color: var(--h5); font-weight: 700; white-space: nowrap; }
 .sug-cardio .linkbtn { color: var(--h4); font-weight: 600; }
 .auth-alt { margin-top: 14px; }
 .auth-alt summary { cursor: pointer; color: var(--muted); font-size: 14px; font-weight: 600; }
@@ -1410,7 +1415,7 @@ function xpLedger(list) {
         streak = 0;
       }
     }
-    if (isCur) week = { days, target: g.days, streak, left: 7 - ((t.getDay() + 6) % 7), atRisk: g.days > days ? BONUS.missedDay * (g.days - days) : 0 };
+    if (isCur) week = { days, target: g.days, streak, left: 7 - ((t.getDay() + 6) % 7), atRisk: g.days > days ? BONUS.missedDay * (g.days - days) : 0, first: +mon === +firstMon };
   }
   // Boss rewards are worked out from the same history, in date order, and join the ledger.
   const bosses = bossTimeline(real, entries);
@@ -3310,14 +3315,19 @@ function suggestion() {
   if (!ms.length) return null;
   const behind = ms.filter(x => x.left > 0);
   const cardioLeft = Math.max(0, (Number(g.cardio) || 0) - c.minutes);
-  if (!behind.length) return { met: true, cardioLeft };
+  const distLeft = Math.max(0, (Number(g.distance) || 0) - (distUnit() === "km" ? c.distance / 1.609344 : c.distance)); // miles
+  const weekLeft = 7 - ((t.getDay() + 6) % 7), lateWeek = weekLeft <= 2; // days left, counting today
+  if (!behind.length) return { met: true, cardioLeft, distLeft };
   // Only muscles that have had at least two days' rest
   const rested = behind.filter(x => x.days == null || x.days >= 2), restNote = "had at least two days' rest";
-  if (!rested.length) return { tired: true, cardioLeft };
+  if (!rested.length) return { tired: true, cardioLeft, distLeft };
+  // Usually the muscles furthest behind; in the last two days of the week, the goals closest to being met,
+  // since those are the ones a session can still finish (each finished goal is worth XP)
+  const near = x => x.left <= 5;
   const groups = SUG_GROUPS.map(([k, name, desc, gm]) => {
-    const mus = rested.filter(x => gm.includes(x.m)).sort((a, b) => b.left - a.left);
-    return { k, name, desc, mus, left: mus.reduce((a, x) => a + x.left, 0) };
-  }).filter(x => x.mus.length).sort((a, b) => b.left - a.left);
+    const mus = rested.filter(x => gm.includes(x.m)).sort((a, b) => (lateWeek ? a.left - b.left : b.left - a.left));
+    return { k, name, desc, mus, left: mus.reduce((a, x) => a + x.left, 0), near: mus.filter(near).length };
+  }).filter(x => x.mus.length).sort((a, b) => (lateWeek ? b.near - a.near || a.left - b.left : b.left - a.left));
   const pick = groups.find(x => x.k === S.sugGroup) || groups[0];
   // Exercises: for the muscles furthest behind, the one you did most recently for it, else a common choice
   const recent = new Map();
@@ -3339,29 +3349,69 @@ function suggestion() {
     if (mu.left <= 5 || ex.filter(e => e.p.includes(mu.m)).length >= 2) continue;
     const e = choose(mu.m); if (e) ex.push(e);
   }
-  return { pick, others: groups.filter(x => x !== pick).slice(0, 3), ex, restNote, cardioLeft, todayK };
+  return { pick, others: groups.filter(x => x !== pick).slice(0, 3), ex, restNote, cardioLeft, distLeft, todayK, behind, weekLeft, lateWeek };
+}
+/* XP within reach today: a running boss fight, the workout-days goal and streak, and the muscle goals
+   the suggested session would finish. Each line is { html, act } with an optional button. */
+function sugGame(sg, ps) {
+  const real = S.workouts.filter(w => !w.sample), L = xpLedger(real), out = [], todayK = ymd(today());
+  const xp = n => `<b class="sug-xp">${n < 0 ? "−" : "+"}${Math.abs(n).toLocaleString()} XP</b>`;
+  for (const b of activeBosses(L)) {
+    const st = fightState(b); if (st.kind !== "active") continue;
+    const left = Math.max(0, b.amount - bossValue(b, st.t));
+    const amt = b.type === "run" ? `${fmt(Math.round(toUnit(left, "mi") * 10) / 10)} ${distUnit()}` : b.type === "stairs" ? `${Math.ceil(left)} stories`
+      : b.type === "sets" ? plural(Math.ceil(left), "set") : compactWt(left);
+    const act = b.type === "run" ? ["boss-run", "Log a run"] : b.type === "stairs" ? ["boss-stairs", "Log stairs"]
+      : ps && ps.items.length ? null : ["lift", "Log lifts"];
+    const extra = b.type === "sets" && ps && ps.items.length ? ` This session adds about ${plural(ps.total, "set")}.` : "";
+    out.push({ html: `<b>Boss fight: ${esc(b.name)}.</b> ${esc(amt)} to go, ${esc(timeLeft(st.end - Date.now()))}. Win for ${xp(b.reward)}.${esc(extra)}`, act });
+  }
+  const w = L.week;
+  if (w && w.target > 0 && w.days < w.target && !real.some(x => x.date === todayK)) {
+    const need = w.target - w.days, streak = w.streak >= 1 ? ` and a ${w.streak + 1}-week streak (${xp(Math.min(BONUS.streakMax, BONUS.streakStep * w.streak))})` : "";
+    if (need === 1) out.push({ html: `Training today reaches your ${w.target}-day goal for ${xp(BONUS.days)}${streak}.` });
+    else if (need <= w.left) out.push({ html: `Training today makes ${w.days + 1} of ${w.target} days. Reach ${w.target} by Sunday for ${xp(BONUS.days)}${streak}.` });
+    else if (!w.first) out.push({ html: `Your ${w.target}-day goal is out of reach this week, but each day you train saves ${xp(-BONUS.missedDay)} in missed-day penalties.` });
+  }
+  if (ps && sg.pick) {
+    const fin = sg.pick.mus.filter(x => (ps.after[x.m] ?? 1) <= 1e-9);
+    if (fin.length) {
+      const names = fin.map(x => MUSCLES[x.m].toLowerCase()), list = names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}` : names[0];
+      const all = sg.behind.every(x => fin.includes(x));
+      out.push({ html: `This session would meet the ${esc(list)} goal${fin.length > 1 ? "s" : ""} for ${xp(BONUS.muscle * fin.length)}${all ? `, and every muscle goal for ${xp(BONUS.allMuscles)} more` : ""}.` });
+    }
+  }
+  return out;
+}
+function sugGameHTML(sg, ps) {
+  const items = sugGame(sg, ps);
+  return items.length ? `<div class="lbl" style="margin-top:12px">XP within reach</div><ul class="sug-game">${items.map(it =>
+    `<li><span>${it.html}</span>${it.act ? `<button class="btn small" type="button" data-sug="${it.act[0]}">${esc(it.act[1])}</button>` : ""}</li>`).join("")}</ul>` : "";
 }
 function renderSuggest() {
   const el = $("sugCard"); if (!el) return;
   if (!S.loaded || prefs.sugHidden === ymd(today())) { el.innerHTML = ""; return; }
   const sg = suggestion();
   if (!sg) { el.innerHTML = ""; return; }
-  const cardioLine = sg.cardioLeft > 0 ? `<p class="sug-cardio">${sg.met || sg.tired ? "Cardio could fit today" : "Or some cardio"}: ${esc(hm(sg.cardioLeft))} to go toward this week's goal. <button class="linkbtn" type="button" data-sug="cardio">Log cardio</button></p>` : "";
+  const togo = [sg.cardioLeft > 0 ? hm(sg.cardioLeft) : "", sg.distLeft > 0.05 ? `${fmt(Math.round(toUnit(sg.distLeft, "mi") * 10) / 10)} ${distUnit()}` : ""].filter(Boolean);
+  const cardioLine = togo.length ? `<p class="sug-cardio">${sg.met || sg.tired ? "Cardio could fit today" : "Or some cardio"}: ${esc(togo.join(" and "))} to go toward this week's ${togo.length > 1 ? "goals" : "goal"}, <b class="sug-xp">+${BONUS.cardio} XP</b> ${togo.length > 1 ? "for each one met" : "when it's met"}. <button class="linkbtn" type="button" data-sug="cardio">Log cardio</button></p>` : "";
   const head = `<div class="sug-head"><span class="sug-tag">Suggestion for today</span><button class="linkbtn sug-hide" type="button" data-sug="hide">Hide for today</button></div>`;
   if (sg.met || sg.tired) {
     el.innerHTML = `<section class="panel sug-card" aria-label="Suggestion for today">${head}
-      <p class="sug-msg">${sg.met ? "Every muscle goal is met this week. A rest day would be well earned, or anything extra you feel like." : "Everything still behind this week was trained in the last two days, so a rest day could be a good call."}</p>${cardioLine}</section>`;
+      <p class="sug-msg">${sg.met ? "Every muscle goal is met this week. A rest day would be well earned, or anything extra you feel like." : "Everything still behind this week was trained in the last two days, so a rest day could be a good call."}</p>${sugGameHTML(sg, null)}${cardioLine}</section>`;
     return;
   }
   const { pick, others, ex, restNote } = sg, ps = planSession(pick, ex);
   el.innerHTML = `<section class="panel sug-card" aria-label="Suggestion for today">${head}
     <h3 class="sug-title">${esc(pick.name)} <small>${esc(pick.desc)}</small></h3>
-    <p class="note" style="margin:2px 0 8px">These are behind this week's goals and have ${esc(restNote)}. Just an idea: train whatever feels right.</p>
+    <p class="note" style="margin:2px 0 8px">${sg.lateWeek ? `${sg.weekLeft === 1 ? "It's the last day of the week" : "There are two days left this week"}, so this favours the goals you can still finish. These have ${esc(restNote)}.`
+      : `These are behind this week's goals and have ${esc(restNote)}.`} Just an idea: train whatever feels right.</p>
     <ul class="sug-why">${pick.mus.slice(0, 4).map(x => `<li><b>${esc(MUSCLES[x.m])}</b><span>${esc(plural(x.left, "set"))} to go · ${esc(daysAgo(x.days))}</span></li>`).join("")}</ul>
     ${ps.items.length ? `<div class="lbl" style="margin-top:10px">A session you could do · about ${plural(ps.total, "set")}</div>
     <ul class="sug-ex">${ps.items.map(it => { const done = !it.e.fresh && exSessions(it.e.name).length;
       return `<li><div class="sug-ex-top"><span class="sug-ex-name">${done ? `<button type="button" class="linkbtn" data-prog="${esc(it.e.name)}">${esc(it.e.name)}</button>` : esc(it.e.name)}</span><b class="num">${esc(it.text)}</b></div><small>${esc(it.why)}</small></li>`; }).join("")}</ul>
     ${ps.leftover >= 1 ? `<p class="note" style="margin:6px 0 0">That leaves about ${plural(ps.leftover, "set")} of this week's goals for another day.</p>` : ""}` : ""}
+    ${sugGameHTML(sg, ps)}
     <div class="sug-actions">${ps.items.length ? `<button class="btn primary small" type="button" data-sug="start">Start this session</button>` : ""}
       ${others.length ? `<span class="sug-alt">Other ideas: ${others.map(o => `<button class="chip" type="button" data-sug-group="${o.k}">${esc(o.name)}</button>`).join("")}</span>` : ""}</div>
     ${cardioLine}</section>`;
@@ -3385,7 +3435,7 @@ function planSession(pick, ex) {
   const after = Object.fromEntries(pick.mus.map(x => [x.m, x.left]));
   for (const { e, sets } of out) { for (const m of e.p) if (after[m] != null) after[m] -= sets; for (const m of e.s) if (after[m] != null) after[m] -= sets / 2; }
   const leftover = Math.round(Object.values(after).reduce((a, v) => a + Math.max(0, v), 0));
-  return { items: out.map(x => ({ ...x, ...progression(x.e, x.sets) })), total, totalLeft, leftover };
+  return { items: out.map(x => ({ ...x, ...progression(x.e, x.sets) })), total, totalLeft, leftover, after };
 }
 /* The next step for an exercise: more weight if every set at the top weight hit its reps last time,
    the same weight if reps dropped off, one more rep for bodyweight moves. */
@@ -3424,6 +3474,8 @@ $("sugCard").addEventListener("click", e => {
   if (k === "hide") { prefs.sugHidden = ymd(today()); savePrefs(); toast("Hidden until tomorrow."); return renderSuggest(); }
   if (k === "start") return startSuggestion();
   if (k === "cardio") return openCardio(ymd(today()));
+  if (k === "boss-run" || k === "boss-stairs") return openCardio(ymd(today()), [{ ...cItem(), activity: k === "boss-run" ? "run" : "stairs" }]);
+  if (k === "lift") return openLift(ymd(today()));
 });
 
 /* ---------- Workout summary: a read-only look at a saved workout, compared with last time, with Edit to change it ---------- */
