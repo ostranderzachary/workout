@@ -824,6 +824,8 @@ button.tag { cursor: pointer; }
 }
 .addgrid { display: grid; gap: 10px; }
 .addopt { display: grid; gap: 4px; text-align: left; border: 1px solid var(--line); background: var(--bg); border-radius: 14px; padding: 16px; }
+.addopt.main { border-color: var(--h4); }
+.addopt.main b { color: var(--h5); }
 .addopt b { font-family: var(--font-display); font-size: 24px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; color: var(--h5); }
 .addopt span { font-size: 14px; color: var(--muted); }
 .err { color: var(--danger); font-size: 14px; margin-top: 10px; }
@@ -3538,10 +3540,12 @@ function openCardio(date = defaultDate(), carry = []) {
   if (ws.length) setTimeout(() => { const it = document.querySelectorAll("#sheetRoot .citem"); if (it.length) it[it.length - 1].scrollIntoView({ block: "start" }); }, 30);
 }
 function addSheet() {
-  const date = defaultDate(), w = liftOn(date), n = w ? (w.exercises || []).reduce((a, x) => a + (x.sets || []).length, 0) : 0;
+  const date = defaultDate(), tk = ymd(today()), wt = liftOn(tk);
+  // A past workout opens on yesterday, or on the day you're looking at in the Day view
+  const past = S.period === "day" && ymd(S.anchor) < tk ? ymd(S.anchor) : ymd(addDays(today(), -1)), wp = liftOn(past);
   return sheetFrame("Log a workout", `<div class="addgrid">
-      <button type="button" class="addopt" data-act="pick-lift"><b>Lifting</b><span>${w ? `Continue ${date === ymd(today()) ? "today's workout" : `your workout from ${esc(dayWord(date))}`}: ${esc(liftTitle(w))}, ${plural(n, "set")} so far` : "Exercises with their sets, reps and weight"}</span></button>
-      <button type="button" class="addopt" data-act="pick-gym"><b>Gym mode</b><span>Plan your exercises, then log one set at a time with a rest timer</span></button>
+      <button type="button" class="addopt main" data-act="pick-now"><b>Lift now</b><span>${wt ? `Carry on with today's workout (${esc(liftTitle(wt))}, ${plural(setsIn(wt), "set")} so far), one set at a time` : "Plan your exercises, then log one set at a time with a rest timer"}</span></button>
+      <button type="button" class="addopt" data-act="pick-past" data-date="${past}"><b>Add or edit a past workout</b><span>${wp ? `Opens your lifts from ${esc(dayWord(past))} (${esc(liftTitle(wp))}). Change the date for another day.` : `One form for logging after the fact. It opens on ${esc(dayWord(past))}; change the date for another day.`}</span></button>
       <button type="button" class="addopt" data-act="pick-cardio"><b>Cardio</b><span>${(() => { const cs = cardioOn(date); return cs.length
         ? `Continue ${date === ymd(today()) ? "today's cardio" : `your cardio from ${esc(dayWord(date))}`}: ${esc([...new Set(cs.map(c => (CARDIO[c.activity] || CARDIO.run)[0]))].join(", "))}`
         : "A run, ride, swim or other session: minutes and distance"; })()}</span></button>
@@ -3682,7 +3686,7 @@ function renderSuggest() {
       return `<li><div class="sug-ex-top"><span class="sug-ex-name">${done ? `<button type="button" class="linkbtn" data-prog="${esc(it.e.name)}">${esc(it.e.name)}</button>` : esc(it.e.name)}</span><b class="num">${esc(it.text)}</b></div><small>${esc(it.why)}</small></li>`; }).join("")}</ul>
     ${ps.leftover >= 1 ? `<p class="note" style="margin:6px 0 0">That leaves about ${plural(ps.leftover, "set")} of this week's goals for another day.</p>` : ""}` : ""}
     ${sugGameHTML(sg, ps)}
-    <div class="sug-actions">${ps.items.length ? `<button class="btn primary small" type="button" data-sug="start">Start this session</button><button class="btn small" type="button" data-sug="gym">Gym mode</button>` : ""}
+    <div class="sug-actions">${ps.items.length ? `<button class="btn primary small" type="button" data-sug="start">Start this session</button>` : ""}
       ${others.length ? `<span class="sug-alt">Other ideas: ${others.map(o => `<button class="chip" type="button" data-sug-group="${o.k}">${esc(o.name)}</button>`).join("")}</span>` : ""}</div>
     ${cardioLine}</section>`;
 }
@@ -3746,8 +3750,7 @@ $("sugCard").addEventListener("click", e => {
   if (b.dataset.sugGroup) { S.sugGroup = b.dataset.sugGroup; renderSuggest(); return renderGlance(); }
   const k = b.dataset.sug;
   if (k === "hide") { prefs.sugHidden = ymd(today()); savePrefs(); toast("Hidden until tomorrow."); renderSuggest(); return renderGlance(); }
-  if (k === "start") return startSuggestion();
-  if (k === "gym") { startSuggestion(true); if (S.sheet === "lift") enterGym(); return; }
+  if (k === "start" || k === "gym") { startSuggestion(true); if (S.sheet === "lift") enterGym(); return; }
   if (k === "cardio") return openCardio(ymd(today()));
   if (k === "boss-run" || k === "boss-stairs") return openCardio(ymd(today()), [{ ...cItem(), activity: k === "boss-run" ? "run" : "stairs" }]);
   if (k === "lift") return openLift(ymd(today()));
@@ -4225,7 +4228,11 @@ function gymAction(a) {
   const i = Math.min(Math.max(0, d.gymI || 0), d.exercises.length - 1), x = d.exercises[i], k = a.gym;
   if (k === "prev" || k === "next") { d.gymI = Math.min(d.exercises.length - 1, Math.max(0, i + (k === "next" ? 1 : -1))); const sb = document.querySelector("#sheetRoot .sheet-body"); renderSheet(); if (sb) { const nb = document.querySelector("#sheetRoot .sheet-body"); if (nb) nb.scrollTop = 0; } return; }
   if (k === "goto") { d.gymI = +a.i; renderSheet(); const nb = document.querySelector("#sheetRoot .sheet-body"); if (nb) nb.scrollTop = 0; return; }
-  if (k === "form") { S.sheet = "lift"; S.error = ""; return renderSheet(); }
+  if (k === "form") {
+    // Nothing ticked in gym mode yet: switch to a plain form, where every set you fill in is saved
+    if (!d.gymTicked) gymToPlain(d);
+    S.sheet = "lift"; S.error = ""; return renderSheet();
+  }
   if (k === "finish") return gymAction({ gym: "step", step: "review" });
   if (k === "save") return saveDraft();
   if (k === "pick") return openExPick(i);
@@ -4282,7 +4289,7 @@ function gymAction(a) {
     if (!x.name.trim()) { toast("Choose the exercise first."); return openExPick(i); }
     const st = x.sets[j];
     if (!(Number(st.reps) > 0)) { toast("Enter the reps for this set first."); const r = $(`r-${i}-${j}`); if (r) r.focus(); return; }
-    st.done = true;
+    st.done = true; d.gymTicked = true;
     // The next set starts from what you just did: same weight, and the same reps unless some were planned
     const nx = x.sets.slice(j + 1).find(y => !y.done);
     if (nx) { if (String(st.weight).trim() !== "") nx.weight = st.weight; if (String(nx.reps).trim() === "") nx.reps = st.reps; }
@@ -4292,6 +4299,15 @@ function gymAction(a) {
     renderSheet(); gymFocus();
     if (g.done >= g.total) toast("Every set is done. Tap Review and save.");
   }
+}
+/* Leave gym mode's "only ticked sets are saved" rule: every set in the form counts again. */
+function gymToPlain(d) {
+  const clean = !draftDirty();
+  for (const k of ["gym", "gymStep", "gymI", "rest", "gymTicked"]) delete d[k];
+  for (const y of d.exercises) { delete y.gymNew; for (const st of y.sets) delete st.done; }
+  d.exercises = d.exercises.filter(y => y.name.trim());
+  if (!d.exercises.length) d.exercises.push(newEx());
+  if (clean) S.draftBase = JSON.stringify(d); // switching views isn't a change you'd need to undo
 }
 /* Rest timer: counts down on screen, then vibrates (where the phone allows) and beeps. */
 let audioCtx = null;
@@ -4344,8 +4360,8 @@ function liftSheet(d) {
   const dw = d.cont ? dayWord(d.date) : "";
   return sheetFrame(d.cont ? (dw === "today" ? "Today's lifts" : dw === "yesterday" ? "Yesterday's lifts" : `Lifts · ${esc(dw)}`) : d.id ? "Edit lifts" : "Log lifts", `
     ${restoredNote()}${d.gym ? (() => { const g = gymCount(d); return `<div class="cont-note"><span><b>Gym mode:</b> ${g.done} of ${plural(g.total, "set")} done. Only the sets you've ticked are saved.</span>
-      <button class="btn small" type="button" data-act="gym">Back to gym mode</button></div>`; })()
-      : `<div class="gym-enter"><span><b>Gym mode</b>Plan your exercises, then log one set at a time with a rest timer</span><button class="btn small primary" type="button" data-act="gym">Start</button></div>`}${d.cont ? `<div class="cont-note"><span>Adding to the workout you logged ${dw === "today" || dw === "yesterday" ? dw : `on ${esc(dw)}`}. Add sets or exercises, then save.</span>
+      <span class="btn-row"><button class="btn small ghost" type="button" data-act="gym-all">Save every set</button><button class="btn small" type="button" data-act="gym">Back to gym mode</button></span></div>`; })()
+      : d.date === ymd(today()) ? `<div class="gym-enter"><span><b>Gym mode</b>Plan your exercises, then log one set at a time with a rest timer</span><button class="btn small primary" type="button" data-act="gym">Start</button></div>` : ""}${d.cont ? `<div class="cont-note"><span>Adding to the workout you logged ${dw === "today" || dw === "yesterday" ? dw : `on ${esc(dw)}`}. Add sets or exercises, then save.</span>
       <button class="btn small ghost" type="button" data-act="lift-new">Start a separate workout</button></div>` : ""}
     <div class="field"><label for="f-date">Date</label><input class="inp" id="f-date" type="date" value="${esc(d.date)}" max="${ymd(today())}" data-f="date"></div>
     <div class="field" style="margin-top:10px"><span class="lbl">Weight unit</span>
@@ -4987,8 +5003,10 @@ $("sheetRoot").addEventListener("click", async e => {
   if (a.gym) return gymAction(a);
   if (a.gymUndo != null) { const x = d.exercises[Math.min(Math.max(0, d.gymI || 0), d.exercises.length - 1)], st = x && x.sets[+a.gymUndo]; if (st) { st.done = false; renderSheet(); gymFocus(); } return; }
   if (a.act === "gym") return enterGym();
+  if (a.act === "gym-all") { gymToPlain(d); renderSheet(); return toast("Every set in the form will be saved."); }
+  if (a.act === "pick-now" || a.act === "pick-gym") { openLift(ymd(today())); if (S.sheet === "lift") enterGym(); return; }
+  if (a.act === "pick-past") return openLift(a.date);
   if (a.act === "pick-lift") return openLift();
-  if (a.act === "pick-gym") { openLift(); if (S.sheet === "lift") enterGym(); return; }
   if (a.act === "lift-new") { const dt = d.date; openSheet("lift", null); S.draft.date = dt; return renderSheet(); }
   if (a.act === "open-share") return openShare();
   if (a.act === "boss-start") return startFight(Number(a.tier));
