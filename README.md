@@ -39,7 +39,7 @@ A mobile-friendly workout tracker. Log lifts and cardio, set daily goals, and se
 
 ## On your phone
 
-The app is split into five tabs: on a bar at the bottom on phones, and in a sidebar on wider screens. The top bar shows just the Forged logo and the sync status.
+The app is split into five sections: Today, Maps, Stats, History and You. On phones, the bar at the bottom holds Today, Maps, **+**, Stats and History, with **+** in the middle, and **You** is the round profile button at the top right (it shows your initial once you're signed in, and a boss badge and glow while a boss is waiting). On wider screens all five are in the left sidebar. The top bar otherwise shows just the Forged logo and the sync status.
 
 - **Today:** the leaderboard card, the at-a-glance strip, your level, the get-started checklist, your progress summary and the suggestion for today.
 - **Ranges:** Today is always about this week, so it has no range bar. Maps, Stats and History each have the Day / Week / Month / Year / All bar and ‹ › arrows at the top, and each remembers its own setting; for example, History can stay on Month while Maps stays on Week. Looking at an earlier range shows a **Back to this week** chip (or day, month or year) under the dates; tap it to return to now. In History, changing the range also moves the calendar to that month. Tapping a muscle under "Most behind" on Today opens the map for this week. Saving a workout while on Maps, Stats or History moves that tab to the workout's date; Today stays on this week.
@@ -50,7 +50,7 @@ The app is split into five tabs: on a bar at the bottom on phones, and in a side
 
 The **+** button in the middle logs a workout: **Lift now** (gym mode), **Add or edit a past workout** (the list form) or **Cardio**. On phones, forms open full screen and fit the space above the keyboard. The Save button stays pinned at the bottom, and the field you're typing in scrolls into view. Number fields have **− / +** buttons, so you rarely need the keyboard. Each tap changes reps by 1, weight by 5 lb (2.5 kg), cardio minutes by 5 and distance by 0.5. Tapping + on an empty set starts from the set above, or from what you did last time for that exercise. New sets copy the set above.
 
-Wider screens use the same five tabs in a left sidebar, with a **Log workout** button at the top. Each tab lays its panels out in two columns, and the Maps tab uses the full width.
+Wider screens put all five in a left sidebar, with a **Log workout** button at the top. Each tab lays its panels out in two columns, and the Maps tab uses the full width.
 
 ## Today at a glance
 
@@ -202,7 +202,7 @@ Each reward equals the XP of the next two levels, plus 5% more for every boss be
 
 A boss beaten later on the same day it appeared counts too.
 
-A new boss is announced with a popup. The **You** tab shows a badge and glows while one is waiting, and its **Bosses** row says which (also **Bosses** in the desktop sidebar). The Today tab shows the boss with a **Start fight** button, and during a fight, the time left and your progress.
+A new boss is announced with a popup. The **You** button (top right on phones, You in the sidebar on wider screens) shows a badge and glows while one is waiting, and the You tab's **Bosses** row says which (also **Bosses** in the desktop sidebar). The Today tab shows the boss with a **Start fight** button, and during a fight, the time left and your progress.
 
 ## Leaderboard
 

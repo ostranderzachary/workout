@@ -525,6 +525,18 @@ button.pl-row { cursor: pointer; }
 .bars li { display: flex; align-items: center; gap: 4px; }
 .gl-goal { border: 0; background: transparent; padding: 0; color: inherit; font: inherit; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
 /* The You tab */
+.you-btn { display: none; }
+@media (max-width: 899px) {
+  .tabbar [data-tabbtn="you"] { display: none; }
+  .you-btn { position: relative; flex: none; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; }
+  .you-btn #youBtnFace { display: grid; place-items: center; width: 100%; height: 100%; }
+  .you-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .you-btn .acct-av { width: 100%; height: 100%; font-size: 16px; }
+  .you-btn[aria-current="page"] { border-color: var(--h5); box-shadow: 0 0 0 2px var(--h5); }
+  .you-btn.live { border-color: var(--boss); box-shadow: 0 0 14px var(--boss-glow); }
+  .you-btn .boss-badge { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: var(--boss); color: #0d0b1f; font-size: 11px; font-style: normal; font-weight: 800; display: grid; place-items: center; }
+  .you-btn .boss-badge[hidden] { display: none; }
+}
 #youPage { display: grid; gap: 12px; margin-top: 4px; }
 #youPage .you-head { margin-bottom: 0; }
 @media (min-width: 900px) { #youPage { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } #youPage .you-head { grid-column: 1 / -1; } }
@@ -730,7 +742,7 @@ body:not([data-tab="you"]) [data-tab="you"] { display: none !important; }
 .tab-add-label { display: none; }
 @media (max-width: 899px) {
   body { padding-block: 0 calc(96px + env(safe-area-inset-bottom, 0px)); }
-  .tabbar { display: grid; grid-template-columns: repeat(6, 1fr); align-items: end; position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--surface); border-top: 1px solid var(--line);
+  .tabbar { display: grid; grid-template-columns: repeat(5, 1fr); align-items: end; position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--surface); border-top: 1px solid var(--line);
     padding: 4px max(8px, env(safe-area-inset-right, 0px)) calc(4px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
   .tabbar button { border: 0; background: transparent; color: var(--muted); display: grid; justify-items: center; gap: 2px; font-size: 11px; font-weight: 600; padding: 6px 0; min-height: 54px; align-content: center; }
   .tabbar button svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -909,6 +921,7 @@ button.tag { cursor: pointer; }
 <div class="wrap">
   <header class="top">
     <div class="brand"><h1>Forged</h1><span class="sync" id="sync">Loading…</span></div>
+    <button class="you-btn" type="button" data-tabbtn="you" id="youBtn" aria-label="You: profile and settings"><span id="youBtnFace"></span><i class="boss-badge" id="bossBadgeTop" hidden></i></button>
   </header>
 
   <div id="lbCard" data-tab="today"></div>
@@ -2528,7 +2541,14 @@ function goal1Sheet(d) {
 }
 document.addEventListener("click", e => { const b = e.target.closest("[data-goal-edit]"); if (b && !e.target.closest("#sheetRoot")) openGoal1(b.dataset.goalEdit); });
 /* ---------- The You tab: your profile, and every setting in one place ---------- */
+function renderYouBtn() {
+  const face = $("youBtnFace"), btn = $("youBtn"); if (!face || !btn) return;
+  const signedIn = Store.mode === "cloud" && Store.user, boss = btn.classList.contains("live");
+  face.innerHTML = signedIn ? `<span class="acct-av">${esc((Store.user.email || "?").charAt(0).toUpperCase())}</span>` : PERSON_SVG;
+  btn.setAttribute("aria-label", `You: profile and settings${signedIn ? `, signed in as ${Store.user.email}` : ""}${boss ? ". A boss is ready" : ""}`);
+}
 function renderYou() {
+  renderYouBtn();
   const el = $("youPage"); if (!el) return;
   const L = xpLedger(S.workouts), info = levelInfo(L.total), g = S.goals, act = activeBosses(L), web = !inClaude();
   const fight = act.map(b => [b, fightState(b)]).find(([, st]) => st.kind === "active");
@@ -2968,8 +2988,9 @@ function repRecords(list) {
 /* Called after a save: XP toast, plus a celebration when a level (and maybe a title) is reached. */
 function renderBossUI() {
   const L = xpLedger(S.workouts), act = activeBosses(L);
-  $("bossBadge").hidden = !act.length; $("bossBadge").textContent = act.length || "";
-  $("youTab").classList.toggle("live", act.length > 0);
+  for (const id of ["bossBadge", "bossBadgeTop"]) { const el = $(id); if (el) { el.hidden = !act.length; el.textContent = act.length || ""; } }
+  for (const id of ["youTab", "youBtn"]) { const el = $(id); if (el) el.classList.toggle("live", act.length > 0); }
+  renderYouBtn();
   if (!act.length) { $("bossCard").innerHTML = ""; return maybeBossPopup(L); }
   const b = act.find(x => fightState(x).kind === "active") || act[0], st = fightState(b);
   const pr = bossProgress(b, st.t);
@@ -3085,7 +3106,7 @@ function renderTour() {
   const root = $("tour");
   if (S.tour == null) { root.innerHTML = ""; return; }
   const steps = tourSteps(), i = Math.min(S.tour, steps.length - 1), st = steps[i], last = i === steps.length - 1;
-  const el = st.target ? document.querySelector(st.target) : null;
+  const el = st.target ? [...document.querySelectorAll(st.target)].find(x => x.offsetParent !== null) || null : null;
   const r = el && el.offsetParent !== null ? el.getBoundingClientRect() : null;
   const vw = innerWidth, vh = innerHeight, W = Math.min(vw - 32, 380), pad = 6;
   let spot = `<div class="tour-dim"></div>`, place = "center", style = "", tip = "";
@@ -5474,6 +5495,7 @@ function showLiftMap() {
   else $("liftH").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 document.querySelector(".tabbar").addEventListener("click", e => { const b = e.target.closest("[data-tabbtn]"); if (b) setTab(b.dataset.tabbtn); });
+$("youBtn").addEventListener("click", () => setTab("you"));
 setTab(["today", "maps", "stats", "history", "you"].includes(prefs.tab) ? prefs.tab : "today", false);
 
 // Size full-screen forms to the part of the screen above the keyboard, and keep the field you tap in view.
