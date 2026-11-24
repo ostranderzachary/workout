@@ -536,8 +536,8 @@ button.pl-row { cursor: pointer; }
 .hm-brow { fill: none; stroke: var(--bg); stroke-width: 1.8; stroke-linecap: round; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .top-actions { align-items: center; }
-.you-btn[data-state="warn"]::after, .you-btn[data-state="busy"]::after { content: ""; position: absolute; top: -1px; right: -1px; width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--bg); background: var(--danger); }
-.you-btn[data-state="busy"]::after { background: #e0b341; }
+.you-sync { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; }
+.you-sync.warn { color: var(--danger); }
 /* The You tab */
 .you-btn { display: none; }
 @media (max-width: 899px) {
@@ -2556,9 +2556,8 @@ document.addEventListener("click", e => { const b = e.target.closest("[data-goal
 /* ---------- The You tab: your profile, and every setting in one place ---------- */
 function renderYouBtn() {
   const face = $("youBtnFace"), btn = $("youBtn"); if (!face || !btn) return;
-  const signedIn = Store.mode === "cloud" && Store.user, state = signedIn ? Store.statusKind() : "";
+  const signedIn = Store.mode === "cloud" && Store.user;
   face.innerHTML = signedIn ? `<span class="acct-av">${esc((Store.user.email || "?").charAt(0).toUpperCase())}</span>` : PERSON_SVG;
-  btn.dataset.state = state; // warn: can't sync; busy: changes waiting or syncing
   btn.setAttribute("aria-label", `You: profile and settings${signedIn ? `, signed in as ${Store.user.email}. ${$("sync").textContent}` : ""}`);
 }
 function renderYou() {
@@ -2597,7 +2596,9 @@ function renderYou() {
       ${setting("Rest timer", "Gym mode starts it after each set", `<div class="gym-cnt" role="group" aria-label="Rest length"><button type="button" data-act="you-rest" data-v="-15" aria-label="15 seconds less"${rest <= 15 ? " disabled" : ""}>−</button><span><b class="num">${mmss(rest)}</b></span><button type="button" data-act="you-rest" data-v="15" aria-label="15 seconds more"${rest >= 600 ? " disabled" : ""}>+</button></div>`)}
       ${setting("Timer sound", "A beep when the rest is over", seg("you-sound", sound ? "on" : "off", [["on", "On"], ["off", "Off"]], "Timer sound"))}
       ${row('data-open="weight"', "Body weight", bw ? `${showWt(bw.lb)} · ${shortDate(bw.date)}` : "Not recorded yet")}
-      ${web ? row('data-open="account"', signedIn ? "Account" : "Sign in", signedIn ? `${Store.lbRow ? `${Store.lbRow.display_name} · ` : ""}${Store.user.email} · ${$("sync").textContent}` : "Not signed in: everything stays in this browser") : ""}
+      ${web ? (signedIn
+        ? `<li><button type="button" class="you-row" data-open="account"><span><b>Account</b><small>${esc(`${Store.lbRow ? `${Store.lbRow.display_name} · ` : ""}${Store.user.email}`)}</small><small class="you-sync${Store.statusKind() === "warn" ? " warn" : ""}" role="status">${esc($("sync").textContent)}</small></span><span class="chev" aria-hidden="true">›</span></button></li>`
+        : row('data-open="account"', "Sign in", "Not signed in: everything stays in this browser")) : ""}
       ${row('data-act="you-backup"', "Backup and restore", "Export or import a backup file")}
       ${row('data-act="you-tour"', "Quick tour", "How goals, levels and bosses work")}
     </ul></section>`;
@@ -5573,7 +5574,7 @@ render();
 Store.init(
   list => { S.workouts = list; S.loaded = true; render(); restoreDraft(); maybeTour(); },
   g => { S.goals = normGoals(g); S.goalsSaved = !!g; render(); },
-  msg => { $("sync").textContent = msg; renderYouBtn(); }
+  msg => { $("sync").textContent = msg; renderYou(); }
 );
 })();
 </script>
