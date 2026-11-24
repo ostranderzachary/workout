@@ -39,7 +39,14 @@ A mobile-friendly workout tracker. Log lifts and cardio, set daily goals, and se
 
 ## On your phone
 
-The app is split into five sections: Today, Maps, Stats, History and You. On phones, the bar at the bottom holds Today, Maps, **+**, Stats and History, with **+** in the middle, and **You** is the round profile button at the top right (it shows your initial once you're signed in, and a boss badge and glow while a boss is waiting). On wider screens all five are in the left sidebar. The top bar otherwise shows just the Forged logo and the sync status.
+The app is split into five sections: Today, Maps, Stats, History and You. On phones, the bar at the bottom holds Today, Maps, **+**, Stats and History, with **+** in the middle. On wider screens all five are in the left sidebar.
+
+**The top bar:**
+- **Spartan helmet** (left): the Forged mark. Tap it to go back to Today.
+- **Crown:** your boss fights. It glows and shows a badge with the number waiting when a boss is ready.
+- **Trophy:** the leaderboard (on the web; not in the Claude artifact version).
+- **Level:** your level (and title on wider screens). Tap it for the Level screen: XP, titles and title theme.
+- **Profile** (phones only; You is in the sidebar on wider screens): opens the You tab. It shows your initial once you're signed in, with a small dot when syncing needs attention: amber while changes are waiting, red when Forged can't reach your account. The full sync status is on the You tab's Account row and the Account screen.
 
 - **Today:** the leaderboard card, the at-a-glance strip, your level, the get-started checklist, your progress summary and the suggestion for today.
 - **Ranges:** Today is always about this week, so it has no range bar. Maps, Stats and History each have the Day / Week / Month / Year / All bar and ‹ › arrows at the top, and each remembers its own setting; for example, History can stay on Month while Maps stays on Week. Looking at an earlier range shows a **Back to this week** chip (or day, month or year) under the dates; tap it to return to now. In History, changing the range also moves the calendar to that month. Tapping a muscle under "Most behind" on Today opens the map for this week. Saving a workout while on Maps, Stats or History moves that tab to the workout's date; Today stays on this week.
@@ -202,7 +209,7 @@ Each reward equals the XP of the next two levels, plus 5% more for every boss be
 
 A boss beaten later on the same day it appeared counts too.
 
-A new boss is announced with a popup. The **You** button (top right on phones, You in the sidebar on wider screens) shows a badge and glows while one is waiting, and the You tab's **Bosses** row says which (also **Bosses** in the desktop sidebar). The Today tab shows the boss with a **Start fight** button, and during a fight, the time left and your progress.
+A new boss is announced with a popup. The **crown** at the top shows a badge and glows while one is waiting, and the You tab's **Bosses** row says which (also **Bosses** in the desktop sidebar). The Today tab shows the boss with a **Start fight** button, and during a fight, the time left and your progress.
 
 ## Leaderboard
 
@@ -223,7 +230,7 @@ Your own row is highlighted, even if you're outside the top 100, and the top of 
 
 **Joining is opt-in.** Pick a display name (2–24 characters, unique). Others only see your name, title, level and scores, never your email or workouts. You can change the name or leave any time. Your entry updates itself as you train.
 
-**Finding it:** a card on the Today tab shows your weekly rank. There's also a **Leaderboard** row on the You tab and **Leaderboard** in the desktop sidebar. The Claude artifact version doesn't have a leaderboard, because it doesn't use Supabase.
+**Finding it:** a card on the Today tab shows your weekly rank. There's also the **trophy** at the top, a **Leaderboard** row on the You tab and **Leaderboard** in the desktop sidebar. The Claude artifact version doesn't have a leaderboard, because it doesn't use Supabase.
 
 The app reports your XP, matching what you see in Forged, and the database checks every number against what your logged workouts, weekly bonuses and boss fights in that period could earn. Anything above that is capped, and the level is recalculated, so the numbers can't be inflated by editing the app. The setup is in [`supabase/leaderboard.sql`](supabase/leaderboard.sql), run once in the SQL Editor after `schema.sql`.
 

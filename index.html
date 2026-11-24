@@ -268,7 +268,8 @@ input[type="date"].inp { -webkit-appearance: none; appearance: none; display: bl
 input[type="date"].inp::-webkit-date-and-time-value { text-align: left; }
 /* Leaderboard */
 .lb-btn { color: var(--fg); }
-@media (max-width: 599px) { .lb-btn { display: none !important; } }
+.lb-btn svg { color: #e9b23c; }
+@media (max-width: 360px) { .top-actions { gap: 6px; } .boss-btn { padding: 7px 8px; } }
 .lb-card { width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; margin-bottom: 12px; padding: 12px 14px; border-radius: 16px; border: 1px solid var(--line); background: linear-gradient(120deg, rgba(245, 196, 81, .12), var(--surface) 55%); color: var(--fg); }
 .lb-card .lb-ico { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; flex: none; background: linear-gradient(135deg, #f5c451, #c98a1b); color: #2a1c00; }
 .lb-card .lb-ico svg, .lb-hero svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
@@ -524,6 +525,19 @@ button.pl-row { cursor: pointer; }
 .goal-tap:hover { color: var(--fg); border-color: var(--muted); }
 .bars li { display: flex; align-items: center; gap: 4px; }
 .gl-goal { border: 0; background: transparent; padding: 0; color: inherit; font: inherit; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; }
+/* Header: the helmet mark */
+.brand-mark { margin: 0; line-height: 0; flex: none; }
+.helmet-btn { display: grid; place-items: center; width: 46px; height: 46px; margin-left: -4px; padding: 0; border: 0; border-radius: 12px; background: transparent; cursor: pointer; }
+.helmet-btn:hover { background: var(--surface); }
+.helmet { width: 42px; height: 42px; display: block; }
+.hm-crest { fill: var(--h4); }
+.hm-hair { fill: none; stroke: var(--h2); stroke-width: 1.3; stroke-linecap: round; }
+.hm-body { fill: var(--fg); }
+.hm-brow { fill: none; stroke: var(--bg); stroke-width: 1.8; stroke-linecap: round; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.top-actions { align-items: center; }
+.you-btn[data-state="warn"]::after, .you-btn[data-state="busy"]::after { content: ""; position: absolute; top: -1px; right: -1px; width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--bg); background: var(--danger); }
+.you-btn[data-state="busy"]::after { background: #e0b341; }
 /* The You tab */
 .you-btn { display: none; }
 @media (max-width: 899px) {
@@ -533,9 +547,6 @@ button.pl-row { cursor: pointer; }
   .you-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .you-btn .acct-av { width: 100%; height: 100%; font-size: 16px; }
   .you-btn[aria-current="page"] { border-color: var(--h5); box-shadow: 0 0 0 2px var(--h5); }
-  .you-btn.live { border-color: var(--boss); box-shadow: 0 0 14px var(--boss-glow); }
-  .you-btn .boss-badge { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: var(--boss); color: #0d0b1f; font-size: 11px; font-style: normal; font-weight: 800; display: grid; place-items: center; }
-  .you-btn .boss-badge[hidden] { display: none; }
 }
 #youPage { display: grid; gap: 12px; margin-top: 4px; }
 #youPage .you-head { margin-bottom: 0; }
@@ -554,10 +565,6 @@ button.pl-row { cursor: pointer; }
 .seg button { border: 0; background: transparent; color: var(--muted); padding: 7px 14px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
 .seg button[aria-pressed="true"] { background: var(--h4); color: #0b1a0f; }
 .tabbar button { position: relative; }
-.tabbar #bossBadge { position: absolute; top: 4px; left: calc(50% + 6px); min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--boss); color: #0d0b1f; font-size: 10px; font-style: normal; font-weight: 800; display: grid; place-items: center; }
-.tabbar #bossBadge[hidden] { display: none; }
-.tabbar #youTab.live { color: var(--boss); }
-@media (min-width: 900px) { .tabbar #bossBadge { position: static; margin-left: auto; } }
 /* Today at a glance */
 .glance { margin-bottom: 12px; padding: 12px 14px; display: grid; gap: 10px; }
 .glance:empty { display: none; }
@@ -920,8 +927,14 @@ button.tag { cursor: pointer; }
 
 <div class="wrap">
   <header class="top">
-    <div class="brand"><h1>Forged</h1><span class="sync" id="sync">Loading…</span></div>
-    <button class="you-btn" type="button" data-tabbtn="you" id="youBtn" aria-label="You: profile and settings"><span id="youBtnFace"></span><i class="boss-badge" id="bossBadgeTop" hidden></i></button>
+    <h1 class="brand-mark"><button type="button" class="helmet-btn" id="homeBtn" aria-label="Forged: go to Today"><svg class="helmet" viewBox="0 0 64 64" aria-hidden="true"><path class="hm-crest" d="M19 19 C21 7 35 2 48 6 C56 9 61 17 60 28 C57 21 52 16 45 15 C37 13 28 15 23 21 Z"/><path class="hm-hair" d="M25 15 C29 9 37 7 45 8 M30 15 C35 11 42 10 50 12 M36 14 C42 13 49 14 55 18"/><path class="hm-body" d="M17 28 C18 20 24 14 33 14 C44 14 52 21 52 32 C52 40 50 47 57 54 C51 53 46 51 42 51 L40 58 C37 60 31 60 28 58 C26 52 26 40 30 34 L21 35 L21 46 L18 45 Z"/><path class="hm-brow" d="M18 28 C28 27 41 27 52 31"/></svg></button></h1>
+    <span class="sr-only" id="sync" role="status">Loading…</span>
+    <div class="top-actions">
+      <button class="boss-btn" type="button" data-open="boss" id="bossBtn" aria-label="Boss fights"><svg viewBox="0 0 24 24"><path d="M4 18h16M5 15L3 7l5 4 4-6 4 6 5-4-2 8z"/></svg><span>Boss</span><i id="bossBadge" hidden></i></button>
+      <button class="boss-btn lb-btn" type="button" data-open="leaderboard" id="lbBtn" aria-label="Leaderboard" hidden><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/></svg><span>Ranks</span></button>
+      <button class="lvl-chip" type="button" data-open="level" id="lvlChip" aria-label="Your level"></button>
+      <button class="you-btn" type="button" data-tabbtn="you" id="youBtn" aria-label="You: profile and settings"><span id="youBtnFace"></span></button>
+    </div>
   </header>
 
   <div id="lbCard" data-tab="today"></div>
@@ -1009,7 +1022,7 @@ button.tag { cursor: pointer; }
   <button type="button" class="tab-add" data-open="add" aria-label="Log a workout"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span class="tab-add-label">Log workout</span></button>
   <button type="button" data-tabbtn="stats"><svg viewBox="0 0 24 24"><path d="M5 20V11M12 20V4M19 20v-6"/></svg><span>Stats</span></button>
   <button type="button" data-tabbtn="history"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>History</span></button>
-  <button type="button" data-tabbtn="you" id="youTab"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg><span>You</span><i id="bossBadge" hidden></i></button>
+  <button type="button" data-tabbtn="you" id="youTab"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg><span>You</span></button>
   <button type="button" class="side-only" data-open="boss"><svg viewBox="0 0 24 24"><path d="M4 18h16M5 15L3 7l5 4 4-6 4 6 5-4-2 8z"/></svg><span>Bosses</span></button>
   <button type="button" class="side-only lb-side" data-open="leaderboard" hidden><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/></svg><span>Leaderboard</span></button>
 </nav>
@@ -2543,9 +2556,10 @@ document.addEventListener("click", e => { const b = e.target.closest("[data-goal
 /* ---------- The You tab: your profile, and every setting in one place ---------- */
 function renderYouBtn() {
   const face = $("youBtnFace"), btn = $("youBtn"); if (!face || !btn) return;
-  const signedIn = Store.mode === "cloud" && Store.user, boss = btn.classList.contains("live");
+  const signedIn = Store.mode === "cloud" && Store.user, state = signedIn ? Store.statusKind() : "";
   face.innerHTML = signedIn ? `<span class="acct-av">${esc((Store.user.email || "?").charAt(0).toUpperCase())}</span>` : PERSON_SVG;
-  btn.setAttribute("aria-label", `You: profile and settings${signedIn ? `, signed in as ${Store.user.email}` : ""}${boss ? ". A boss is ready" : ""}`);
+  btn.dataset.state = state; // warn: can't sync; busy: changes waiting or syncing
+  btn.setAttribute("aria-label", `You: profile and settings${signedIn ? `, signed in as ${Store.user.email}. ${$("sync").textContent}` : ""}`);
 }
 function renderYou() {
   renderYouBtn();
@@ -2666,6 +2680,8 @@ function renderPlayer() {
         ? `Last week you ${esc(lastPen.text.toLowerCase())}: −${Math.abs(lastPen.xp)} XP${lastNet > lastPen.xp ? ` (net ${lastNet >= 0 ? "+" : "−"}${Math.abs(lastNet)} XP with bonuses)` : ""}.`
         : `Last week you earned +${lastNet} XP in weekly bonuses.`}</p>` : ""}`;
   }
+  $("lvlChip").innerHTML = `<b class="num">Lv ${info.level}</b><span>${esc(titleFor(info.level))}</span>`;
+  $("lvlChip").setAttribute("aria-label", `Level ${info.level}, ${titleFor(info.level)}`);
   $("player").classList.toggle("folded", isFolded("player"));
   if (isFolded("player")) { $("player").innerHTML = foldRow("player", `Level ${info.level} · ${titleFor(info.level)} · ${(info.need - info.into).toLocaleString()} XP to go`); return; }
   $("player").innerHTML = `<button type="button" class="player-btn" data-open="level">
@@ -2988,9 +3004,9 @@ function repRecords(list) {
 /* Called after a save: XP toast, plus a celebration when a level (and maybe a title) is reached. */
 function renderBossUI() {
   const L = xpLedger(S.workouts), act = activeBosses(L);
-  for (const id of ["bossBadge", "bossBadgeTop"]) { const el = $(id); if (el) { el.hidden = !act.length; el.textContent = act.length || ""; } }
-  for (const id of ["youTab", "youBtn"]) { const el = $(id); if (el) el.classList.toggle("live", act.length > 0); }
-  renderYouBtn();
+  $("bossBadge").hidden = !act.length; $("bossBadge").textContent = act.length || "";
+  $("bossBtn").classList.toggle("live", act.length > 0);
+  $("bossBtn").setAttribute("aria-label", act.length ? `Boss fights: ${act.length} ready` : "Boss fights");
   if (!act.length) { $("bossCard").innerHTML = ""; return maybeBossPopup(L); }
   const b = act.find(x => fightState(x).kind === "active") || act[0], st = fightState(b);
   const pr = bossProgress(b, st.t);
@@ -3021,7 +3037,7 @@ function maybeThemePick(after) {
   $("themePick").innerHTML = `<div class="overlay pick-overlay"><div class="sheet pick" role="dialog" aria-modal="true" aria-labelledby="pickH" aria-describedby="pickD">
     <div class="sheet-head"><h3 id="pickH">Choose your title theme</h3></div>
     <div class="sheet-body">
-      <p class="pick-intro" id="pickD">As you level up you earn a new title every 10 levels. Pick the world you want to rise through. You can change it any time on the You tab.</p>
+      <p class="pick-intro" id="pickD">As you level up you earn a new title every 10 levels. Pick the world you want to rise through. You can change it any time by tapping your level.</p>
       <div class="themes">${themeGroups().map(([name, ks]) => `<div class="theme-group" role="group" aria-label="${esc(name)}"><span class="theme-head">${esc(name)}</span>
         <div class="chips">${ks.map(k => `<button type="button" class="chip" data-pick="${k}" aria-pressed="false">${esc(THEMES[k].name)}</button>`).join("")}</div></div>`).join("")}</div>
       <div id="pickLadder" aria-live="polite"></div>
@@ -3076,10 +3092,10 @@ const TOUR = [
     body: "Log your lifts and cardio, watch your muscles light up on the heat map, and level up as you train. Here's a quick tour of how it works." },
   { icon: "goals", target: "[data-tabbtn=you]", title: "Set your weekly goals",
     body: "Choose how many <b>sets each muscle</b> should get every week, plus your <b>cardio time, distance and stairs</b>. Each muscle on the heat map turns brighter green as it gets closer to its goal, and meeting goals earns bonus XP every week. Find <b>Goals</b> on the <b>You</b> tab, where three quick questions can set them for you." },
-  { icon: "level", target: "#glance .gl-ring", title: "Level up and earn titles",
-    body: () => `Every workout earns <b>XP</b>, and each level takes a little more than the last. Every 10 levels unlocks a new <b>title</b>. ${needsTheme() ? "Right after this tour you'll pick your <b>title theme</b>" : "Change your <b>title theme</b> any time on the <b>You</b> tab"}: Game of Thrones, Marvel, Naruto, military ranks and more.` },
-  { icon: "boss", target: "[data-tabbtn=you]", boss: true, title: "Take on boss fights",
-    body: "Every 5 levels a <b>boss</b> appears: a long run, a big stair climb, a high set count or a heavy lifting day. Start the fight when you're ready and finish it <b>within 24 hours</b> to win a big XP reward. Your bosses are on the <b>You</b> tab, which lights up when one is ready." },
+  { icon: "level", target: "#lvlChip", title: "Level up and earn titles",
+    body: () => `Every workout earns <b>XP</b>, and each level takes a little more than the last. Every 10 levels unlocks a new <b>title</b>. ${needsTheme() ? "Right after this tour you'll pick your <b>title theme</b>" : "Tap your level at the top to change your <b>title theme</b>"}: Game of Thrones, Marvel, Naruto, military ranks and more.` },
+  { icon: "boss", target: "#bossBtn", boss: true, title: "Take on boss fights",
+    body: "Every 5 levels a <b>boss</b> appears: a long run, a big stair climb, a high set count or a heavy lifting day. Start the fight when you're ready and finish it <b>within 24 hours</b> to win a big XP reward. The <b>crown</b> at the top lights up when one is ready." },
   { icon: "account", target: "[data-tabbtn=you]", account: true, title: "Sign in to sync",
     body: "Sign in with <b>Google</b> or your <b>email</b> to back up your workouts and use Forged on your phone and computer. It's optional: without an account, everything stays in this browser. You can sign in any time from the <b>You</b> tab.",
     when: () => !inClaude() && Store.mode !== "cloud" }
@@ -5496,6 +5512,7 @@ function showLiftMap() {
 }
 document.querySelector(".tabbar").addEventListener("click", e => { const b = e.target.closest("[data-tabbtn]"); if (b) setTab(b.dataset.tabbtn); });
 $("youBtn").addEventListener("click", () => setTab("you"));
+$("homeBtn").addEventListener("click", () => setTab("today"));
 setTab(["today", "maps", "stats", "history", "you"].includes(prefs.tab) ? prefs.tab : "today", false);
 
 // Size full-screen forms to the part of the screen above the keyboard, and keep the field you tap in view.
@@ -5556,7 +5573,7 @@ render();
 Store.init(
   list => { S.workouts = list; S.loaded = true; render(); restoreDraft(); maybeTour(); },
   g => { S.goals = normGoals(g); S.goalsSaved = !!g; render(); },
-  msg => { $("sync").textContent = msg; }
+  msg => { $("sync").textContent = msg; renderYouBtn(); }
 );
 })();
 </script>
