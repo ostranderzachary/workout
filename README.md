@@ -297,9 +297,19 @@ On the You tab, tap **Sign in**. Sign in with **Google**, or with your email: Fo
 
 Once you're signed in:
 
-- Your workouts, goals (with their history), body weight, boss fights, title theme and units are stored in your account and sync to every device you sign in on. An open app picks up changes from another device within a few seconds, or when you switch back to it.
-- Everything is also kept on the device. If you log a workout with no signal, it's saved and sent when you're back online. The account icon has a dot: green when synced, grey while syncing or waiting, red when offline or something needs attention. Tap it for details.
-- If this browser already has workouts from before you signed in, Forged offers to add them to your account. Workouts already in the account aren't added twice.
+- **What's stored in your account and synced to every device you sign in on:**
+  - workouts, exactly as logged (custom exercises come with them)
+  - goals, with their dated history, body weight entries and boss fights
+  - settings: title theme, weight and distance units, last cardio activity, rest timer length and sound, folded Today cards, each tab's range, whether you've done the quick tour, picked a title theme or hidden the Get started checklist, which bosses have already been announced, and a suggestion hidden for today
+  - your leaderboard entry, if you've joined
+- **Not synced, on purpose:** the tab you were last on, and an unsaved form (each device keeps its own draft).
+- When a device that has its own settings signs in, the account's settings win, except that anything done on either device stays done (the tour, the theme pick, a hidden checklist) and bosses announced on either aren't announced again.
+- An open app picks up changes from another device within a few seconds, or when you switch back to it.
+- Everything is also kept on the device. If you log a workout with no signal, it's saved and sent when you're back online. The You tab's Account row shows the sync status (red only when Forged can't reach your account); the Account screen has the details.
+- **Data from before you signed in:**
+  - **Goals:** if the account has none yet, this browser's goals (with their history, body weight entries and boss fights) and settings are added automatically.
+  - **Workouts:** Forged offers to add them, since a shared browser might hold someone else's.
+  - **Extra weigh-ins and boss fights:** if the account already has goals, any of these this browser has that the account doesn't are offered too, for example "This browser has 2 workouts, 1 weigh-in and 1 boss fight from before you signed in". **Add them to my account** merges them, and nothing already in the account is added twice.
 - **Sign out** removes the account's copy from the device, and this browser's own workouts are shown again. If changes haven't synced yet, Forged warns you first.
 
 Accounts use [Supabase](https://supabase.com) (sign-in and a Postgres database). The database's row-level security rules mean each person can only read and change their own rows, so the public key in the page is safe to share. The Claude artifact version keeps using its own built-in storage.
@@ -313,7 +323,7 @@ Accounts use [Supabase](https://supabase.com) (sign-in and a Postgres database).
 
 ## Backup and restore
 
-On the You tab, **Backup and restore → Export backup** saves a single `.json` file with your workouts, goals (including their history), body weight entries and settings (title theme, weight and distance units).
+On the You tab, **Backup and restore → Export backup** saves a single `.json` file with your workouts, goals (including their history), body weight entries and settings (title theme, units, rest timer, folded cards, each tab's range and the other synced settings).
 
 On another phone or browser, choose **Import backup** and pick that file. Forged shows what's in it, then lets you choose:
 

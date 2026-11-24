@@ -1434,11 +1434,20 @@ const Store = {
       if (this.again) { this.again = false; this.sync(); }
     }
   },
+  // The account's settings win, except that anything done on this device stays done (the tour, the theme pick,
+  // hiding the checklist) and bosses already announced here aren't announced again. Any difference goes back up.
   applyPrefs(p) {
     this.cache.prefs = p;
+    const m = { ...p };
+    for (const k of DONE_FLAGS) if (prefs[k]) m[k] = true;
+    if (Array.isArray(p.bossSeen) || Array.isArray(prefs.bossSeen)) m.bossSeen = [...new Set([...(p.bossSeen || []), ...(prefs.bossSeen || [])])].sort((a, b) => a - b);
     let changed = false;
-    for (const k of BACKUP_PREFS) if (p[k] != null && prefs[k] !== p[k]) { prefs[k] = p[k]; changed = true; }
-    if (changed) { savePrefs(); setTheme(themeKey()); }
+    for (const k of BACKUP_PREFS) if (m[k] != null && JSON.stringify(prefs[k]) !== JSON.stringify(m[k])) { prefs[k] = m[k]; changed = true; }
+    if (changed) {
+      if (m.periods && S.ranges) for (const t of Object.keys(S.ranges)) if (m.periods[t]) S.ranges[t].period = m.periods[t];
+      savePrefs(); setTheme(themeKey());
+    }
+    this.prefsChanged(); // sends the merged settings if they differ from the account's
   },
   subscribe() {
     if (this.chan || !this.sb || !this.user) return;
@@ -1450,26 +1459,44 @@ const Store = {
     this.chan.subscribe();
   },
   // Workouts saved on this device before signing in that the account doesn't have yet
+  // Data saved on this device before signing in that the account doesn't have yet: workouts, and either all the
+  // goals (when the account has none) or the weigh-ins and boss fights the account's goals are missing.
   devicePending() {
-    if (this.mode !== "cloud") return { ws: [], goals: null };
-    const have = new Set(S.workouts.map(w => w.id));
-    return { ws: this.readLocal().filter(w => w && w.id && !w.sample && !have.has(w.id)), goals: S.goalsSaved ? null : this.readGoals() };
+    const none = { ws: [], goals: null, bw: [], fights: [] };
+    if (this.mode !== "cloud") return none;
+    const have = new Set(S.workouts.map(w => w.id)), local = this.readGoals();
+    const ws = this.readLocal().filter(w => w && w.id && !w.sample && !have.has(w.id));
+    if (!local) return { ...none, ws };
+    if (!S.goalsSaved) return { ...none, ws, goals: local };
+    const lg = normGoals(local), dates = new Set(S.goals.bodyweight.map(e => e.date)), fk = f => `${f.tier}:${f.start}`, known = new Set(S.goals.bossFights.map(fk));
+    return { ws, goals: null, bw: lg.bodyweight.filter(e => e && e.date && !dates.has(e.date)), fights: lg.bossFights.filter(f => f && f.start && !known.has(fk(f))) };
   },
+  pendingText(p = this.devicePending()) {
+    return [p.ws.length ? plural(p.ws.length, "workout") : "", p.bw.length ? plural(p.bw.length, "weigh-in") : "", p.fights.length ? plural(p.fights.length, "boss fight") : ""]
+      .filter(Boolean).join(", ").replace(/, ([^,]*)$/, " and $1");
+  },
+  // After the first sync: goals come along without asking when the account has none; workouts (and extra weigh-ins
+  // or boss fights) are offered, since this browser might hold someone else's.
   offerUpload() {
-    const p = this.devicePending();
-    if (p.ws.length) { if (!S.sheet) openSheet("account", null); }
-    else if (p.goals) this.uploadDevice(); // just goals: bring them along without asking
+    if (this.devicePending().goals) this.uploadDevice({ goalsOnly: true });
+    if (this.pendingText() && !S.sheet) openSheet("account", null);
   },
-  uploadDevice() {
-    const p = this.devicePending();
-    const list = S.workouts.concat(p.ws);
-    for (const w of p.ws) { const body = JSON.parse(JSON.stringify(w)); delete body.id; this.cache.outbox.push({ k: "w:" + w.id, op: "save", id: w.id, body }); }
-    if (p.goals) { this.cache.goals = p.goals; this.cache.outbox = this.cache.outbox.filter(o => o.k !== "goals").concat([{ k: "goals", op: "goals", body: p.goals }]); }
+  uploadDevice(opt = {}) {
+    const p = this.devicePending(), ws = opt.goalsOnly ? [] : p.ws;
+    let goals = p.goals;
+    if (!goals && !opt.goalsOnly && (p.bw.length || p.fights.length)) {
+      const g = S.goals;
+      goals = { ...g, bodyweight: g.bodyweight.concat(p.bw).sort((a, b) => a.date.localeCompare(b.date)).slice(-1000),
+        bossFights: g.bossFights.concat(p.fights).sort((a, b) => a.start - b.start).slice(-100) };
+    }
+    const list = S.workouts.concat(ws);
+    for (const w of ws) { const body = JSON.parse(JSON.stringify(w)); delete body.id; this.cache.outbox.push({ k: "w:" + w.id, op: "save", id: w.id, body }); }
+    if (goals) { this.cache.goals = goals; this.cache.outbox = this.cache.outbox.filter(o => o.k !== "goals").concat([{ k: "goals", op: "goals", body: goals }]); }
     this.cache.workouts = list;
     this.writeCache();
-    this.cb.onData(list); if (p.goals) this.cb.onGoals(p.goals);
+    this.cb.onData(list); if (goals) this.cb.onGoals(goals);
     this.sync();
-    return p.ws.length;
+    return ws.length;
   },
   async signInGoogle() {
     const sb = await this.client();
@@ -4681,7 +4708,9 @@ function bodyWeightField(d) {
 }
 
 /* ---------- Backup and restore: one JSON file with workouts, goals, body weight and settings ---------- */
-const BACKUP_PREFS = ["theme", "unit", "dist", "activity", "rest", "restSound"];
+// Settings that follow your account (and go in backups). Only the tab you were last on stays with each device.
+const BACKUP_PREFS = ["theme", "unit", "dist", "activity", "rest", "restSound", "fold", "periods", "tourDone", "themeChosen", "onboardHidden", "bossSeen", "sugHidden"];
+const DONE_FLAGS = ["tourDone", "themeChosen", "onboardHidden"]; // once done on any device, done everywhere
 function backupSection(bare) {
   const real = S.workouts.filter(w => !w.sample), imp = S.importPending;
   if (imp) {
@@ -4857,7 +4886,7 @@ function renderAcct() {
 function accountSheet() {
   const a = S.auth || (S.auth = {});
   if (Store.mode === "cloud" && Store.user) {
-    const n = Store.waiting(), e = Store.syncErr, pend = Store.devicePending().ws.length, at = Store.cache.syncedAt ? new Date(Store.cache.syncedAt) : null;
+    const n = Store.waiting(), e = Store.syncErr, pendP = Store.devicePending(), pend = Store.pendingText(pendP), pendN = pendP.ws.length + pendP.bw.length + pendP.fights.length, at = Store.cache.syncedAt ? new Date(Store.cache.syncedAt) : null;
     const state = e && e.setup ? "Your account's storage isn't set up yet: run supabase/schema.sql from the repo in Supabase's SQL Editor. Changes are kept on this device until then."
       : e && e.auth ? "Your sign-in has expired. Sign out and sign in again to keep syncing. Changes are kept on this device."
       : e ? `Can't reach your account right now.${n ? ` ${plural(n, "change")} saved on this device will sync when you're back online.` : ""}`
@@ -4868,10 +4897,10 @@ function accountSheet() {
       <div class="acct-card${e ? " warn" : ""}"><span class="acct-av">${esc((Store.user.email || "?").charAt(0).toUpperCase())}</span>
         <div style="min-width:0"><b>${esc(Store.user.email || "Signed in")}</b><span class="note" role="status">${esc(state)}</span></div></div>
       ${profileHTML()}
-      ${pend ? `<div class="acct-offer"><b>This browser has ${plural(pend, "workout")} from before you signed in.</b>
-        <p class="note">Add them to your account to keep everything together. Workouts already in your account aren't added twice.</p>
-        <button class="btn primary small" type="button" data-act="auth-upload">Add ${pend === 1 ? "it" : "them"} to my account</button></div>` : ""}
-      <p class="note" style="margin-top:14px">Your workouts, goals, body weight, boss fights, title theme and units sync to every device you sign in on. Anything you log offline is kept here and sent when you're back online.</p>
+      ${pend ? `<div class="acct-offer"><b>This browser has ${esc(pend)} from before you signed in.</b>
+        <p class="note">Add ${pendN === 1 ? "it" : "them"} to your account to keep everything together. Anything already in your account isn't added twice.</p>
+        <button class="btn primary small" type="button" data-act="auth-upload">Add ${pendN === 1 ? "it" : "them"} to my account</button></div>` : ""}
+      <p class="note" style="margin-top:14px">Your workouts, goals (with their history), body weight, boss fights and settings (title theme, units, rest timer, folded cards, each tab's range and more) sync to every device you sign in on. Anything you log offline is kept here and sent when you're back online.</p>
       ${S.confirmOut ? `<div class="err" role="alert">${plural(n, "change")} haven't synced yet and will be lost if you sign out now. Tap Sign out again to sign out anyway, or Sync now to try first.</div>` : ""}`,
       `<button class="btn ghost" type="button" data-act="auth-signout">Sign out</button>
        <div class="right"><button class="btn" type="button" data-act="auth-sync"${Store.syncing ? " disabled" : ""}>Sync now</button><button class="btn primary" type="button" data-act="close">Done</button></div>`);
@@ -4994,7 +5023,7 @@ async function accountAction(act) {
     return authRun(async () => { await Store.verifyCode(a.email, code); S.auth = {}; toast("Signed in. Syncing your workouts…"); });
   }
   if (act === "auth-reset") { S.auth = { email: a.email }; S.error = ""; return renderSheet(); }
-  if (act === "auth-upload") { const n = Store.uploadDevice(); toast(`Adding ${plural(n, "workout")} to your account.`); return renderSheet(); }
+  if (act === "auth-upload") { const what = Store.pendingText(); Store.uploadDevice(); toast(`Adding ${what} to your account.`); return renderSheet(); }
   if (act === "auth-sync") { Store.sync(); return renderSheet(); }
   if (act === "auth-signout") {
     if (Store.waiting() && !S.confirmOut) { S.confirmOut = true; return renderSheet(); }
