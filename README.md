@@ -4,7 +4,7 @@ A mobile-friendly workout tracker. Log lifts and cardio, set daily goals, and se
 
 ## Features
 
-- **Quick tour:** the first time Forged opens, short cards explain goals, levels and title themes, boss fights and signing in, each pointing at the button it describes. The sign-in card offers **Sign in** or **Not now**, and is left out for people already signed in. Skip it any time, and replay it from the Level screen (**Take the quick tour again**).
+- **Quick tour:** the first time Forged opens, short cards explain goals, levels and title themes, boss fights and signing in, each pointing at where to find it (the You tab, or the level ring on Today). The sign-in card offers **Sign in** or **Not now**, and is left out for people already signed in. Skip it any time, and replay it from **You → Quick tour** or the Level screen (**Take the quick tour again**).
 - **Choose a title theme:** right after the tour, a new visitor picks their title theme. Tapping a theme lists all 11 of its titles, from level 1 to 100 with their descriptions, at the bottom of the picker. It can't be closed until a theme is chosen. Anyone who already picked a theme isn't asked. Change it any time on the Level screen.
 
 - **Log workouts:** the date, then exercises with reps and weight for each set (lb or kg). About 50 common exercises come with their muscles already mapped.
@@ -39,17 +39,18 @@ A mobile-friendly workout tracker. Log lifts and cardio, set daily goals, and se
 
 ## On your phone
 
-The app is split into four tabs: on a bar at the bottom on phones, and in a sidebar on wider screens.
+The app is split into five tabs: on a bar at the bottom on phones, and in a sidebar on wider screens. The top bar shows just the Forged logo and the sync status.
 
 - **Today:** the leaderboard card, the at-a-glance strip, your level, the get-started checklist, your progress summary and the suggestion for today.
 - **Ranges:** Today is always about this week, so it has no range bar. Maps, Stats and History each have the Day / Week / Month / Year / All bar and ‹ › arrows at the top, and each remembers its own setting; for example, History can stay on Month while Maps stays on Week. Looking at an earlier range shows a **Back to this week** chip (or day, month or year) under the dates; tap it to return to now. In History, changing the range also moves the calendar to that month. Tapping a muscle under "Most behind" on Today opens the map for this week. Saving a workout while on Maps, Stats or History moves that tab to the workout's date; Today stays on this week.
 - **Maps:** the lifting heat map.
 - **Stats:** cardio gauges, lifting goal bars and the cardio breakdown.
 - **History:** your workout list.
+- **You:** your profile and every setting in one place (see below).
 
 The **+** button in the middle logs a workout: **Lift now** (gym mode), **Add or edit a past workout** (the list form) or **Cardio**. On phones, forms open full screen and fit the space above the keyboard. The Save button stays pinned at the bottom, and the field you're typing in scrolls into view. Number fields have **− / +** buttons, so you rarely need the keyboard. Each tap changes reps by 1, weight by 5 lb (2.5 kg), cardio minutes by 5 and distance by 0.5. Tapping + on an empty set starts from the set above, or from what you did last time for that exercise. New sets copy the set above.
 
-Wider screens use the same four tabs in a left sidebar, with a **Log workout** button at the top. Each tab lays its panels out in two columns, and the Maps tab uses the full width.
+Wider screens use the same five tabs in a left sidebar, with a **Log workout** button at the top. Each tab lays its panels out in two columns, and the Maps tab uses the full width.
 
 ## Today at a glance
 
@@ -64,9 +65,29 @@ A strip just below the leaderboard card shows where your week stands:
 
 **Fold cards to one line:** the level card, the boss card, Your progress and the suggestion each have a small ⌃ button that folds them to a single line, such as "Your progress · 4 of 15 muscle goals · 60% of cardio · Nov 16–22". Tap the line to open the card again. Forged remembers which cards you folded (across devices when you're signed in), and the order stays the same.
 
+## The You tab
+
+Everything about you, and every setting, in one place.
+
+- **Profile:** your level card (tap for the Level screen), then rows for **Level and titles**, **Title theme** (opens the Level screen at the themes), **Bosses** (says which boss is ready or how a fight is going, with a badge; the You tab itself shows the badge and glows while a boss waits), **Leaderboard** (on the web), **Goals** (a one-line summary, such as "4 days · 113 sets · 2h 30m of cardio a week") and **Share progress**.
+- **Settings:**
+  - **Weight unit** (lb or kg) and **Distance unit** (mi or km), applied everywhere. The lifting and cardio forms still have their own unit switches.
+  - **Rest timer:** − / + changes gym mode's rest length in 15-second steps (15 seconds to 10 minutes). **Timer sound** turns the beep on or off.
+  - **Body weight:** your latest weigh-in; tap to record a new one.
+  - **Account** or **Sign in** (on the web), with your email and sync status.
+  - **Backup and restore** and **Quick tour**.
+
 ## Goals
 
-Tap **Goals** to set a weekly target: sets per week for each muscle group, and minutes per week for cardio. The defaults match the Standard preset: 10 sets a week for big muscles, 5–8 for smaller ones, 150 minutes of cardio and 10 miles.
+Open **Goals** from the You tab, or **Change goals** under Your progress on Today.
+
+**Three quick questions:** the first time you set goals (from the Get started checklist or Goals), Forged asks how many days a week you train (2–6), your focus (balanced, upper body, lower body or cardio first) and how experienced you are (new, some experience, experienced). It then fills in every goal and shows a summary: days, total sets and cardio a week, and each muscle's sets. **Use these goals** saves them; **Fine-tune** opens the full form with them filled in, not yet saved. Each muscle keeps its usual share (big muscles most): experience sets the base (8, 12 or 16 sets a week for a big muscle at 4 days), fewer days scale it down and more days up, and the focus moves sets between upper and lower body (cardio first lightens lifting and sets 4 hours of cardio). Distance and stairs goals stay as they were. The full form offers the questions again at the top, and they offer **Use the full form** on the first question.
+
+**Change one goal where you see it:** tap the pencil next to a muscle's bar on Stats, **Change goal** on a muscle selected on the map, the cardio, distance or stairs goal in the Stats cardio panel, or "2 of 4 days this week" in Today's at-a-glance strip. A small screen explains the goal, shows how you're doing this week, and has − / + and **Save**. **All goals** opens the full form.
+
+All goal changes are saved with the date, so earlier weeks are still judged by the goals that applied then.
+
+**The full form** sets a weekly target: sets per week for each muscle group, and minutes per week for cardio. The defaults match the Standard preset: 10 sets a week for big muscles, 5–8 for smaller ones, 150 minutes of cardio and 10 miles. sets per week for each muscle group, and minutes per week for cardio. The defaults match the Standard preset: 10 sets a week for big muscles, 5–8 for smaller ones, 150 minutes of cardio and 10 miles.
 
 Other ranges scale by their number of days. A day's target is a seventh of the weekly goal, and a 31-day month is 31/7 of it. A year uses 365 or 366 days, and all time counts from your first workout to today.
 
@@ -83,7 +104,7 @@ Every workout earns XP:
 
 Each level needs 100 XP more than the one before. Level 1 to 2 takes 100 XP, 9 to 10 takes 900 XP, and level 10 is 4,500 XP in total.
 
-Every 10 levels unlocks a new title. Pick a **title theme** on the Level screen: Game of Thrones (default), Warriors, Greek mythology, Norse mythology, Egyptian mythology, Red Rising (Reaper at level 100), Disney, Solo Leveling (Shadow Monarch at level 100), Star Wars, Dragon Ball, Marvel heroes (Phoenix at level 100), Marvel villains (Thanos at level 100), DC heroes (Superman at level 100), DC villains (Darkseid at level 100), Hunter x Hunter (Meruem at level 100), Attack on Titan (Levi Ackerman at level 100), Naruto (Naruto Uzumaki at level 100), military ranks for each branch (Army, Navy, Air Force, Marine Corps, Space Force and Coast Guard), Famous warriors (legendary fighters, with Miyamoto Musashi at level 100), Martial artists (proven fighters, with Khabib Nurmagomedov at level 100), Immortal Great Souls (the ranks from Phil Tucker's series, with Scorio at level 100) or Martial arts belts. The picker groups them under headings: Fantasy and sci-fi, Mythology, Anime, Comics, Military, and Warriors and martial arts. Each theme has 11 titles from a humble start at level 1 to the top at level 100, each with a short description. Picking a theme there scrolls straight to its titles. Switching themes only changes the names; your level and XP stay the same. The theme is saved on your device.
+Every 10 levels unlocks a new title. Pick a **title theme** on the Level screen (or **You → Title theme**): Game of Thrones (default), Warriors, Greek mythology, Norse mythology, Egyptian mythology, Red Rising (Reaper at level 100), Disney, Solo Leveling (Shadow Monarch at level 100), Star Wars, Dragon Ball, Marvel heroes (Phoenix at level 100), Marvel villains (Thanos at level 100), DC heroes (Superman at level 100), DC villains (Darkseid at level 100), Hunter x Hunter (Meruem at level 100), Attack on Titan (Levi Ackerman at level 100), Naruto (Naruto Uzumaki at level 100), military ranks for each branch (Army, Navy, Air Force, Marine Corps, Space Force and Coast Guard), Famous warriors (legendary fighters, with Miyamoto Musashi at level 100), Martial artists (proven fighters, with Khabib Nurmagomedov at level 100), Immortal Great Souls (the ranks from Phil Tucker's series, with Scorio at level 100) or Martial arts belts. The picker groups them under headings: Fantasy and sci-fi, Mythology, Anime, Comics, Military, and Warriors and martial arts. Each theme has 11 titles from a humble start at level 1 to the top at level 100, each with a short description. Picking a theme there scrolls straight to its titles. Switching themes only changes the names; your level and XP stay the same. The theme is saved on your device.
 
 ### Weekly bonuses and penalties
 
@@ -123,10 +144,10 @@ XP is worked out from your logged workouts, so editing or deleting a workout upd
 
 ## Body weight
 
-Record your body weight at the top of **Goals**: type it in or use the − / + buttons (1 lb or 0.5 kg per tap). Tapping **Save goals** saves it with today's date.
+Record your body weight from **You → Body weight**, the **Update weight** button on the Stats weight chart, or the Get started checklist: type it in or use the − / + buttons (1 lb or 0.5 kg per tap), then **Save**. It's saved with today's date, and the screen lists your last five weigh-ins.
 
 - Changing it on a later day adds a new dated entry, so you build a history. Changing it again the same day updates that day's entry.
-- Saving other goals without touching the weight doesn't add an entry.
+- Saving without changing the number doesn't add an entry.
 - It isn't used for XP or goals.
 - The **Stats** tab shows your current weight, the change over the last 30 days and since your first entry, and a line chart of every weigh-in. Tap a point to see its date and weight.
 - "Record your body weight" is a step in the Get started checklist.
@@ -175,7 +196,7 @@ Each reward equals the XP of the next two levels, plus 5% more for every boss be
 
 A boss beaten later on the same day it appeared counts too.
 
-A new boss is announced with a popup. The crown **Boss** button in the header (and **Bosses** in the desktop sidebar) shows a badge while one is waiting. The Today tab shows the boss with a **Start fight** button, and during a fight, the time left and your progress.
+A new boss is announced with a popup. The **You** tab shows a badge and glows while one is waiting, and its **Bosses** row says which (also **Bosses** in the desktop sidebar). The Today tab shows the boss with a **Start fight** button, and during a fight, the time left and your progress.
 
 ## Leaderboard
 
@@ -196,7 +217,7 @@ Your own row is highlighted, even if you're outside the top 100, and the top of 
 
 **Joining is opt-in.** Pick a display name (2–24 characters, unique). Others only see your name, title, level and scores, never your email or workouts. You can change the name or leave any time. Your entry updates itself as you train.
 
-**Finding it:** a card on the Today tab shows your weekly rank. There's also a **Ranks** button in the header on wider screens and **Leaderboard** in the desktop sidebar. The Claude artifact version doesn't have a leaderboard, because it doesn't use Supabase.
+**Finding it:** a card on the Today tab shows your weekly rank. There's also a **Leaderboard** row on the You tab and **Leaderboard** in the desktop sidebar. The Claude artifact version doesn't have a leaderboard, because it doesn't use Supabase.
 
 The app reports your XP, matching what you see in Forged, and the database checks every number against what your logged workouts, weekly bonuses and boss fights in that period could earn. Anything above that is capped, and the level is recalculated, so the numbers can't be inflated by editing the app. The setup is in [`supabase/leaderboard.sql`](supabase/leaderboard.sql), run once in the SQL Editor after `schema.sql`.
 
@@ -251,7 +272,7 @@ Without an account, workouts are saved in the browser's `localStorage`, so they 
 
 ## Accounts and sync
 
-Tap the person icon (**Sign in**) at the top right. Sign in with **Google**, or with your email: Forged emails you a sign-in link, and tapping it opens Forged signed in. Open the email on the device you want to sign in on. If you use Forged from your home screen, sign in with Google, because email links open in the browser instead. If the email ever contains a code (see the setup notes), tap **Email has a code instead?** and type it in.
+On the You tab, tap **Sign in**. Sign in with **Google**, or with your email: Forged emails you a sign-in link, and tapping it opens Forged signed in. Open the email on the device you want to sign in on. If you use Forged from your home screen, sign in with Google, because email links open in the browser instead. If the email ever contains a code (see the setup notes), tap **Email has a code instead?** and type it in.
 
 Once you're signed in:
 
@@ -271,7 +292,7 @@ Accounts use [Supabase](https://supabase.com) (sign-in and a Postgres database).
 
 ## Backup and restore
 
-At the bottom of **Goals**, **Export backup** saves a single `.json` file with your workouts, goals (including their history), body weight entries and settings (title theme, weight and distance units).
+On the You tab, **Backup and restore → Export backup** saves a single `.json` file with your workouts, goals (including their history), body weight entries and settings (title theme, weight and distance units).
 
 On another phone or browser, choose **Import backup** and pick that file. Forged shows what's in it, then lets you choose:
 
