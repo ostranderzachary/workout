@@ -280,6 +280,14 @@ Without an account, workouts are saved in the browser's `localStorage`, so they 
 
 On the You tab, tap **Sign in**. Sign in with **Google**, or with your email: Forged emails you a sign-in link, and tapping it opens Forged signed in. Open the email on the device you want to sign in on. If you use Forged from your home screen, sign in with Google, because email links open in the browser instead. If the email ever contains a code (see the setup notes), tap **Email has a code instead?** and type it in.
 
+**Profile:** once you're signed in, the Account screen (You → Account) has a **Profile** section:
+
+- **Signed in with:** Google or Email link, so you know which to use on your other devices.
+- **Display name:** the name others see on the leaderboard. **Change** edits it in place (Enter saves). It's the same name as on the Leaderboard screen, so changing it in either place changes both.
+- **Show me on the leaderboard:** a switch. Turning it on asks for a display name (suggested from your email) and joins the board. Turning it off asks first, then removes your entry; you can rejoin any time.
+- **How others see you this week:** a preview of your leaderboard row, with your name, title and theme, level, workouts this week and this week's XP. It follows the name as you type. Before you join, it shows "How you'd appear".
+- The You tab's Account row shows your display name too.
+
 Once you're signed in:
 
 - Your workouts, goals (with their history), body weight, boss fights, title theme and units are stored in your account and sync to every device you sign in on. An open app picks up changes from another device within a few seconds, or when you switch back to it.

@@ -484,6 +484,24 @@ button.pl-row { cursor: pointer; }
 .t-name em { font-style: normal; font-size: 12px; color: var(--muted); line-height: 1.3; }
 .titles li:not(.got) .t-name em { opacity: .7; }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 40; background: var(--h5); color: #0b1a0f; font-weight: 700; border-radius: 12px; padding: 10px 16px; font-size: 14px; max-width: min(92vw, 480px); box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+/* Account: profile */
+.prof-list { list-style: none; margin: 0; padding: 0; }
+.prof-list > li + li { border-top: 1px solid var(--line); }
+.prof-row { display: flex; align-items: center; gap: 12px; padding: 12px 2px; }
+.prof-row > span:first-child { flex: 1; min-width: 0; }
+.prof-row b { display: block; font-size: 15px; }
+.prof-row small { display: block; margin-top: 2px; color: var(--muted); font-size: 13px; }
+.prof-val { flex: none; display: flex; align-items: center; gap: 8px; max-width: 55%; }
+.prof-val b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prof-val.muted { color: var(--muted); font-size: 14px; }
+.prof-edit, .prof-confirm { padding: 12px 2px; }
+.prof-confirm { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; font-size: 14px; }
+.prof-prev { margin-top: 6px; }
+.switch { flex: none; position: relative; width: 52px; height: 30px; border-radius: 15px; border: 1px solid var(--line); background: var(--bg); padding: 0; cursor: pointer; transition: background .15s; }
+.switch span { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--muted); transition: transform .15s, background .15s; }
+.switch[aria-checked="true"] { background: var(--h4); border-color: var(--h4); }
+.switch[aria-checked="true"] span { transform: translateX(22px); background: #0b1a0f; }
+.switch:disabled { opacity: .5; cursor: default; }
 /* Goals: the setup and the one-goal editor */
 .wiz-n { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .wiz-bar { height: 6px; margin: 0 0 14px; border-radius: 99px; background: var(--bg); overflow: hidden; }
@@ -1260,7 +1278,7 @@ const Store = {
   storedUser() {
     try {
       const v = JSON.parse(localStorage.getItem(SB.authKey) || "null"), u = v && v.user;
-      return u && u.id ? { id: u.id, email: u.email || "" } : null;
+      return u && u.id ? { id: u.id, email: u.email || "", provider: (u.app_metadata && u.app_metadata.provider) || "" } : null;
     } catch { return null; }
   },
   // Errors Google or the email link can send back in the address
@@ -1294,8 +1312,9 @@ const Store = {
   authChanged(ev, session) {
     const u = session && session.user;
     if (u) {
-      if (this.mode !== "cloud" || !this.user || this.user.id !== u.id) this.enterCloud({ id: u.id, email: u.email || "" });
-      else if (u.email) this.user.email = u.email;
+      const provider = (u.app_metadata && u.app_metadata.provider) || "";
+      if (this.mode !== "cloud" || !this.user || this.user.id !== u.id) this.enterCloud({ id: u.id, email: u.email || "", provider });
+      else { if (u.email) this.user.email = u.email; if (provider) this.user.provider = provider; }
       if (ev === "SIGNED_IN" || ev === "INITIAL_SESSION" || this.syncErr) { this.subscribe(); this.sync(); }
       if (this.fromLink) { this.fromLink = false; toast(`Signed in as ${u.email || "you"}. Syncing your workouts…`); }
     } else if (ev === "SIGNED_OUT" && this.mode === "cloud") this.leaveCloud(!this.cache || !this.cache.outbox.length);
@@ -2544,7 +2563,7 @@ function renderYou() {
       ${setting("Rest timer", "Gym mode starts it after each set", `<div class="gym-cnt" role="group" aria-label="Rest length"><button type="button" data-act="you-rest" data-v="-15" aria-label="15 seconds less"${rest <= 15 ? " disabled" : ""}>−</button><span><b class="num">${mmss(rest)}</b></span><button type="button" data-act="you-rest" data-v="15" aria-label="15 seconds more"${rest >= 600 ? " disabled" : ""}>+</button></div>`)}
       ${setting("Timer sound", "A beep when the rest is over", seg("you-sound", sound ? "on" : "off", [["on", "On"], ["off", "Off"]], "Timer sound"))}
       ${row('data-open="weight"', "Body weight", bw ? `${showWt(bw.lb)} · ${shortDate(bw.date)}` : "Not recorded yet")}
-      ${web ? row('data-open="account"', signedIn ? "Account" : "Sign in", signedIn ? `${Store.user.email} · ${$("sync").textContent}` : "Not signed in: everything stays in this browser") : ""}
+      ${web ? row('data-open="account"', signedIn ? "Account" : "Sign in", signedIn ? `${Store.lbRow ? `${Store.lbRow.display_name} · ` : ""}${Store.user.email} · ${$("sync").textContent}` : "Not signed in: everything stays in this browser") : ""}
       ${row('data-act="you-backup"', "Backup and restore", "Export or import a backup file")}
       ${row('data-act="you-tour"', "Quick tour", "How goals, levels and bosses work")}
     </ul></section>`;
@@ -3655,7 +3674,11 @@ function openSheet(kind, w) {
   if (kind === "level" || kind === "add" || kind === "share" || kind === "boss" || kind === "account" || kind === "leaderboard" || kind === "summary" || kind === "bodyweight" || kind === "backup") S.draft = {};
   if (kind === "goal1" || kind === "goalwiz") S.draft = w; // the quick goal editor and the goals setup bring their own
   if (kind === "leaderboard") { S.lb = { tab: (S.lb && S.lb.tab) || "week", data: {}, name: "", renaming: false, confirmLeave: false }; /* fresh scores each time it opens */ setTimeout(() => lbLoad(S.lb.tab), 0); }
-  if (kind === "account") { S.auth = { email: (S.auth || {}).email, sent: (S.auth || {}).sent }; S.confirmOut = false; }
+  if (kind === "account") {
+    S.auth = { email: (S.auth || {}).email, sent: (S.auth || {}).sent }; S.confirmOut = false; S.prof = {};
+    if (Store.mode === "cloud" && Store.user && Store.lbRow === undefined)
+      Store.client().then(() => Store.lbLoadRow()).catch(e => { if (S.prof) S.prof.err = lbErr(e); }).then(() => { if (S.sheet === "account") renderSheet(); });
+  }
   // What the form started as, after any set-up the caller does straight after (a date, carried exercises)
   if (kind === "lift" || kind === "cardio") { const d0 = S.draft; setTimeout(() => { if (S.draft === d0) S.draftBase = JSON.stringify(d0); }, 0); }
   clearDraft();
@@ -4809,6 +4832,7 @@ function accountSheet() {
     return sheetFrame("Account", `
       <div class="acct-card${e ? " warn" : ""}"><span class="acct-av">${esc((Store.user.email || "?").charAt(0).toUpperCase())}</span>
         <div style="min-width:0"><b>${esc(Store.user.email || "Signed in")}</b><span class="note" role="status">${esc(state)}</span></div></div>
+      ${profileHTML()}
       ${pend ? `<div class="acct-offer"><b>This browser has ${plural(pend, "workout")} from before you signed in.</b>
         <p class="note">Add them to your account to keep everything together. Workouts already in your account aren't added twice.</p>
         <button class="btn primary small" type="button" data-act="auth-upload">Add ${pend === 1 ? "it" : "them"} to my account</button></div>` : ""}
@@ -4838,6 +4862,68 @@ function accountSheet() {
     ${standalone() ? `<p class="note" style="margin-top:14px">Using Forged from your home screen? Sign in with Google: email links open in your browser, not here.</p>` : ""}
     <p class="note" style="margin-top:16px">After you sign in, you can add the workouts already in this browser to your account.</p>`,
     `<div class="right"><button class="btn" type="button" data-act="close">Not now</button></div>`);
+}
+/* Profile on the account screen: how you signed in, your display name, whether you're on the leaderboard,
+   and a preview of how others see you. The name is the leaderboard's, so changing it here or there changes both. */
+const lbSuggestName = () => (Store.user && Store.user.email ? Store.user.email.split("@")[0].replace(/[^A-Za-z0-9 _.-]/g, "").slice(0, 24) : "");
+function profileHTML() {
+  const pr = S.prof || (S.prof = {}), row = Store.lbRow, on = !!row, loading = row === undefined, prov = (Store.user && Store.user.provider) || "";
+  const method = prov === "google" ? "Google" : prov === "email" ? "an email link" : prov ? prov.charAt(0).toUpperCase() + prov.slice(1) : "";
+  const st = lbStats(), level = levelInfo(st.total_xp).level, w0 = ymd(weekStart(today()));
+  const wk = S.workouts.filter(w => !w.sample && w.date >= w0 && w.date <= ymd(today())).length;
+  const name = on && !pr.editing ? row.display_name : (pr.name || (on ? row.display_name : lbSuggestName()) || "You");
+  const preview = lbRowHTML({ place: on && Store.lbMine ? Store.lbMine.place : "–", display_name: name, title: st.title, theme: st.theme, level, workouts: wk,
+    streak: st.streak, bosses: st.bosses, total_xp: st.total_xp, score: st.week_xp, is_me: true }, "week");
+  const field = `<li class="prof-edit"><div class="field"><label for="profName">Display name</label>
+      <input id="profName" class="inp" maxlength="24" autocomplete="nickname" spellcheck="false" placeholder="2–24 characters" value="${esc(pr.name ?? "")}"></div>
+      <p class="note" style="margin:6px 0 0">Others see this next to your title, level and scores.</p>
+      <div class="btn-row" style="margin-top:10px"><button class="btn primary small" type="button" data-act="${on ? "prof-save" : "prof-join"}"${pr.busy ? " disabled" : ""}>${pr.busy ? "Saving…" : on ? "Save name" : "Join the leaderboard"}</button>
+        <button class="btn ghost small" type="button" data-act="prof-cancel">Cancel</button></div></li>`;
+  return `<div class="lbl" style="margin-top:18px">Profile</div>
+    <ul class="prof-list">
+      <li class="prof-row"><span><b>Signed in with</b><small>${method ? `Use ${esc(method)} on your other devices too` : "Your email address"}</small></span><span class="prof-val">${method ? `<b>${esc(method === "an email link" ? "Email link" : method)}</b>` : ""}</span></li>
+      <li class="prof-row"><span><b>Display name</b><small>${on ? "Shown on the leaderboard" : "Used only on the leaderboard"}</small></span>
+        ${on && !pr.editing ? `<span class="prof-val"><b>${esc(row.display_name)}</b><button class="btn small ghost" type="button" data-act="prof-edit">Change</button></span>` : !on ? `<span class="prof-val muted">${loading ? "Loading…" : "Not set"}</span>` : ""}</li>
+      ${on && pr.editing ? field : ""}
+      <li class="prof-row"><span><b>Show me on the leaderboard</b><small>${on ? "Others see your name, title, level and scores, never your email or workouts" : loading ? "Checking…" : "Turn on to pick a name and join"}</small></span>
+        <button type="button" class="switch" role="switch" aria-checked="${on}" aria-label="Show me on the leaderboard" data-act="prof-toggle"${loading || pr.busy ? " disabled" : ""}><span></span></button></li>
+      ${!on && pr.editing ? field : ""}
+      ${pr.confirmLeave ? `<li class="prof-confirm"><span>Leave the leaderboard? Your entry is removed, and you can rejoin any time.</span>
+        <span class="btn-row"><button class="btn small danger" type="button" data-act="prof-leave">Leave</button><button class="btn small ghost" type="button" data-act="prof-stay">Stay</button></span></li>` : ""}
+    </ul>
+    <div class="lbl" style="margin-top:14px">${on ? "How others see you this week" : "How you'd appear"}</div>
+    <ol class="lb-list prof-prev">${preview}</ol>
+    ${pr.err ? `<div class="err" role="alert">${esc(pr.err)}</div>` : ""}`;
+}
+async function profAction(a) {
+  const pr = S.prof || (S.prof = {});
+  pr.err = "";
+  const focusName = () => setTimeout(() => { const f = $("profName"); if (f) { f.focus(); f.select(); } }, 30);
+  const after = () => { pr.busy = false; if (S.lb) S.lb.data = {}; renderSheet(); renderLbCard(); renderYou(); };
+  if (a.act === "prof-edit" || (a.act === "prof-toggle" && !Store.lbRow)) {
+    pr.editing = true; pr.confirmLeave = false; pr.name = Store.lbRow ? Store.lbRow.display_name : pr.name || lbSuggestName();
+    renderSheet(); return focusName();
+  }
+  if (a.act === "prof-toggle") { pr.confirmLeave = true; pr.editing = false; return renderSheet(); }
+  if (a.act === "prof-cancel") { pr.editing = false; pr.name = ""; return renderSheet(); }
+  if (a.act === "prof-stay") { pr.confirmLeave = false; return renderSheet(); }
+  if (a.act === "prof-leave") {
+    pr.confirmLeave = false; pr.busy = true; renderSheet();
+    try { await Store.lbLeave(); toast("You've left the leaderboard."); } catch (e) { pr.err = lbErr(e); }
+    return after();
+  }
+  if (a.act === "prof-save" || a.act === "prof-join") {
+    const name = (($("profName") || {}).value || "").trim().replace(/\s+/g, " ");
+    pr.name = name;
+    if (!lbNameOk(name)) { pr.err = "Names need 2–24 characters and can't include < or >."; renderSheet(); return focusName(); }
+    pr.busy = true; renderSheet();
+    try {
+      if (a.act === "prof-join") { await Store.lbJoin(name); toast(`You're on the leaderboard as ${name}.`); }
+      else { await Store.lbRename(name); toast(`Now showing as ${name}.`); }
+      pr.editing = false; pr.name = "";
+    } catch (e) { pr.err = lbErr(e); }
+    return after();
+  }
 }
 const standalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 function authMsg(e) {
@@ -4886,6 +4972,7 @@ $("sheetRoot").addEventListener("keydown", e => {
   const act = e.target.id === "authEmail" ? "auth-email" : e.target.id === "authCode" ? "auth-verify" : null;
   if (act) { e.preventDefault(); accountAction(act); }
   if (e.target.id === "lbName") { e.preventDefault(); lbAction({ act: S.lb && S.lb.renaming ? "lb-rename" : "lb-join" }); }
+  if (e.target.id === "profName") { e.preventDefault(); profAction({ act: Store.lbRow ? "prof-save" : "prof-join" }); }
 });
 
 function backupData() {
@@ -5050,6 +5137,7 @@ $("sheetRoot").addEventListener("input", e => {
   }
   if (t.dataset.set) { const [i, j, k] = t.dataset.set.split(":"); d.exercises[i].sets[j][k] = t.value; }
   if (t.dataset.goal1) d.value = t.value;
+  if (t.id === "profName" && S.prof) { S.prof.name = t.value; const b = document.querySelector("#sheetRoot .prof-prev .lb-who b"); if (b && b.firstChild) b.firstChild.textContent = t.value.trim() || "You"; }
 });
 
 /* Starting value when + is tapped on an empty field: the same set last time you did this exercise,
@@ -5227,6 +5315,7 @@ $("sheetRoot").addEventListener("click", async e => {
   if (a.act === "export") return exportBackup();
   if (a.act === "sum-edit") { const w = S.workouts.find(x => x.id === S.sumId); if (w) openSheet(isCardio(w) ? "cardio" : "lift", w); return; }
   if (a.act === "tour") { closeSheet(); return startTour(0); }
+  if (a.act && a.act.startsWith("prof-")) return profAction(a);
   if (a.act && a.act.startsWith("auth-")) return accountAction(a.act);
   if ((a.act && a.act.startsWith("lb-")) || a.lbtab) return lbAction(a);
   if (a.act === "import-merge") return applyImport("merge");
