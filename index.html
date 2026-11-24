@@ -692,7 +692,10 @@ body[data-sheet="gym"] .toast { bottom: auto; top: calc(10px + env(safe-area-ins
 .gym-rest-btns { display: flex; gap: 6px; }
 .gym-rest-bar { grid-column: 1 / -1; height: 6px; border-radius: 99px; background: var(--surface); overflow: hidden; }
 .gym-rest-bar span { display: block; height: 100%; background: var(--h4); }
-.gym-rest.over { border-color: var(--h5); box-shadow: 0 0 0 3px color-mix(in srgb, var(--h5) 35%, transparent); }
+.gym-rest.over { border-color: var(--h5); box-shadow: 0 0 0 3px color-mix(in srgb, var(--h5) 35%, transparent); animation: restFlash .45s ease-in-out 6 alternate; }
+@keyframes restFlash { from { background: var(--bg); } to { background: color-mix(in srgb, var(--h5) 28%, var(--bg)); } }
+@media (prefers-reduced-motion: reduce) { .gym-rest.over { animation: none; } }
+.you-ctl { flex: none; display: inline-flex; align-items: center; gap: 8px; }
 .gym-rest.over .gym-rest-t { color: var(--h5); }
 .set.planned .inp { opacity: .55; }
 .set .n.ok { color: var(--h5); }
@@ -2623,7 +2626,7 @@ function renderYou() {
       ${setting("Weight unit", "Lifting and body weight", seg("you-unit", wtUnit(), [["lb", "lb"], ["kg", "kg"]], "Weight unit"))}
       ${setting("Distance unit", "Cardio distance and goals", seg("you-dist", distUnit(), [["mi", "mi"], ["km", "km"]], "Distance unit"))}
       ${setting("Rest timer", "Gym mode starts it after each set", `<div class="gym-cnt" role="group" aria-label="Rest length"><button type="button" data-act="you-rest" data-v="-15" aria-label="15 seconds less"${rest <= 15 ? " disabled" : ""}>−</button><span><b class="num">${mmss(rest)}</b></span><button type="button" data-act="you-rest" data-v="15" aria-label="15 seconds more"${rest >= 600 ? " disabled" : ""}>+</button></div>`)}
-      ${setting("Timer sound", "A beep when the rest is over", seg("you-sound", sound ? "on" : "off", [["on", "On"], ["off", "Off"]], "Timer sound"))}
+      ${setting("Timer sound", "Beeps when the rest is over. On iPhone, the ring/silent switch must be on ring", `<span class="you-ctl">${sound ? `<button type="button" class="btn small" data-act="you-test-sound">Test</button>` : ""}${seg("you-sound", sound ? "on" : "off", [["on", "On"], ["off", "Off"]], "Timer sound")}</span>`)}
       ${row('data-open="weight"', "Body weight", bw ? `${showWt(bw.lb)} · ${shortDate(bw.date)}` : "Not recorded yet")}
       ${web ? (signedIn
         ? `<li><button type="button" class="you-row" data-open="account"><span><b>Account</b><small>${esc(`${Store.lbRow ? `${Store.lbRow.display_name} · ` : ""}${Store.user.email}`)}</small><small class="you-sync${Store.statusKind() === "warn" ? " warn" : ""}" role="status">${esc($("sync").textContent)}</small></span><span class="chev" aria-hidden="true">›</span></button></li>`
@@ -4319,7 +4322,7 @@ function musclesHTML(x, i) {
 function renderSheet() {
   const root = $("sheetRoot"), d = S.draft;
   document.body.dataset.sheet = S.sheet && d ? S.sheet : "";
-  if (!S.sheet || !d) { root.innerHTML = ""; root.dataset.kind = ""; document.body.style.overflow = ""; keepAwake(false); return; }
+  if (!S.sheet || !d) { root.innerHTML = ""; root.dataset.kind = ""; document.body.style.overflow = ""; keepAwake(false); cancelRestSound(); return; }
   document.body.style.overflow = "hidden";
   const same = root.dataset.kind === S.sheet;
   const keep = [(root.querySelector(".sheet-body") || {}).scrollTop || 0, (root.querySelector(".sheet") || {}).scrollTop || 0];
@@ -4343,6 +4346,7 @@ function renderSheet() {
   root.dataset.kind = S.sheet;
   persistDraft();
   keepAwake(S.sheet === "gym");
+  syncRestSound();
 }
 
 /* ---------- Gym mode: one exercise at a time, tick each set as you finish it, with a rest timer ---------- */
@@ -4538,9 +4542,10 @@ function gymAction(a) {
   if (k === "addex") { const y = newEx(); y.sets = [{ reps: "", weight: "", done: false }]; y.gymNew = true; d.exercises.push(y); d.gymI = d.exercises.length - 1; renderSheet(); return openExPick(d.gymI); }
   if (k === "addset") { const lastSet = x.sets[x.sets.length - 1] || {}; x.sets.push({ reps: lastSet.reps ?? "", weight: lastSet.weight ?? "", done: false }); return renderSheet(); }
   if (k === "skip") { const j = gymNext(x); if (j >= 0) removeFromForm("set", i, j); return; }
-  if (k === "sound") { prefs.restSound = prefs.restSound === false; savePrefs(); if (prefs.restSound) unlockAudio(); return renderSheet(); }
-  if (k === "rest-skip") { d.rest = null; return renderSheet(); }
+  if (k === "sound") { prefs.restSound = prefs.restSound === false; savePrefs(); if (prefs.restSound) unlockAudio(); else cancelRestSound(); return renderSheet(); }
+  if (k === "rest-skip") { d.rest = null; cancelRestSound(); return renderSheet(); }
   if ((k === "rest-minus" || k === "rest-plus") && d.rest) {
+    unlockAudio();
     const dt = k === "rest-plus" ? 15 : -15, total = Math.min(600, Math.max(15, d.rest.total + dt));
     d.rest = { end: Math.max(Date.now(), d.rest.end + (total - d.rest.total) * 1000), total, alerted: false };
     prefs.rest = total; savePrefs(); // the next rest starts from this
@@ -4571,30 +4576,50 @@ function gymToPlain(d) {
   if (!d.exercises.length) d.exercises.push(newEx());
   if (clean) S.draftBase = JSON.stringify(d); // switching views isn't a change you'd need to undo
 }
-/* Rest timer: counts down on screen, then vibrates (where the phone allows) and beeps. */
-let audioCtx = null;
+/* Rest timer: counts down on screen, then vibrates (where the phone allows) and beeps.
+   The beep is booked on the audio clock when the rest starts (your tap on Done has just switched audio on), so it
+   plays on time even if the browser would refuse to start sound later without a tap, and whichever gym mode view is
+   showing. It's rebooked when the rest changes (±15s) and cancelled when it's skipped or gym mode closes. */
+let audioCtx = null, restBooked = null; // { end, nodes }
 function unlockAudio() {
   if (prefs.restSound === false) return;
-  try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === "suspended") audioCtx.resume(); } catch { audioCtx = null; }
+  try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state !== "running") audioCtx.resume(); } catch { audioCtx = null; }
+}
+// Two double beeps and a rising triple over about two seconds: loud and distinctive enough to hear in a gym
+function beeps(at) {
+  const nodes = [];
+  if (!audioCtx) return nodes;
+  const t0 = Math.max(audioCtx.currentTime + 0.02, at);
+  [0, 0.16, 0.7, 0.86, 1.4, 1.56, 1.72].forEach((dt, k) => {
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain(), t = t0 + dt;
+    o.type = "triangle"; o.frequency.value = k >= 4 ? 1320 : 988;
+    o.connect(g); g.connect(audioCtx.destination);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.9, t + 0.015); g.gain.setValueAtTime(0.9, t + 0.09); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+    o.start(t); o.stop(t + 0.14); nodes.push(o);
+  });
+  return nodes;
+}
+function cancelRestSound() { if (restBooked) { for (const o of restBooked.nodes) try { o.stop(0); o.disconnect(); } catch {} restBooked = null; } }
+// Keep the booked beep in step with the rest that's running (called whenever the screen is redrawn)
+function syncRestSound() {
+  const d = S.draft, r = d && d.gym && (S.sheet === "gym" || S.sheet === "lift") ? d.rest : null;
+  if (!r || r.alerted || prefs.restSound === false || !audioCtx || r.end <= Date.now()) { if (!r || r.alerted || prefs.restSound === false) cancelRestSound(); return; }
+  if (restBooked && restBooked.end === r.end) return;
+  cancelRestSound();
+  try { restBooked = { end: r.end, nodes: beeps(audioCtx.currentTime + (r.end - Date.now()) / 1000) }; } catch { restBooked = null; }
 }
 function restAlert() {
-  try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch {}
-  if (prefs.restSound === false || !audioCtx) return;
-  try {
-    const t0 = audioCtx.currentTime + 0.02;
-    for (let k = 0; k < 3; k++) {
-      const o = audioCtx.createOscillator(), g = audioCtx.createGain(), t = t0 + k * 0.22;
-      o.type = "sine"; o.frequency.value = k === 2 ? 1175 : 880; o.connect(g); g.connect(audioCtx.destination);
-      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.35, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
-      o.start(t); o.stop(t + 0.18);
-    }
-  } catch {}
+  try { if (navigator.vibrate) navigator.vibrate([250, 120, 250, 120, 400]); } catch {}
+  // Booked and the audio clock was running: it's already playing. Otherwise play now (works if audio is still on).
+  const booked = restBooked && audioCtx && audioCtx.state === "running";
+  restBooked = null;
+  if (!booked && prefs.restSound !== false && audioCtx) try { if (audioCtx.state !== "running") audioCtx.resume(); beeps(0); } catch {}
 }
 setInterval(() => {
-  const d = S.draft; if (S.sheet !== "gym" || !d || !d.rest) return;
+  const d = S.draft; if (!d || !d.gym || !d.rest || (S.sheet !== "gym" && S.sheet !== "lift")) return;
   const left = restLeft(d.rest), t = $("gymRestT"), bar = $("gymRestBar"), box = $("gymRest");
   if (left > 0) { if (t) t.firstChild.textContent = mmss(left); if (bar) bar.style.width = `${(left / d.rest.total) * 100}%`; return; }
-  if (!d.rest.alerted) { d.rest.alerted = true; restAlert(); persistDraft(); }
+  if (!d.rest.alerted) { d.rest.alerted = true; restAlert(); persistDraft(); if (S.sheet === "lift") toast("Rest's up. Back to gym mode for your next set."); }
   if (box && !box.classList.contains("over")) renderSheet();
 }, 250);
 /* Keep the screen on in gym mode, where the browser supports it. */
@@ -5503,7 +5528,8 @@ document.addEventListener("click", e => {
   if (k === "you-theme") { openSheet("level", null); setTimeout(() => { const el = $("themeLbl"); if (el) el.scrollIntoView({ block: "start" }); }, 40); }
   if (k === "you-unit" || k === "you-dist") { prefs[k === "you-unit" ? "unit" : "dist"] = b.dataset.v; savePrefs(); render(); }
   if (k === "you-rest") { prefs.rest = Math.min(600, Math.max(15, (Number(prefs.rest) || 90) + Number(b.dataset.v))); savePrefs(); renderYou(); }
-  if (k === "you-sound") { prefs.restSound = b.dataset.v === "on"; savePrefs(); renderYou(); }
+  if (k === "you-sound") { prefs.restSound = b.dataset.v === "on"; savePrefs(); if (!prefs.restSound) cancelRestSound(); renderYou(); }
+  if (k === "you-test-sound") { unlockAudio(); try { if (navigator.vibrate) navigator.vibrate([250, 120, 250]); beeps(0); } catch {} toast("That's the rest timer sound. Can't hear it? Check the volume, and on iPhone the ring/silent switch."); }
   if (k === "you-backup") openSheet("backup", null);
   if (k === "you-tour") { setTab("today"); startTour(0); }
   if (k === "level") openSheet("level", null);
