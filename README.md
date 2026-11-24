@@ -42,7 +42,7 @@ A mobile-friendly workout tracker. Log lifts and cardio, set daily goals, and se
 The app is split into five sections: Today, Maps, Stats, History and You. On phones, the bar at the bottom holds Today, Maps, **+**, Stats and History, with **+** in the middle. On wider screens all five are in the left sidebar.
 
 **The top bar:**
-- **Spartan helmet** (left): the Forged mark. Tap it to go back to Today.
+- **Flame** (left): the Forged mark, a forge flame in the heat-map greens. Tap it to go back to Today.
 - **Crown:** your boss fights. It glows and shows a badge with the number waiting when a boss is ready.
 - **Trophy:** the leaderboard (on the web; not in the Claude artifact version).
 - **Level:** your level (and title on wider screens). Tap it for the Level screen: XP, titles and title theme.
