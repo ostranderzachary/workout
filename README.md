@@ -82,6 +82,7 @@ Everything about you, and every setting, in one place.
 - **Settings:**
   - **Weight unit** (lb or kg) and **Distance unit** (mi or km), applied everywhere. The lifting and cardio forms still have their own unit switches.
   - **Rest timer:** − / + changes gym mode's rest length in 15-second steps (15 seconds to 10 minutes). **Timer sound** turns the beep on or off; **Test** plays it now, so you can check the volume (and, on iPhone, that the ring/silent switch is on ring).
+  - **Level-up voice:** says "You have leveled up" each time a save takes you to a new level. **Test** plays it now; On / Off turns it on or off. The Save tap readies the voice, so it still speaks when the save takes a moment to sync.
   - **Body weight:** your latest weigh-in; tap to record a new one.
   - **Account** or **Sign in** (on the web), with your email and sync status.
   - **Backup and restore** and **Quick tour**.
@@ -153,7 +154,7 @@ Tap a bar to list where its XP came from: today's bar is listed to start with. T
 
 Tap a workout in the list to open it. This week's bonuses appear on today's bar until the week ends.
 
-Saving a workout shows the XP earned. Reaching a new level or title brings up a celebration. Tap your level (the chip at the top, or your title in the at-a-glance strip) to see the title ladder and recent XP.
+Saving a workout shows the XP earned. Reaching a new level or title brings up a celebration, and a voice says "You have leveled up" (using the phone's built-in speech; turn it off under You → **Level-up voice**). Tap your level (the chip at the top, or your title in the at-a-glance strip) to see the title ladder and recent XP.
 
 XP is worked out from your logged workouts, so editing or deleting a workout updates it. Example workouts don't earn XP.
 
@@ -302,7 +303,7 @@ Once you're signed in:
 - **What's stored in your account and synced to every device you sign in on:**
   - workouts, exactly as logged (custom exercises come with them)
   - goals, with their dated history, body weight entries and boss fights
-  - settings: title theme, weight and distance units, last cardio activity, rest timer length and sound, folded Today cards, each tab's range, whether you've done the quick tour, picked a title theme or hidden the Get started checklist, which bosses have already been announced, and a suggestion hidden for today
+  - settings: title theme, weight and distance units, last cardio activity, rest timer length and sound, the level-up voice, folded Today cards, each tab's range, whether you've done the quick tour, picked a title theme or hidden the Get started checklist, which bosses have already been announced, and a suggestion hidden for today
   - your leaderboard entry, if you've joined
 - **Not synced, on purpose:** the tab you were last on, and an unsaved form (each device keeps its own draft).
 - When a device that has its own settings signs in, the account's settings win, except that anything done on either device stays done (the tour, the theme pick, a hidden checklist) and bosses announced on either aren't announced again.

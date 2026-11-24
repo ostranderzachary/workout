@@ -696,6 +696,10 @@ body[data-sheet="gym"] .toast { bottom: auto; top: calc(10px + env(safe-area-ins
 @keyframes restFlash { from { background: var(--bg); } to { background: color-mix(in srgb, var(--h5) 28%, var(--bg)); } }
 @media (prefers-reduced-motion: reduce) { .gym-rest.over { animation: none; } }
 .you-ctl { flex: none; display: inline-flex; align-items: center; gap: 8px; }
+/* Rows with a Test button: when there isn't room beside the text, the buttons drop below it */
+.you-set.wrap { flex-wrap: wrap; row-gap: 10px; }
+.you-set.wrap > span:first-child { flex: 1 1 140px; }
+.you-set.wrap > .you-ctl { margin-left: auto; }
 .gym-rest.over .gym-rest-t { color: var(--h5); }
 .set.planned .inp { opacity: .55; }
 .set .n.ok { color: var(--h5); }
@@ -2602,10 +2606,10 @@ function renderYou() {
   const sets = M_IDS.reduce((a, m) => a + (Number(g.sets[m]) || 0), 0);
   const goalSub = `${g.days ? `${plural(g.days, "day")} · ` : ""}${fmt(sets)} sets · ${hm(g.cardio)} of cardio a week`;
   const bw = latestWeight(), signedIn = Store.mode === "cloud" && Store.user;
-  const rest = Math.min(600, Math.max(15, Number(prefs.rest) || 90)), sound = prefs.restSound !== false;
+  const rest = Math.min(600, Math.max(15, Number(prefs.rest) || 90)), sound = prefs.restSound !== false, voice = prefs.levelVoice !== false;
   const row = (attrs, title, sub, extra = "") => `<li><button type="button" class="you-row" ${attrs}><span><b>${title}</b><small>${esc(sub)}</small></span>${extra}<span class="chev" aria-hidden="true">›</span></button></li>`;
   const seg = (act, cur, opts, label) => `<div class="seg" role="group" aria-label="${esc(label)}">${opts.map(([v, t]) => `<button type="button" data-act="${act}" data-v="${v}" aria-pressed="${cur === v}">${t}</button>`).join("")}</div>`;
-  const setting = (title, sub, ctl) => `<li class="you-set"><span><b>${title}</b><small>${sub}</small></span>${ctl}</li>`;
+  const setting = (title, sub, ctl) => `<li class="you-set${ctl.includes("you-ctl") ? " wrap" : ""}"><span><b>${title}</b><small>${sub}</small></span>${ctl}</li>`;
   el.innerHTML = `<section class="panel player you-head" aria-label="Your level">
       <button type="button" class="player-btn" data-open="level">
         <span class="lvl-badge"><small>Level</small><b class="num">${info.level}</b></span>
@@ -2627,6 +2631,7 @@ function renderYou() {
       ${setting("Distance unit", "Cardio distance and goals", seg("you-dist", distUnit(), [["mi", "mi"], ["km", "km"]], "Distance unit"))}
       ${setting("Rest timer", "Gym mode starts it after each set", `<div class="gym-cnt" role="group" aria-label="Rest length"><button type="button" data-act="you-rest" data-v="-15" aria-label="15 seconds less"${rest <= 15 ? " disabled" : ""}>−</button><span><b class="num">${mmss(rest)}</b></span><button type="button" data-act="you-rest" data-v="15" aria-label="15 seconds more"${rest >= 600 ? " disabled" : ""}>+</button></div>`)}
       ${setting("Timer sound", "Beeps when the rest is over. On iPhone, the ring/silent switch must be on ring", `<span class="you-ctl">${sound ? `<button type="button" class="btn small" data-act="you-test-sound">Test</button>` : ""}${seg("you-sound", sound ? "on" : "off", [["on", "On"], ["off", "Off"]], "Timer sound")}</span>`)}
+      ${setting("Level-up voice", "Says “You have leveled up” when you reach a new level", `<span class="you-ctl">${voice ? `<button type="button" class="btn small" data-act="you-test-voice">Test</button>` : ""}${seg("you-voice", voice ? "on" : "off", [["on", "On"], ["off", "Off"]], "Level-up voice")}</span>`)}
       ${row('data-open="weight"', "Body weight", bw ? `${showWt(bw.lb)} · ${shortDate(bw.date)}` : "Not recorded yet")}
       ${web ? (signedIn
         ? `<li><button type="button" class="you-row" data-open="account"><span><b>Account</b><small>${esc(`${Store.lbRow ? `${Store.lbRow.display_name} · ` : ""}${Store.user.email}`)}</small><small class="you-sync${Store.statusKind() === "warn" ? " warn" : ""}" role="status">${esc($("sync").textContent)}</small></span><span class="chev" aria-hidden="true">›</span></button></li>`
@@ -3245,6 +3250,25 @@ function bossSheet() {
     `<div class="right"><button class="btn primary" type="button" data-act="close">Close</button></div>`);
 }
 
+/* Level-up voice: says "You have leveled up" when a save takes you to a new level. Phones only let a page speak after
+   a tap, and the save can finish after a moment (cloud sync), so the Save tap itself readies the voice first. */
+const voiceOn = () => prefs.levelVoice !== false && "speechSynthesis" in window && typeof SpeechSynthesisUtterance !== "undefined";
+let voiceReady = false;
+function primeVoice() {
+  if (voiceReady || !voiceOn()) return;
+  try { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); voiceReady = true; } catch {}
+}
+function speakLevelUp() {
+  if (!voiceOn()) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance("You have leveled up"), vs = speechSynthesis.getVoices();
+    u.lang = "en-US"; u.rate = 1; u.pitch = 1; u.volume = 1;
+    const v = vs.find(x => x.lang === "en-US" && x.default) || vs.find(x => x.lang === "en-US") || vs.find(x => /^en/i.test(x.lang));
+    if (v) u.voice = v;
+    speechSynthesis.speak(u);
+  } catch {}
+}
 function rewardXP(beforeL, afterL, records = []) {
   const before = beforeL.total, after = afterL.total, gained = after - before;
   const prNote = records.length ? ` · New record${records.length > 1 ? "s" : ""}: ${records.join(", ")}` : "";
@@ -3254,6 +3278,7 @@ function rewardXP(beforeL, afterL, records = []) {
   const extra = fresh.length ? ` · ${fresh.map(e => `${e.text} +${e.xp}`).join(", ")}` : "";
   const a = levelInfo(before).level, b = levelInfo(after).level;
   const win = fresh.find(e => e.boss);
+  if (b > a) speakLevelUp();
   if (win) {
     const bd = (afterL.bosses || []).find(x => x.tier === win.boss), newTitle = b > a && titleFor(b) !== titleFor(a) ? titleFor(b) : null;
     $("celebrate").innerHTML = `<div class="overlay celebrate" data-act="cel-close"><div class="cel-card boss-window" role="dialog" aria-modal="true" aria-labelledby="celH">
@@ -4729,7 +4754,7 @@ function bodyWeightField(d) {
 
 /* ---------- Backup and restore: one JSON file with workouts, goals, body weight and settings ---------- */
 // Settings that follow your account (and go in backups). Only the tab you were last on stays with each device.
-const BACKUP_PREFS = ["theme", "unit", "dist", "activity", "rest", "restSound", "fold", "periods", "tourDone", "themeChosen", "onboardHidden", "bossSeen", "sugHidden"];
+const BACKUP_PREFS = ["theme", "unit", "dist", "activity", "rest", "restSound", "levelVoice", "fold", "periods", "tourDone", "themeChosen", "onboardHidden", "bossSeen", "sugHidden"];
 const DONE_FLAGS = ["tourDone", "themeChosen", "onboardHidden"]; // once done on any device, done everywhere
 function backupSection(bare) {
   const real = S.workouts.filter(w => !w.sample), imp = S.importPending;
@@ -5267,6 +5292,7 @@ function refocus(id) {
 }
 
 async function saveCardio(d) {
+  primeVoice();
   const items = d.items.filter(it => !cBlank(it) || d.items.length === 1);
   const bad = items.findIndex(it => !((Number(it.minutes) || 0) > 0));
   if (bad >= 0) { S.error = items.length > 1 ? `Enter the minutes for activity ${d.items.indexOf(items[bad]) + 1}.` : "Enter how many minutes the session took."; return renderSheet(); }
@@ -5304,6 +5330,7 @@ async function commitGoals(v) {
 }
 const goalErr = ex => (ex && ex.message ? ex.message : "Couldn't save your goals. Try again.");
 async function saveDraft() {
+  primeVoice();
   const d = S.draft;
   let w;
   if (S.sheet === "goals") {
@@ -5529,6 +5556,8 @@ document.addEventListener("click", e => {
   if (k === "you-unit" || k === "you-dist") { prefs[k === "you-unit" ? "unit" : "dist"] = b.dataset.v; savePrefs(); render(); }
   if (k === "you-rest") { prefs.rest = Math.min(600, Math.max(15, (Number(prefs.rest) || 90) + Number(b.dataset.v))); savePrefs(); renderYou(); }
   if (k === "you-sound") { prefs.restSound = b.dataset.v === "on"; savePrefs(); if (!prefs.restSound) cancelRestSound(); renderYou(); }
+  if (k === "you-voice") { prefs.levelVoice = b.dataset.v === "on"; savePrefs(); if (!prefs.levelVoice) try { speechSynthesis.cancel(); } catch {} renderYou(); }
+  if (k === "you-test-voice") { if (!voiceOn()) toast("This browser can't speak. The level-up screen still shows."); else { speakLevelUp(); voiceReady = true; toast("That's the level-up voice. Can't hear it? Check the volume."); } }
   if (k === "you-test-sound") { unlockAudio(); try { if (navigator.vibrate) navigator.vibrate([250, 120, 250]); beeps(0); } catch {} toast("That's the rest timer sound. Can't hear it? Check the volume, and on iPhone the ring/silent switch."); }
   if (k === "you-backup") openSheet("backup", null);
   if (k === "you-tour") { setTab("today"); startTour(0); }
