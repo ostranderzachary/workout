@@ -4,7 +4,7 @@ A mobile-friendly workout tracker. Log lifts and cardio, set daily goals, and se
 
 ## Features
 
-- **Quick tour:** the first time Forged opens, short cards explain goals, levels and title themes, boss fights and signing in, each pointing at where to find it (the You tab, or the level ring on Today). The sign-in card offers **Sign in** or **Not now**, and is left out for people already signed in. Skip it any time, and replay it from **You → Quick tour** or the Level screen (**Take the quick tour again**).
+- **Quick tour:** the first time Forged opens, short cards explain goals, levels and title themes, boss fights and signing in, each pointing at where to find it (the You tab, or the level ring on Today). The sign-in card offers **Sign in** or **Not now**, and is left out for people already signed in. **Sign in** goes straight to the sign-in screen; the title theme is picked after it closes, and skipped if the account already has one. Skip it any time, and replay it from **You → Quick tour** or the Level screen (**Take the quick tour again**).
 - **Choose a title theme:** right after the tour, a new visitor picks their title theme. Tapping a theme lists all 11 of its titles, from level 1 to 100 with their descriptions, at the bottom of the picker. It can't be closed until a theme is chosen. Anyone who already picked a theme isn't asked. Change it any time on the Level screen.
 
 - **Log workouts:** the date, then exercises with reps and weight for each set (lb or kg). About 50 common exercises come with their muscles already mapped.
@@ -22,7 +22,7 @@ A mobile-friendly workout tracker. Log lifts and cardio, set daily goals, and se
   - **Cardio** opens the cardio form, the quickest way to log a run, ride or swim on its own.
 - **Lifts and cardio in one form:** the workout form ("Today's workout", "Yesterday's workout", "New workout" or "Edit workout") lists the day's cardio under the exercises, and **+ Add cardio** sits next to **+ Add exercise**. Each activity has the same fields as the cardio form (activity, minutes, distance or stories, name). Change one, remove it (with Undo; a saved one is deleted when you save) or add more, then save once. Each activity is still saved as its own cardio session, so goals, XP, bosses and the leaderboard count it exactly as before. You can save cardio alone from this form too. A new activity left empty is skipped; one with a distance but no minutes asks for the minutes. On a day with cardio but no lifts yet, the form says "Your cardio from yesterday is below. Add lifts or more cardio, then save."
 - **Changing the date in the list form:** if the new day already has a lifting workout, it opens, and anything you'd already entered is added to it. Editing a workout from History is different: changing its date moves it. Either way, the cardio shown switches to the new day's (new activities you'd entered come along), so the old day's cardio stays where it is.
-- Example workouts are shown until you log your first one. They are never saved.
+- A new user starts with a clean slate: no example workouts, and the maps stay empty until you log your first one.
 - **Gym mode:** log as you train, in three steps shown at the top: **1 Plan › 2 Lift › 3 Save**. Start it with **+ → Gym mode**, **Start this session** on the suggestion card, or the gym mode box at the top of today's lifting form.
   - **1 Plan:** list the exercises you'll do and how many sets of each. **+ Add exercise** opens the exercise picker. Each exercise you've done before gets as many sets as last time (2–5) and the next step up, for example "Suggested: 3 × 10 at 125 lb". A new one gets 3 sets. Use **− / +** to change the sets, tap a name to swap the exercise, or **×** to remove it (with Undo). With an empty plan, **Today's suggestion** offers the whole session: tap **Use it**. **Start workout ›** is ready once there's an exercise or cardio. From the suggestion card, the plan is already filled in.
   - **Cardio in gym mode:** **+ Add cardio** (on Plan, and under each exercise in Lift) adds an activity after your exercises, starting from your last session's minutes (20 if it's new). In the plan, pick the activity from its menu, set the minutes with **− / +** (5-minute steps), or remove it. Cardio already saved today shows as done.
@@ -158,7 +158,7 @@ Tap a workout in the list to open it. This week's bonuses appear on today's bar 
 
 Saving a workout shows the XP earned. Reaching a new level or title brings up a celebration, and a voice says "You have leveled up" (using the phone's built-in speech; turn it off under You → **Level-up voice**). Tap your level (the chip at the top, or your title in the at-a-glance strip) to see the title ladder and recent XP.
 
-XP is worked out from your logged workouts, so editing or deleting a workout updates it. Example workouts don't earn XP.
+XP is worked out from your logged workouts, so editing or deleting a workout updates it.
 
 ## Body weight
 

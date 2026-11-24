@@ -1472,6 +1472,7 @@ const Store = {
       this.syncing = false; this.status();
       if (S.sheet === "account") renderSheet();
       if (this.again) { this.again = false; this.sync(); }
+      else if (S.themeLater) setTimeout(pickThemeWhenFree, 0);
     }
   },
   // The account's settings win, except that anything done on this device stays done (the tour, the theme pick,
@@ -1620,43 +1621,13 @@ const Store = {
 document.addEventListener("visibilitychange", () => { if (!document.hidden) Store.sync(); });
 window.addEventListener("online", () => { if (Store.mode === "cloud" && !Store.sb) Store.connect().catch(() => {}); else Store.sync(); });
 
-/* ---------- Example data shown until the first real workout ---------- */
-function sampleWorkouts() {
-  const plans = [
-    ["Push", [["Bench Press", 4, 8, 185], ["Overhead Press", 3, 8, 105], ["Lateral Raise", 3, 15, 20], ["Tricep Pushdown", 3, 12, 50]]],
-    ["Pull", [["Pull-up", 4, 8, 0], ["Barbell Row", 3, 8, 155], ["Face Pull", 3, 15, 40], ["Barbell Curl", 3, 10, 65]]],
-    ["Legs", [["Back Squat", 4, 6, 245], ["Romanian Deadlift", 3, 8, 185], ["Leg Curl", 3, 12, 90], ["Calf Raise", 4, 12, 135]]],
-    ["Upper + core", [["Incline Bench Press", 3, 10, 135], ["Lat Pulldown", 3, 10, 130], ["Hanging Leg Raise", 3, 12, 0], ["Russian Twist", 3, 20, 25]]]
-  ];
-  const cardio = [[3, "run", "Easy run", 35, 3.8], [6, "cycle", "Weekend ride", 60, 15], [7, "walk", "Long walk", 45, 2.2]];
-  const out = [], t = today(), offs = [1, 2, 4, 5];
-  for (let wk = 0; wk < 16; wk++) {
-    const mon = addDays(weekStart(t), -7 * wk);
-    plans.forEach((p, i) => {
-      const d = addDays(mon, offs[i] - 1);
-      if (d > t || (wk % 5 === 3 && i === 3)) return;
-      out.push({
-        id: `sample-${wk}-${i}`, date: ymd(d), name: p[0], unit: "lb", sample: true,
-        exercises: p[1].map(([n, sets, reps, wt]) => ({ name: n, p: LIB[n][0], s: LIB[n][1], sets: Array.from({ length: sets }, () => ({ reps, weight: wt })) }))
-      });
-    });
-    cardio.forEach(([dow, activity, name, minutes, distance], i) => {
-      const d = addDays(mon, dow - 1);
-      if (d > t || (wk % 4 === 2 && i === 2)) return;
-      out.push({ id: `sample-c-${wk}-${i}`, kind: "cardio", date: ymd(d), name, activity, minutes: minutes + (wk % 3) * 5, distance, distUnit: "mi", sample: true });
-    });
-  }
-  return out;
-}
-
 /* ---------- State ---------- */
 let prefs = {};
 try { prefs = JSON.parse(localStorage.getItem("musclemap.prefs") || "{}"); } catch {}
 const savePrefs = () => { try { localStorage.setItem("musclemap.prefs", JSON.stringify(prefs)); } catch {} Store.prefsChanged(); };
 const S = { workouts: [], goals: normGoals(null), goalsSaved: false, loaded: false, period: "week", anchor: today(), selLift: null, sheet: null, draft: null, error: "", confirmDel: false };
-const SAMPLE = sampleWorkouts();
-const data = () => (S.workouts.length ? S.workouts : SAMPLE);
-const usingSample = () => S.workouts.length === 0;
+const data = () => S.workouts;
+const noWorkouts = () => S.workouts.length === 0;
 const isCardio = w => w.kind === "cardio";
 /* A lifting workout's title: its saved name (older workouts), else its top two muscles by sets. */
 function liftTitle(w) {
@@ -2357,8 +2328,8 @@ function render() {
   renderYou();
   renderSummary({ r, c, days, elapsed, isCurrent, liftTarget, cardioTarget, liftSt, cardioSt, g });
 
-  $("banner").innerHTML = usingSample() && prefs.onboardHidden
-    ? `<div class="banner"><span><strong>Example workouts.</strong> These maps show sample lifts and cardio so you can see how it works. Log your first workout and they switch to yours.</span><span class="banner-actions"><button class="btn small primary" type="button" data-act="log">Log lifts</button><button class="btn small" type="button" data-act="cardio">Log cardio</button><button class="btn small" type="button" data-act="goals">Set goals</button></span></div>` : "";
+  $("banner").innerHTML = noWorkouts() && prefs.onboardHidden
+    ? `<div class="banner"><span><strong>No workouts yet.</strong> Log your first lifts or cardio and the maps fill in.</span><span class="banner-actions"><button class="btn small primary" type="button" data-act="log">Log lifts</button><button class="btn small" type="button" data-act="cardio">Log cardio</button><button class="btn small" type="button" data-act="goals">Set goals</button></span></div>` : "";
 
   // Lifting map
   const unit = (list.find(w => w.unit) || {}).unit || prefs.unit || "lb";
@@ -3138,6 +3109,20 @@ function maybeThemePick(after) {
   if (!matchMedia("(pointer: coarse)").matches) setTimeout(() => { const c = document.querySelector("#themePick [data-pick]"); if (c) c.focus(); }, 40);
   return true;
 }
+/* Show the theme picker once nothing else needs the screen. After signing in it waits for the account's first sync,
+   so someone who already chose a theme on another device isn't asked again. */
+function pickThemeWhenFree(force) {
+  S.themeLater = false;
+  if (!needsTheme() || S.pick) return;
+  if (S.sheet || S.tour != null) { S.themeLater = true; return; } // closeSheet tries again
+  const signingIn = Store.fromLink || (Store.mode === "cloud" && !(Store.cache && Store.cache.syncedAt) && !Store.syncErr);
+  if (!force && signingIn) {
+    S.themeLater = true; // the sync picks it up when it finishes; don't wait forever if it never runs
+    clearTimeout(S.themeT); S.themeT = setTimeout(() => { if (S.themeLater) pickThemeWhenFree(true); }, 6000);
+    return;
+  }
+  maybeThemePick();
+}
 $("themePick").addEventListener("click", e => {
   const chip = e.target.closest("[data-pick]");
   if (chip) {
@@ -3191,9 +3176,10 @@ const TOUR = [
 // Steps that apply here: sign-in is only offered on the web, to people not signed in yet.
 const tourSteps = () => TOUR.filter(t => !t.when || t.when());
 function startTour(i = 0) { $("bossPop").innerHTML = ""; window.scrollTo(0, 0); S.tour = i; renderTour(); if (!matchMedia("(pointer: coarse)").matches) setTimeout(() => { const b = document.querySelector("#tour [data-tour=next]"); if (b) b.focus(); }, 40); }
-function endTour(after) {
+function endTour(after, noTheme) {
   S.tour = null; $("tour").innerHTML = "";
   if (!prefs.tourDone) { prefs.tourDone = true; savePrefs(); }
+  if (noTheme) return; // signing in from the tour: the theme picker waits until the account sheet closes
   if (maybeThemePick(after)) return;
   if (after) return;
   if (S.loaded) maybeBossPopup(xpLedger(S.workouts));
@@ -3203,7 +3189,7 @@ function maybeTour() {
   S.tourAsked = true;
   setTimeout(() => {
     if (S.sheet || $("celebrate").innerHTML) return;
-    if (!prefs.tourDone) startTour(0); else maybeThemePick();
+    if (!prefs.tourDone) startTour(0); else pickThemeWhenFree();
   }, 500);
 }
 function renderTour() {
@@ -3240,7 +3226,7 @@ $("tour").addEventListener("click", e => {
   const b = e.target.closest("[data-tour]"); if (!b) return;
   const k = b.dataset.tour;
   const n = tourSteps().length;
-  if (k === "signin") return endTour(() => openSheet("account", null));
+  if (k === "signin") { endTour(null, true); openSheet("account", null); S.themeLater = needsTheme(); return; }
   if (k === "skip" || (k === "next" && S.tour >= n - 1)) return endTour();
   S.tour = Math.max(0, Math.min(n - 1, S.tour + (k === "next" ? 1 : -1)));
   renderTour();
@@ -3737,7 +3723,6 @@ function renderOnboard() {
   if (prefs.onboardHidden || (done === steps.length)) { $("onboard").innerHTML = ""; return; }
   $("onboard").innerHTML = `<section class="panel onboard" aria-labelledby="obH">
     <div class="ob-head"><h2 id="obH">Get started · ${done} of ${steps.length} done</h2><button class="btn small ghost" type="button" data-act="ob-hide">Hide</button></div>
-    ${usingSample() ? `<p class="note" style="margin:0 0 10px">The maps below show <strong>example workouts</strong> until you log your own.</p>` : ""}
     <ol class="ob-steps">${steps.map(([k, t, d, ok, btn], i) => `<li class="${ok ? "done" : ""}"><span class="ob-n">${ok ? "✓" : i + 1}</span>
       <span class="ob-body"><b>${t}</b><span>${d}</span></span>${ok ? "" : `<button class="btn small ${steps.findIndex(x => !x[3]) === i ? "primary" : ""}" type="button" data-act="${k}">${btn}</button>`}</li>`).join("")}</ol>
   </section>`;
@@ -3836,7 +3821,8 @@ function closeSheet(done) {
   const kept = !done && draftDirty() ? { sheet: S.sheet, draft: S.draft, base: S.draftBase } : null;
   if (draftKind()) clearDraft();
   if (S.exPick) closeExPick(); if (S.prog) closeProg(); S.sheet = null; S.draft = null; S.draftBase = null; S.restoredAt = null; S.importPending = null; renderSheet();
-  if (S.loaded) maybeBossPopup(xpLedger(S.workouts));
+  if (S.themeLater) setTimeout(pickThemeWhenFree, 250);
+  else if (S.loaded) maybeBossPopup(xpLedger(S.workouts));
   if (kept) toast(`Closed without saving your ${kept.sheet === "cardio" ? "cardio" : "workout"}.`, { label: "Undo", fn: () => reopenDraft(kept) });
 }
 
