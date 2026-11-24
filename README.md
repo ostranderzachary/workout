@@ -87,7 +87,13 @@ Open **Goals** from the You tab, or **Change goals** under Your progress on Toda
 
 All goal changes are saved with the date, so earlier weeks are still judged by the goals that applied then.
 
-**The full form** sets a weekly target: sets per week for each muscle group, and minutes per week for cardio. The defaults match the Standard preset: 10 sets a week for big muscles, 5–8 for smaller ones, 150 minutes of cardio and 10 miles. sets per week for each muscle group, and minutes per week for cardio. The defaults match the Standard preset: 10 sets a week for big muscles, 5–8 for smaller ones, 150 minutes of cardio and 10 miles.
+**The full form** sets every weekly target: workout days, sets per week for each muscle, and cardio minutes, distance and stairs. The defaults are 4 days, 10 sets a week for big muscles, 5–8 for smaller ones, 150 minutes of cardio and 10 miles.
+
+- **Summary at the top**, updating as you change numbers: "4 days · 113 sets · 2h 30m cardio a week", then about how many sets a workout that takes. Since one set of an exercise counts toward about two muscles on average (the main ones fully, helpers by half), 113 goal sets over 4 days is about 15 sets a workout. If it's more than 25, it suggests more days or fewer sets.
+- **− / + on every goal**, or type a number.
+- **This week so far** next to each goal, such as "7 done" or "3 so far" for days. It turns green once the goal is met, and updates as you change the goal.
+- **How goals work** opens a short explanation. **Start over** (or "Not sure where to start?" before you've saved goals) offers the 3 quick questions. **Reset to defaults** is a link at the end; it fills the defaults in without saving.
+- The bottom bar is just **Cancel** and **Save goals**.
 
 Other ranges scale by their number of days. A day's target is a seventh of the weekly goal, and a 31-day month is 31/7 of it. A year uses 365 or 366 days, and all time counts from your first workout to today.
 

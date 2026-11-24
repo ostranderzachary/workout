@@ -752,9 +752,17 @@ body:not([data-tab="you"]) [data-tab="you"] { display: none !important; }
 .withunit { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 6px; align-items: center; }
 .withunit .tag { padding: 8px 10px; font-size: 13px; }
 .goals { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px 16px; margin-top: 6px; }
-.goal { display: grid; grid-template-columns: minmax(0,1fr) 76px 72px; gap: 8px; align-items: center; font-size: 14px; }
-.goal .inp { padding: 7px 10px; }
+.goal { display: grid; grid-template-columns: minmax(0,1fr) 132px 66px; gap: 8px; align-items: center; font-size: 14px; }
+.goal .inp { padding: 7px 4px; }
 .goal small { color: var(--muted); font-size: 12px; text-align: right; }
+.goal small.met { color: var(--h5); font-weight: 700; }
+.goal-sum { margin: 0 0 12px; padding: 12px 14px; border-radius: 14px; background: var(--bg); border: 1px solid var(--h3); }
+.goal-sum b { display: block; font-size: 16px; }
+.goal-sum small { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; }
+.goal-sum .warn { color: var(--danger); }
+details.how { margin: 0 0 12px; }
+details.how summary { cursor: pointer; color: var(--h5); font-weight: 700; font-size: 14px; }
+details.how p { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
 .goalline { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 14px; color: var(--muted); margin-bottom: 6px; }
 .goalline b { font-family: var(--font-display); font-size: 26px; color: var(--fg); font-weight: 700; }
 .gauges { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
@@ -4598,15 +4606,6 @@ const GOAL_GROUPS = [
   ["Core", ["abs", "obliques", "lowerback"]],
   ["Legs", ["quads", "hamstrings", "glutes", "adductors", "calves"]]
 ];
-/* Presets scale the default split: big muscles get the most sets. */
-const BIG = ["chest", "shoulders", "lats", "quads"];
-const MID = ["biceps", "triceps", "abs", "glutes", "hamstrings", "calves"];
-// [name, big, medium, small sets per week, cardio minutes, workout days, distance in miles]
-const PRESETS = { light: ["Light", 6, 5, 3, 90, 3, 5, 20], standard: ["Standard", 10, 8, 5, 150, 4, 10, 50], high: ["High volume", 16, 12, 8, 300, 5, 20, 100] };
-function presetGoals(k) {
-  const [, big, mid, small, cardio, days, distance, stairs] = PRESETS[k];
-  return { per: "week", cardio, distance, stairs, days, history: S.draft ? S.draft.history : [], sets: Object.fromEntries(M_IDS.map(m => [m, BIG.includes(m) ? big : MID.includes(m) ? mid : small])) };
-}
 function latestWeight() { const b = S.goals.bodyweight; return b.length ? b[b.length - 1] : null; }
 const bwStep = () => (wtUnit() === "kg" ? 0.5 : 1);
 function bodyWeightSheet(d) {
@@ -4968,40 +4967,46 @@ async function applyImport(mode) {
   }
 }
 
+/* One set of an exercise counts toward about this many muscles (the main ones fully, helpers by half),
+   averaged over the built-in exercises. Used to turn goal totals into sets you'd actually do. */
+let creditPerSet = 0;
+const setCredit = () => creditPerSet || (creditPerSet = (() => { const v = Object.values(LIB).map(([pm, sm]) => pm.length + 0.5 * sm.length); return v.length ? v.reduce((a, x) => a + x, 0) / v.length : 1.5; })());
+/* The summary at the top of the goals form, kept up to date as you change numbers. */
+function goalSumHTML(d) {
+  const sets = M_IDS.reduce((a, m) => a + (Number(d.sets[m]) || 0), 0), days = Math.max(0, Math.round(Number(d.days) || 0)), cardio = Number(d.cardio) || 0;
+  const per = days ? Math.round(sets / setCredit() / days) : 0;
+  return `<b class="num">${days ? `${plural(days, "day")} · ` : ""}${fmt(sets)} sets · ${esc(hm(cardio))} cardio a week</b>
+    <small>${days ? `About ${per} sets a workout, since most exercises count toward more than one muscle.${per > 25 ? ` <span class="warn">That's a long session: more days or fewer sets would spread it out.</span>` : ""}` : "Set workout days to see about how many sets each workout takes."}</small>`;
+}
 function goalsSheet(d) {
-  const row = m => `<label class="goal" for="g-${m}"><span>${esc(MUSCLES[m])}</span>
-      <input class="inp num" id="g-${m}" type="number" inputmode="numeric" min="0" step="1" value="${esc(d.sets[m])}" data-goal="${m}">
-      <small class="num" id="gw-${m}">${fmt(perDay(d.sets[m]))}/day</small></label>`;
+  const real = S.workouts.filter(w => !w.sample), c = compute(real, rangeFor("week", today(), real));
+  const daysDone = new Set(c.ws.map(w => w.date)).size;
+  // This week so far, shown next to each goal (green once the goal is met)
+  const done = { days: daysDone, cardio: c.minutes, distance: c.distance, stairs: c.stories, ...Object.fromEntries(M_IDS.map(m => [m, c.lift[m].v])) };
+  S.goalDone = done; // for marking goals met as you type (distance is in the display unit, like its field)
+  const doneText = k => k === "cardio" ? `${hm(done.cardio)} done` : k === "distance" ? `${fmt(Math.round(done.distance * 10) / 10)} done` : k === "days" ? `${done.days} so far` : `${fmt(Math.round(done[k] * 10) / 10)} done`;
+  const goalOf = k => k === "distance" ? Math.round(toUnit(Number(d.distance) || 0, "mi") * 10) / 10 : k === "days" || k === "cardio" || k === "stairs" ? Number(d[k]) || 0 : Number(d.sets[k]) || 0;
+  const row = (k, label, value, step) => {
+    const g = goalOf(k), met = g > 0 && done[k] >= g;
+    return `<div class="goal"><label for="g-${k}">${esc(label)}</label>
+      ${stepper(`<input class="inp num" id="g-${k}" type="number" inputmode="decimal" min="0" step="any" value="${esc(value)}" data-goal="${k}">`, step, label)}
+      <small class="num${met ? " met" : ""}" id="gw-${k}" title="This week so far">${esc(doneText(k))}</small></div>`;
+  };
   return sheetFrame("Weekly goals", `
-    <div class="explain">
-      <p><b>How many sets should each muscle get per week?</b> A set is one round of an exercise, such as 8 reps of bench press. Exercises also give half a set to the muscles that help, so the total adds up across your workouts.</p>
-      <p>About <b>10 sets a week</b> for a big muscle is enough for steady progress for most people; experienced lifters often go higher. Start with a preset and adjust any muscle. Day, month and year targets are worked out from these weekly numbers.</p>
-    </div>
-    <div class="gym-sug"><div><span class="lbl">Not sure where to start?</span><b>Answer 3 quick questions</b><small>Forged fills in every goal for you.</small></div>
+    <div class="goal-sum" id="goalSum" aria-live="polite">${goalSumHTML(d)}</div>
+    <details class="how"><summary>How goals work</summary>
+      <p><b>Sets per muscle each week.</b> A set is one round of an exercise, such as 8 reps of bench press. Exercises also give half a set to the muscles that help, so the total adds up across your workouts. About <b>10 sets a week</b> for a big muscle is enough for steady progress for most people; experienced lifters often go higher.</p>
+      <p><b>Workout days:</b> reaching it each week earns +${BONUS.days} XP and a growing streak bonus; each day short costs ${BONUS.missedDay} XP. <b>Cardio:</b> 150 minutes a week is the usual health guideline, and distance counts every session you log with one. Set any goal to 0 to leave it off.</p>
+      <p>Day, month and year targets are worked out from these weekly numbers. The number on the right of each goal is what you've done this week; it turns green once the goal is met.</p></details>
+    <div class="gym-sug"><div><span class="lbl">${S.goalsSaved ? "Start over" : "Not sure where to start?"}</span><b>Answer 3 quick questions</b><small>Forged fills in every goal for you. You can still change anything after.</small></div>
       <button class="btn small primary" type="button" data-act="goal-wiz">Start</button></div>
-    <div class="lbl">Start from a preset</div>
-    <div class="chips" style="margin:6px 0 14px">${Object.entries(PRESETS).map(([k, [n, big, , small, cm, days]]) =>
-      `<button type="button" class="chip" data-preset="${k}">${n} <small>${days} days · ${small}–${big} sets · ${cm} min</small></button>`).join("")}</div>
-    <div class="lbl">Consistency · workout days per week</div>
-    <div class="goals"><label class="goal" for="g-days"><span>Days with a workout</span>
-      <input class="inp num" id="g-days" type="number" inputmode="numeric" min="0" max="7" step="1" value="${esc(d.days)}" data-goal="days">
-      <small class="num">of 7</small></label></div>
-    <p class="note" style="margin-top:4px">Hit this each week for +${BONUS.days} XP and a growing streak bonus. Each day short costs ${BONUS.missedDay} XP. Set it to 0 to turn off bonuses and penalties for days.</p>
-    ${GOAL_GROUPS.map(([title, ms]) => `<div class="lbl" style="margin-top:12px">${title} · sets per week</div><div class="goals">${ms.map(row).join("")}</div>`).join("")}
-    <div class="lbl" style="margin-top:16px">Cardio · minutes per week</div>
-    <div class="goals"><label class="goal" for="g-cardio"><span>All cardio</span>
-      <input class="inp num" id="g-cardio" type="number" inputmode="numeric" min="0" step="10" value="${esc(d.cardio)}" data-goal="cardio">
-      <small class="num" id="gw-cardio">${hm(perDay(d.cardio))}/day</small></label>
-    <label class="goal" for="g-distance"><span>Distance (${distUnit()})</span>
-      <input class="inp num" id="g-distance" type="number" inputmode="decimal" min="0" step="0.5" value="${esc(Math.round(toUnit(Number(d.distance) || 0, "mi") * 10) / 10)}" data-goal="distance">
-      <small class="num" id="gw-distance">${fmt(perDay(toUnit(Number(d.distance) || 0, "mi")))}/day</small></label>
-    <label class="goal" for="g-stairs"><span>Stairs (stories)</span>
-      <input class="inp num" id="g-stairs" type="number" inputmode="numeric" min="0" step="5" value="${esc(d.stairs ?? DEFAULT_GOALS.stairs)}" data-goal="stairs">
-      <small class="num" id="gw-stairs">${fmt(perDay(d.stairs ?? DEFAULT_GOALS.stairs))}/day</small></label></div>
-    <p class="note">150 minutes a week is the usual health guideline. Distance counts every cardio session you log with one. Set any goal to 0 to leave it off.</p>
-    <p class="note">Body weight, units and backup are on the <b>You</b> tab.</p>`,
-    `<button class="btn ghost" type="button" data-act="goals-reset">Reset to defaults</button>
-     <div class="right"><button class="btn ghost" type="button" data-act="close">Cancel</button><button class="btn primary" type="button" data-act="save">Save goals</button></div>`);
+    <div class="lbl">Workout days per week</div>
+    <div class="goals">${row("days", "Days with a workout", d.days, 1)}</div>
+    ${GOAL_GROUPS.map(([title, ms]) => `<div class="lbl" style="margin-top:14px">${title} · sets per week</div><div class="goals">${ms.map(m => row(m, MUSCLES[m], d.sets[m], 1)).join("")}</div>`).join("")}
+    <div class="lbl" style="margin-top:14px">Cardio per week</div>
+    <div class="goals">${row("cardio", "Minutes", d.cardio, 10)}${row("distance", `Distance (${distUnit()})`, Math.round(toUnit(Number(d.distance) || 0, "mi") * 10) / 10, 0.5)}${row("stairs", "Stairs (stories)", d.stairs ?? DEFAULT_GOALS.stairs, 5)}</div>
+    <p class="note" style="margin-top:14px">Body weight, units and backup are on the <b>You</b> tab. <button class="linkbtn" type="button" data-act="goals-reset">Reset to defaults</button></p>`,
+    `<div class="right"><button class="btn ghost" type="button" data-act="close">Cancel</button><button class="btn primary" type="button" data-act="save">Save goals</button></div>`);
 }
 
 $("sheetRoot").addEventListener("change", e => {
@@ -5034,10 +5039,14 @@ $("sheetRoot").addEventListener("input", e => {
     const k = t.dataset.goal;
     if (k === "bw") d.bwInput = t.value;
     else if (k === "days") d.days = t.value;
-    else if (k === "stairs") { d.stairs = t.value; $("gw-stairs").textContent = `${fmt(perDay(t.value))}/day`; }
-    else if (k === "distance") { d.distance = distUnit() === "km" ? (Number(t.value) || 0) / 1.609344 : Number(t.value) || 0; $("gw-distance").textContent = `${fmt(perDay(Number(t.value) || 0))}/day`; }
-    else if (k === "cardio") { d.cardio = t.value; $("gw-cardio").textContent = `${hm(perDay(t.value))}/day`; }
-    else { d.sets[k] = t.value; $(`gw-${k}`).textContent = `${fmt(perDay(t.value))}/day`; }
+    else if (k === "stairs") d.stairs = t.value;
+    else if (k === "distance") d.distance = distUnit() === "km" ? (Number(t.value) || 0) / 1.609344 : Number(t.value) || 0;
+    else if (k === "cardio") d.cardio = t.value;
+    else d.sets[k] = t.value;
+    if (S.sheet === "goals") {
+      const sum = $("goalSum"); if (sum) sum.innerHTML = goalSumHTML(d);
+      const gw = $(`gw-${k}`), v = Number(t.value) || 0, dv = S.goalDone && S.goalDone[k]; if (gw && dv != null) gw.classList.toggle("met", v > 0 && dv >= v);
+    }
   }
   if (t.dataset.set) { const [i, j, k] = t.dataset.set.split(":"); d.exercises[i].sets[j][k] = t.value; }
   if (t.dataset.goal1) d.value = t.value;
@@ -5233,8 +5242,7 @@ $("sheetRoot").addEventListener("click", async e => {
   if (a.act === "share-save") { S.shareMsg = savedMsg(await saveShareImages()); return renderSheet(); }
   if (a.act === "pick-cardio") return openCardio();
   if (a.act === "save") return saveDraft();
-  if (a.act === "goals-reset") { S.draft = { ...JSON.parse(JSON.stringify(DEFAULT_GOALS)), bwInput: d.bwInput }; return renderSheet(); }
-  if (a.preset) { S.draft = { ...presetGoals(a.preset), bwInput: d.bwInput }; return renderSheet(); }
+  if (a.act === "goals-reset") { S.draft = { ...JSON.parse(JSON.stringify(DEFAULT_GOALS)), history: d.history }; renderSheet(); return toast("Default goals filled in. Save goals to keep them."); }
   if (a.unit) { d.unit = a.unit; prefs.unit = a.unit; savePrefs(); return renderSheet(); }
   if (a.cunit) { d.items[+a.i].distUnit = a.cunit; prefs.dist = a.cunit; savePrefs(); return renderSheet(); }
   if (a.activity && d.items) { d.items[+a.i].activity = a.activity; return renderSheet(); }
