@@ -107,10 +107,11 @@ body[data-tab="today"] #periods, body[data-tab="today"] #rangeNav, body[data-tab
 .pill { display: inline-block; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 600; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
 .pill.met { background: var(--h5); border-color: var(--h5); color: #0b1a0f; }
 .pill.on { border-color: var(--h3); color: var(--h4); }
-.pill.behind { border-color: var(--danger); color: var(--danger); }
+.pill.behind { border-color: var(--muted); color: var(--fg); }
+.pill.risk { border-color: var(--danger); color: var(--danger); }
 .pill.missed { color: var(--muted); }
 .st { grid-column: 1 / -1; font-size: 12px; color: var(--muted); margin-top: -2px; }
-.st-met { color: var(--h5); } .st-on { color: var(--h4); } .st-behind { color: var(--danger); }
+.st-met { color: var(--h5); } .st-on { color: var(--h4); } .st-behind { color: var(--muted); } .st-risk { color: var(--danger); }
 .track .pace { position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; background: var(--fg); opacity: .7; border-radius: 1px; }
 .summary { margin-top: 14px; }
 .sum-head, .ob-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
@@ -429,7 +430,10 @@ button.pl-row { cursor: pointer; }
 .sug-ex-name, .sug-ex-name .linkbtn { font-weight: 600; color: var(--fg); }
 .sug-ex small { color: var(--muted); font-size: 12px; }
 .sug-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
-.sug-alt { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.sug-alt { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); margin: 12px 0 0; }
+.sug-sum { margin: 6px 0 0; font-size: 15px; font-weight: 600; }
+.sug-actions .btn { flex: 1 1 auto; }
+.sug-details { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
 .sug-alt .chip { padding: 5px 12px; font-size: 13px; }
 .sug-msg { margin: 8px 0 0; font-size: 15px; }
 .sug-cardio { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
@@ -746,6 +750,16 @@ body[data-sheet="gym"] .toast { bottom: auto; top: calc(10px + env(safe-area-ins
 .bars .zero .name, .bars .zero .val { color: var(--muted); }
 .bars .val small { font-size: 13px; color: var(--muted); font-weight: 500; }
 .bars .met .val { color: var(--fg); }
+.bars li.bars-grp { display: block; }
+.bars li.bars-grp + li.bars-grp, .bars li:not(.bars-grp) + li.bars-grp { margin-top: 6px; border-top: 1px solid var(--line); padding-top: 6px; }
+.bars-h { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto 20px; align-items: center; gap: 10px; border: 0; background: transparent; color: var(--fg); font: inherit; padding: 8px 6px; border-radius: 10px; cursor: pointer; text-align: left; }
+.bars-h:hover { background: var(--bg); }
+.bars-hl { font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.bars-hl small { font-size: 12px; letter-spacing: 0; text-transform: none; font-weight: 600; margin-left: 6px; }
+.bars-h b { font-family: var(--font-display); font-size: 17px; }
+.bars-h .chev { color: var(--muted); font-size: 20px; line-height: 1; transition: transform .15s ease; text-align: center; }
+.bars-h[aria-expanded="true"] .chev { transform: rotate(90deg); }
+@media (prefers-reduced-motion: reduce) { .bars-h .chev { transition: none; } }
 .note { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
 
 .history { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
@@ -2272,6 +2286,9 @@ function compute(list, r) {
 const LEGEND_STEPS = [["var(--idle)", "None yet"], ["var(--h1)", "Under 25%"], ["var(--h2)", "25–49%"], ["var(--h3)", "50–74%"], ["var(--h4)", "75–99%"], ["var(--h5)", "Goal met"]];
 const legendHTML = `<span class="legend-title">Share of goal done</span><ol class="steps">${LEGEND_STEPS.map(([c, t]) => `<li><i style="background:${c}"></i>${t}</li>`).join("")}</ol>`;
 const plural = (n, w) => `${fmt(n)} ${w}${Math.abs(n - 1) < 1e-9 ? "" : "s"}`;
+/* The lifting goal groups on Stats, in order: [status, heading, open at first]. Taps open and close them for the visit. */
+const BAR_GROUPS = [["behind", "Behind", true], ["todo", "To go", true], ["missed", "Missed", true], ["on", "On pace", false], ["met", "Goal met", false], ["none", "No goal", false]];
+S.barsOpen = {};
 /* Where you stand on one target. `pace` is { current, elapsed, days } for the range on screen. */
 function status(v, t, pace, unitWord) {
   if (!t) return { k: "none", txt: "No goal set" };
@@ -2279,10 +2296,17 @@ function status(v, t, pace, unitWord) {
   const left = t - v, togo = unitWord === "min" ? `${hm(left)} to go` : unitWord === "dist" ? `${fmt(left)} ${distUnit()} to go` : unitWord === "stories" ? `${Math.ceil(left)} ${Math.ceil(left) === 1 ? "story" : "stories"} to go` : `${plural(Math.round(left * 10) / 10, "set")} to go`;
   if (!pace.current) return { k: "missed", txt: `Missed · ${togo.replace(" to go", " short")}` };
   if (pace.days > 1 && v >= (t * pace.elapsed) / pace.days) return { k: "on", txt: `On pace · ${togo}` };
-  if (pace.days > 1) return { k: "behind", txt: `Behind pace · ${togo}` };
+  // Behind the even pace. It's only flagged red ("at risk") when what's left looks hard to fit into the days left (today
+  // included); a little behind mid-week just shows what's to go. Sets come in sessions: about half the weekly goal (at
+  // least 5) per session, with a day's rest between, so 3 days left is 2 sessions. Cardio: more than twice the usual daily pace.
+  if (pace.days > 1) {
+    const daysLeft = Math.max(1, pace.days - pace.elapsed + 1), weekly = (t * 7) / pace.days;
+    const risk = unitWord === "set" ? left > Math.max(5, Math.ceil(weekly / 2)) * Math.ceil(daysLeft / 2) : left / daysLeft > (2 * t) / pace.days;
+    return { k: "behind", risk, txt: risk ? `Behind pace · ${togo}` : togo };
+  }
   return { k: "todo", txt: togo };
 }
-const pill = st => `<span class="pill ${st.k}">${esc(st.txt)}</span>`;
+const pill = st => `<span class="pill ${st.k}${st.risk ? " risk" : ""}">${esc(st.txt)}</span>`;
 
 /* Today is always this week. Maps, Stats and History each keep their own range (period remembered across visits). */
 const RANGE_TABS = ["maps", "stats", "history"];
@@ -2354,13 +2378,26 @@ function render() {
   // Lifting goal bars
   const sorted = M_IDS.slice().sort((a, b) => Math.min(1, c.lift[b].v / (liftTarget(b) || Infinity)) - Math.min(1, c.lift[a].v / (liftTarget(a) || Infinity)) || c.lift[b].v - c.lift[a].v);
   $("barsTitle").textContent = `Lifting goals · ${r.label}`;
-  $("bars").innerHTML = sorted.map(m => {
+  const barRow = m => {
     const v = c.lift[m].v, t = liftTarget(m), lv = liftLv[m];
     const mark = t && isCurrent && pace.days > 1 && elapsed < days ? `<span class="pace" style="left:${(elapsed / days) * 100}%" title="Where you'd be today at an even pace"></span>` : "";
     return `<li><button type="button" data-m="${m}" data-map="lift" aria-pressed="${S.selLift === m}" class="${v ? "" : "zero"}${t && v >= t ? " met" : ""}"><span class="name">${esc(MUSCLES[m])}</span>` +
       `<span class="track"><span class="fill" style="width:${t ? Math.min(100, (v / t) * 100) : 0}%;background:var(--h${lv || 1})"></span>${mark}</span>` +
-      `<span class="val">${fmt(v)}<small>/${t ? fmt(t) : "–"}</small></span><span class="st st-${liftSt[m].k}">${esc(liftSt[m].txt)}</span></button>` +
+      `<span class="val">${fmt(v)}<small>/${t ? fmt(t) : "–"}</small></span>${liftSt[m].risk ? `<span class="st st-risk">${esc(liftSt[m].txt)}</span>` : ""}</button>` +
       `<button type="button" class="goal-tap" data-goal-edit="${m}" aria-label="Change the ${esc(MUSCLES[m].toLowerCase())} goal (${fmt(Number(g.sets[m]) || 0)} sets a week)" title="Change goal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg></button></li>`;
+  };
+  // Grouped by where each muscle stands, so what needs work comes first and the rest folds away.
+  // Behind lists the at-risk ones first, then the least done.
+  const frac = m => Math.min(1, c.lift[m].v / (liftTarget(m) || Infinity));
+  const groups = BAR_GROUPS.map(([k, label, open]) => {
+    let ms = sorted.filter(m => liftSt[m].k === k);
+    if (k === "behind") ms = ms.slice().sort((a, b) => (liftSt[b].risk ? 1 : 0) - (liftSt[a].risk ? 1 : 0) || frac(a) - frac(b));
+    return { k, label, ms, open: S.barsOpen[k] ?? open };
+  }).filter(x => x.ms.length);
+  $("bars").innerHTML = groups.map(gp => {
+    const risky = gp.k === "behind" ? gp.ms.filter(m => liftSt[m].risk).length : 0;
+    return `<li class="bars-grp"><button type="button" class="bars-h" data-bgrp="${gp.k}" aria-expanded="${gp.open}"><span class="bars-hl">${esc(gp.label)}${risky ? ` <small class="st-risk">${risky} at risk</small>` : ""}</span><b class="num">${gp.ms.length}</b><span class="chev" aria-hidden="true">›</span></button></li>`
+      + (gp.open ? gp.ms.map(barRow).join("") : "");
   }).join("");
   $("barsNote").innerHTML = `Sets done / target for ${esc(r.label)}. ${days === 7 ? "Targets are your weekly goals." : `Targets are your weekly goal scaled to ${days} day${days === 1 ? "" : "s"} (weekly goal ÷ 7 × ${days}).`}` +
     (isCurrent && pace.days > 1 && elapsed < days ? ` The thin line on each bar is where you'd be today at an even pace, ${elapsed} of ${days} days in.` : "") + ` Tap a muscle to see it on the map, or the pencil to change its goal.`;
@@ -2707,8 +2744,7 @@ function renderGlance() {
   if (prefs.sugHidden !== todayK) {
     const sg = suggestion();
     if (sg && sg.pick) {
-      const ps = planSession(sg.pick, sg.ex), fin = sg.pick.mus.filter(x => (ps.after[x.m] ?? 1) <= 1e-9);
-      const xp = BONUS.muscle * fin.length + (fin.length && sg.behind.every(x => fin.includes(x)) ? BONUS.allMuscles : 0);
+      const ps = planSession(sg.pick, sg.ex), xp = sessionXP(sg, ps);
       lines.push(`<button type="button" class="gl-line" data-glance="sug"><span class="k">Next</span><span class="v">${esc(sg.pick.name)} · about ${plural(ps.total, "set")}${xp ? ` · <span class="gl-xp">+${xp} XP</span>` : ""}</span><span class="chev" aria-hidden="true">›</span></button>`);
     } else if (sg && (sg.met || sg.tired)) {
       lines.push(`<button type="button" class="gl-line" data-glance="sug"><span class="k">Next</span><span class="v">${sg.met ? "Every muscle goal is met. Rest, or anything extra" : "A rest day could be a good call"}</span><span class="chev" aria-hidden="true">›</span></button>`);
@@ -2731,9 +2767,16 @@ function renderGlance() {
   }
   el.innerHTML = `<div class="gl-top">${ring}<div>${title}${week}${meta}</div></div>${stakes}${lines.join("")}`;
 }
+$("bars").addEventListener("click", e => {
+  const h = e.target.closest("[data-bgrp]"); if (!h) return;
+  const k = h.dataset.bgrp; S.barsOpen[k] = h.getAttribute("aria-expanded") !== "true";
+  render();
+  const nh = document.querySelector(`#bars [data-bgrp="${k}"]`); if (nh) nh.focus({ preventScroll: true });
+});
 $("glance").addEventListener("click", e => {
   if (!e.target.closest("[data-glance=sug]")) return;
-  if (isFolded("sugCard")) { delete prefs.fold.sugCard; savePrefs(); render(); }
+  if (isFolded("sugCard")) { delete prefs.fold.sugCard; savePrefs(); }
+  S.sugOpen = true; render();
   const c = $("sugCard"); if (c) c.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
 });
 function renderPlayer() {
@@ -3374,7 +3417,7 @@ function cardCanvas({ C, DISP, BODY }, x, page) {
     const font = `700 20px ${BODY}`, t = fit(st.txt, font, max - 32);
     ctx.font = font; const w = ctx.measureText(t).width + 32;
     rr(cx - w / 2, y0, w, 38, 19);
-    const tone = st.k === "met" ? [C.h5, "#0b1a0f", true] : st.k === "on" ? [C.h3, C.h4] : st.k === "behind" ? [C.danger, C.danger] : [C.line, C.muted];
+    const tone = st.k === "met" ? [C.h5, "#0b1a0f", true] : st.k === "on" ? [C.h3, C.h4] : st.risk ? [C.danger, C.danger] : st.k === "behind" ? [C.muted, C.fg] : [C.line, C.muted];
     if (tone[2]) { ctx.fillStyle = tone[0]; ctx.fill(); } else { ctx.lineWidth = 2; ctx.strokeStyle = tone[0]; ctx.stroke(); }
     text(t, cx, y0 + 26, font, tone[1], "center");
   };
@@ -3397,7 +3440,7 @@ function cardCanvas({ C, DISP, BODY }, x, page) {
 }
 const cardImage = async cv => ({ url: cv.toDataURL("image/png"), blob: await new Promise(res => cv.toBlob(res, "image/png")) });
 // Splits "On pace · 40m to go" into a short pill and a detail line
-const splitSt = st => { const [a, ...rest] = st.txt.split(" · "); return [{ k: st.k, txt: a }, rest.join(" · ")]; };
+const splitSt = st => { const [a, ...rest] = st.txt.split(" · "); return [{ k: st.k, risk: st.risk, txt: a }, rest.join(" · ")]; };
 
 /* Card 1: level and XP, this week's numbers, the lifting heat map with muscle goals and records, and the title ladder. */
 async function drawOverview(x, K) {
@@ -3957,6 +4000,11 @@ function sugGame(sg, ps) {
   }
   return out;
 }
+// XP the suggested session would earn by meeting muscle goals (and all of them, if it finishes the week's)
+function sessionXP(sg, ps) {
+  const fin = sg.pick.mus.filter(x => (ps.after[x.m] ?? 1) <= 1e-9);
+  return BONUS.muscle * fin.length + (fin.length && sg.behind.every(x => fin.includes(x)) ? BONUS.allMuscles : 0);
+}
 function sugGameHTML(sg, ps) {
   const items = sugGame(sg, ps);
   return items.length ? `<div class="lbl" style="margin-top:12px">XP within reach</div><ul class="sug-game">${items.map(it =>
@@ -3980,9 +4028,16 @@ function renderSuggest() {
       <p class="sug-msg">${sg.met ? "Every muscle goal is met this week. A rest day would be well earned, or anything extra you feel like." : "Everything still behind this week was trained in the last two days, so a rest day could be a good call."}</p>${sugGameHTML(sg, null)}${cardioLine}</section>`;
     return;
   }
-  const { pick, others, ex, restNote } = sg, ps = planSession(pick, ex);
+  const { pick, others, ex, restNote } = sg, ps = planSession(pick, ex), xpN = sessionXP(sg, ps);
+  // Up front: what it is and Start. The reasons, the exercises and the XP details open with See the plan.
+  const open = !!S.sugOpen || !ps.items.length;
+  const alt = [...others.map(o => `<button class="chip" type="button" data-sug-group="${o.k}">${esc(o.name)}</button>`), togo.length ? `<button class="chip" type="button" data-sug="cardio">Cardio</button>` : ""].filter(Boolean);
   el.innerHTML = `<section class="panel sug-card" aria-label="Suggestion for today">${head}
     <h3 class="sug-title">${esc(pick.name)} <small>${esc(pick.desc)}</small></h3>
+    ${ps.items.length ? `<p class="sug-sum num">${plural(ps.items.length, "exercise")} · about ${plural(ps.total, "set")}${xpN ? ` · <b class="sug-xp">+${xpN} XP</b>` : ""}</p>
+    <div class="sug-actions"><button class="btn primary" type="button" data-sug="start">Start this session</button>
+      <button class="btn ghost sug-more" type="button" data-sug="details" aria-expanded="${open}" aria-controls="sugDetails">${open ? "Hide the plan" : "See the plan"}</button></div>` : ""}
+    ${open ? `<div class="sug-details" id="sugDetails">
     <p class="note" style="margin:2px 0 8px">${sg.lateWeek ? `${sg.weekLeft === 1 ? "It's the last day of the week" : "There are two days left this week"}, so this favours the goals you can still finish. These have ${esc(restNote)}.`
       : `These are behind this week's goals and have ${esc(restNote)}.`} Just an idea: train whatever feels right.</p>
     <ul class="sug-why">${pick.mus.slice(0, 4).map(x => `<li><b>${esc(MUSCLES[x.m])}</b><span>${esc(plural(x.left, "set"))} to go · ${esc(daysAgo(x.days))}</span></li>`).join("")}</ul>
@@ -3991,9 +4046,8 @@ function renderSuggest() {
       return `<li><div class="sug-ex-top"><span class="sug-ex-name">${done ? `<button type="button" class="linkbtn" data-prog="${esc(it.e.name)}">${esc(it.e.name)}</button>` : esc(it.e.name)}</span><b class="num">${esc(it.text)}</b></div><small>${esc(it.why)}</small></li>`; }).join("")}</ul>
     ${ps.leftover >= 1 ? `<p class="note" style="margin:6px 0 0">That leaves about ${plural(ps.leftover, "set")} of this week's goals for another day.</p>` : ""}` : ""}
     ${sugGameHTML(sg, ps)}
-    <div class="sug-actions">${ps.items.length ? `<button class="btn primary small" type="button" data-sug="start">Start this session</button>` : ""}
-      ${others.length ? `<span class="sug-alt">Other ideas: ${others.map(o => `<button class="chip" type="button" data-sug-group="${o.k}">${esc(o.name)}</button>`).join("")}</span>` : ""}</div>
-    ${cardioLine}</section>`;
+    ${cardioLine}</div>` : ""}
+    ${alt.length ? `<p class="sug-alt">Other ideas: ${alt.join("")}</p>` : ""}</section>`;
 }
 /* How much to do: sets per exercise to cover what each muscle still needs (helpers count half),
    2–5 sets an exercise and about 18 in all, each with a next step from last time. */
@@ -4055,6 +4109,7 @@ $("sugCard").addEventListener("click", e => {
   if (b.dataset.sugGroup) { S.sugGroup = b.dataset.sugGroup; renderSuggest(); return renderGlance(); }
   const k = b.dataset.sug;
   if (k === "hide") { prefs.sugHidden = ymd(today()); savePrefs(); toast("Hidden until tomorrow."); renderSuggest(); return renderGlance(); }
+  if (k === "details") { S.sugOpen = !S.sugOpen; renderSuggest(); const nb = document.querySelector("#sugCard [data-sug=details]"); if (nb) nb.focus({ preventScroll: true }); return; }
   if (k === "start" || k === "gym") { startSuggestion(true); if (S.sheet === "lift") enterGym(); return; }
   if (k === "cardio") return openCardio(ymd(today()));
   if (k === "boss-run" || k === "boss-stairs") return openCardio(ymd(today()), [{ ...cItem(), activity: k === "boss-run" ? "run" : "stairs" }]);

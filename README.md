@@ -243,6 +243,8 @@ The app reports your XP, matching what you see in Forged, and the database check
 
 The Today tab shows an idea for what to train, worked out from your week so far. It's only a suggestion, so train whatever feels right.
 
+- **At a glance:** the card shows the focus and one line, for example "Legs · 5 exercises · about 18 sets · +20 XP", with **Start this session** and **See the plan** under it and the other ideas (including **Cardio** when you're behind on it) on one line at the bottom. **See the plan** opens everything below (the reasons, the exercises, XP within reach and the cardio note) in place, and **Hide the plan** folds it again. Tapping **Next** in the at-a-glance strip opens the plan and scrolls to the card. When there's no session to start, the details show straight away.
+
 - **The focus:** Push, Pull, Legs or Core. It's the group with the most sets still to go toward this week's goals, counting only muscles that have had at least two days' rest. A lift counts as training a muscle whether it's a main or a helper muscle.
 - **Late in the week** (Saturday and Sunday), it favours the goals closest to being met instead: the group with the most muscles 5 sets or less from their goal. Those are the ones a session can still finish, and each finished goal is worth XP. The card says so when this applies.
 - **Why:** each of those muscles with its sets to go and when it was last trained, for example "Lats: 8 sets to go · last trained 6 days ago".
@@ -258,7 +260,7 @@ The Today tab shows an idea for what to train, worked out from your week so far.
   - **A running boss fight:** what's left, the time left and the reward, for example "Boss fight: Road Wraith. 3.2 mi to go, 21h 40m left. Win for +1,100 XP", with a **Log a run** or **Log stairs** button. For a sets boss it says how many sets the suggested session adds.
   - **Workout days:** if you haven't trained today and are short of your days goal, what training today earns, for example "Training today reaches your 4-day goal for +50 XP and a 2-week streak (+20 XP)". If the goal is out of reach, it says each day you train still saves 40 XP in missed-day penalties.
   - **Muscle goals:** which goals the suggested session would finish, for example "This session would meet the lats and biceps goals for +40 XP", plus the +100 XP bonus when it would finish every muscle goal.
-- **Other ideas** switch to another focus. A cardio option appears when you're behind on cardio time or distance, with the +75 XP each goal earns when it's met.
+- **Other ideas** switch to another focus. **Cardio** appears when you're behind on cardio time or distance and opens the cardio form; the plan's cardio note gives the +75 XP each goal earns when it's met.
 - **If every muscle goal is met,** or everything behind was trained in the last two days, it suggests a rest day instead.
 - **Hide for today** hides the card until tomorrow.
 
@@ -266,7 +268,9 @@ The Today tab shows an idea for what to train, worked out from your week so far.
 
 - **Get started checklist:** walks new users through setting goals, logging lifts and logging cardio. Each step ticks off when done. You can hide it.
 - **Your progress:** shows how many muscle goals are met, how much of the cardio goal is done, the days left in the range, and the muscles furthest behind. Tap one to see it on the map.
-- **Pace:** in the current week, month or year, each goal is marked *On pace*, *Behind pace* or *Goal met*. The comparison is with how far through the range you are; for example, 2 of 7 days in, you'd be on pace with 2/7 of the goal. The thin line on each bar marks that point. Past ranges show *Goal met* or *Missed*.
+- **Pace:** in the current week, month or year, each goal is on pace, behind, or met. The comparison is with how far through the range you are; for example, 2 of 7 days in, you'd be on pace with 2/7 of the goal. The thin line on each bar marks that point. Past ranges show *Goal met* or *Missed*.
+- **Red only when it matters:** a goal a little behind just shows what's to go ("2h to go") in a neutral colour. It turns red, "Behind pace · 10 sets to go", only when what's left looks hard to fit into the days left, today included. For sets, a muscle can take about half its weekly goal (at least 5 sets) per session with a day's rest between, so with 3 days left 10 shoulder sets is fine but on Sunday it's at risk. For cardio time, distance and stairs, it's red when you'd need more than twice the usual daily pace.
+- **Lifting goals on Stats** are grouped: **Behind** (open, with how many are at risk, those listed first), **On pace** and **Goal met** (folded), and **Missed** or **To go** for past ranges and All. Tap a heading to open or close it. Each row is one line (muscle, bar, sets done / target); only an at-risk row adds a red line saying why.
 - **Legend:** each map labels its colour steps (none yet, under 25%, 25–49%, 50–74%, 75–99%, goal met). "How to read this map" explains how sets and minutes are counted.
 
 ## Cardio
