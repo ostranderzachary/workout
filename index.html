@@ -637,6 +637,14 @@ button.pl-row { cursor: pointer; }
 .gym-cnt span { min-width: 54px; text-align: center; font-size: 12px; color: var(--muted); }
 .gym-cnt span b { color: var(--fg); font-size: 16px; }
 .gym-addex { width: 100%; margin-top: 10px; padding: 12px; border-style: dashed; }
+.gym-adds { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.gym-csel { max-width: 100%; border: 0; background: transparent; color: var(--fg); padding: 0 18px 0 0; font: inherit; font-weight: 700; font-size: 15px; cursor: pointer;
+  appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: right 6px center, right 1px center; background-size: 5px 5px; background-repeat: no-repeat; }
+.gym-csel option { background: var(--surface); color: var(--fg); }
+.gym-ccur .chips { margin-bottom: 12px; }
+.form-sec { display: block; margin: 18px 0 2px; }
+.citem.planned .inp { opacity: .55; }
 .gym-rv-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 10px 0 12px; }
 .gym-rv-stats div { padding: 10px 6px; border-radius: 12px; background: var(--bg); text-align: center; }
 .gym-rv-stats b { display: block; font-family: var(--font-display); font-size: 26px; font-weight: 700; line-height: 1.05; }
@@ -747,6 +755,12 @@ body[data-sheet="gym"] .toast { bottom: auto; top: calc(10px + env(safe-area-ins
 .date-chip b { display: block; font-family: var(--font-display); font-size: 26px; font-weight: 700; }
 .date-chip span { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
 .history .t { font-weight: 600; }
+/* A day with several entries: one card, one date, a row per entry */
+.hday-card { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 6px 6px 6px 12px; display: grid; grid-template-columns: 52px minmax(0,1fr); gap: 6px 12px; align-items: center; }
+.hday-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.hday-list > li + li { border-top: 1px solid var(--line); }
+.history .hday-list button { grid-template-columns: minmax(0,1fr); border: 0; border-radius: 8px; padding: 8px 6px; background: transparent; }
+.history .hday-list button:hover { background: var(--bg); }
 .history .s { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .empty { color: var(--muted); font-size: 14px; padding: 8px 0; }
 
@@ -2379,9 +2393,16 @@ function render() {
   renderCalendar();
 
   // History
-  $("history").innerHTML = c.ws.length ? c.ws.slice(0, 60).map(w => {
-    const d = parse(w.date);
-    const chip = `<span class="date-chip"><b>${d.getDate()}</b><span>${MON[d.getMonth()]} · ${DOW[d.getDay()]}</span></span>`;
+  // A day with more than one entry (say lifts and a run) shows them together under one date; each still opens on its own
+  const chipFor = ds => { const d = parse(ds); return `<span class="date-chip"><b>${d.getDate()}</b><span>${MON[d.getMonth()]} · ${DOW[d.getDay()]}</span></span>`; };
+  const byDay = new Map(); for (const w of c.ws.slice(0, 60)) { if (!byDay.has(w.date)) byDay.set(w.date, []); byDay.get(w.date).push(w); }
+  $("history").innerHTML = c.ws.length ? [...byDay].map(([ds, ws]) => ws.length === 1 ? histRow(ws[0], chipFor(ds))
+    : `<li class="hday"><div class="hday-card">${chipFor(ds)}<ul class="hday-list">${ws.map(w => histRow(w, "")).join("")}</ul></div></li>`).join("")
+    + (c.ws.length > 60 ? `<li class="empty">Showing the 60 most recent of ${c.ws.length}.</li>` : "")
+    : `<li class="empty">No workouts in this range.</li>`;
+}
+function histRow(w, chip) {
+  {
     if (isCardio(w)) {
       const a = CARDIO[w.activity] || CARDIO.run;
       const wd = toUnit(Number(w.distance) || 0, w.distUnit || "mi");
@@ -2390,10 +2411,9 @@ function render() {
       return `<li${w.sample ? "" : ` data-swipe="w:${esc(w.id)}"`}><button type="button" data-w="${esc(w.id)}">${chip}<span style="min-width:0"><div class="t"><span class="badge cardio">${esc(a[0])}</span>${esc(w.name || a[0])}</div><div class="s num">${w.sample ? "" : `<span class="xp-tag">+${xpFor(w)} XP</span> `}${esc(bits.join(" · "))}</div></span></button></li>`;
     }
     const n = (w.exercises || []).reduce((a, x) => a + (x.sets || []).length, 0);
-    return `<li${w.sample ? "" : ` data-swipe="w:${esc(w.id)}"`}><button type="button" data-w="${esc(w.id)}">${chip}<span style="min-width:0"><div class="t"><span class="badge">Lift</span>${esc(liftTitle(w))} <span class="num" style="color:var(--muted);font-weight:500">· ${n} sets</span></div>` +
+    return `<li${w.sample ? "" : ` data-swipe="w:${esc(w.id)}"`}><button type="button" data-w="${esc(w.id)}">${chip}<span style="min-width:0"><div class="t"><span class="badge">Lift</span>${esc(liftTitle(w))} <span class="num" style="color:var(--muted);font-weight:500">· ${plural(n, "set")}</span></div>` +
       `<div class="s">${w.sample ? "" : `<span class="xp-tag">+${xpFor(w)} XP</span> `}${esc((w.exercises || []).map(x => x.name).join(", "))}</div></span></button></li>`;
-  }).join("") + (c.ws.length > 60 ? `<li class="empty">Showing the 60 most recent of ${c.ws.length}.</li>` : "")
-    : `<li class="empty">No workouts in this range.</li>`;
+  }
 }
 
 function renderBreakdown(c, r) {
@@ -3748,7 +3768,7 @@ const restoredNote = () => {
 };
 function openSheet(kind, w) {
   S.error = ""; S.confirmDel = false; S.sheet = kind; S.draftBase = null; S.restoredAt = null;
-  if (kind === "lift") S.draft = w && !w.sample ? JSON.parse(JSON.stringify(w)) : { id: null, date: defaultDate(), name: "", unit: prefs.unit || "lb", exercises: [newEx()] };
+  if (kind === "lift") { S.draft = w && !w.sample ? JSON.parse(JSON.stringify(w)) : { id: null, date: defaultDate(), name: "", unit: prefs.unit || "lb", exercises: [newEx()] }; S.draft.cItems = dayCardio(S.draft.date); }
   if (kind === "cardio") S.draft = w && !w.sample
     ? { id: w.id, kind: "cardio", date: w.date, items: [cItem(w)] } // one session, opened from History
     : { id: null, kind: "cardio", date: defaultDate(), items: [w ? { ...cItem(w), id: null, createdAt: null } : cItem()] };
@@ -3774,7 +3794,7 @@ function closeSheet(done) {
   if (draftKind()) clearDraft();
   if (S.exPick) closeExPick(); if (S.prog) closeProg(); S.sheet = null; S.draft = null; S.draftBase = null; S.restoredAt = null; S.importPending = null; renderSheet();
   if (S.loaded) maybeBossPopup(xpLedger(S.workouts));
-  if (kept) toast(`Closed without saving your ${kept.sheet === "cardio" ? "cardio" : "lifts"}.`, { label: "Undo", fn: () => reopenDraft(kept) });
+  if (kept) toast(`Closed without saving your ${kept.sheet === "cardio" ? "cardio" : "workout"}.`, { label: "Undo", fn: () => reopenDraft(kept) });
 }
 
 /* An input with − and + buttons either side, so numbers can be set without the keyboard.
@@ -3800,10 +3820,11 @@ function dayWord(date) {
 }
 /* Opens the lift form for a date: that day's workout if there is one, else a new one.
    `carry` is exercises already typed into a new form, added on so nothing is lost. */
-function openLift(date = defaultDate(), carry = []) {
+function openLift(date = defaultDate(), carry = [], cCarry = []) {
   const w = liftOn(date);
-  if (!w) { openSheet("lift", null); S.draft.date = date; if (carry.length) S.draft.exercises = carry; return renderSheet(); }
+  if (!w) { openSheet("lift", null); S.draft.date = date; S.draft.cItems = dayCardio(date, cCarry); if (carry.length) S.draft.exercises = carry; return renderSheet(); }
   openSheet("lift", w); S.draft.cont = true;
+  if (cCarry.length) S.draft.cItems = S.draft.cItems.concat(cCarry);
   if (carry.length) S.draft.exercises = S.draft.exercises.concat(carry);
   renderSheet();
   // Start at the last exercise, where the next set goes
@@ -3826,9 +3847,10 @@ function addSheet() {
   const date = defaultDate(), tk = ymd(today()), wt = liftOn(tk);
   // A past workout opens on yesterday, or on the day you're looking at in the Day view
   const past = S.period === "day" && ymd(S.anchor) < tk ? ymd(S.anchor) : ymd(addDays(today(), -1)), wp = liftOn(past);
+  const pastBits = [wp ? liftTitle(wp) : null, ...new Set(cardioOn(past).map(cName))].filter(Boolean);
   return sheetFrame("Log a workout", `<div class="addgrid">
-      <button type="button" class="addopt main" data-act="pick-now"><b>Gym mode</b><span>${wt ? `Lift now, carrying on with today's workout (${esc(liftTitle(wt))}, ${plural(setsIn(wt), "set")} so far), one set at a time` : "Lift now: plan your exercises, then log one set at a time with a rest timer"}</span></button>
-      <button type="button" class="addopt" data-act="pick-past" data-date="${past}"><b>Add or edit a past workout</b><span>${wp ? `Opens your lifts from ${esc(dayWord(past))} (${esc(liftTitle(wp))}). Change the date for another day.` : `One form for logging after the fact. It opens on ${esc(dayWord(past))}; change the date for another day.`}</span></button>
+      <button type="button" class="addopt main" data-act="pick-now"><b>Gym mode</b><span>${wt ? `Lift now, carrying on with today's workout (${esc(liftTitle(wt))}, ${plural(setsIn(wt), "set")} so far), one set at a time` : "Lift now: plan your exercises and cardio, then log one set at a time with a rest timer"}</span></button>
+      <button type="button" class="addopt" data-act="pick-past" data-date="${past}"><b>Add or edit a past workout</b><span>${pastBits.length ? `Opens your workout from ${esc(dayWord(past))} (${esc(pastBits.join(", "))}). Change the date for another day.` : `Lifts and cardio in one form, for logging after the fact. It opens on ${esc(dayWord(past))}; change the date for another day.`}</span></button>
       <button type="button" class="addopt" data-act="pick-cardio"><b>Cardio</b><span>${(() => { const cs = cardioOn(date); return cs.length
         ? `Continue ${date === ymd(today()) ? "today's cardio" : `your cardio from ${esc(dayWord(date))}`}: ${esc([...new Set(cs.map(c => (CARDIO[c.activity] || CARDIO.run)[0]))].join(", "))}`
         : "A run, ride, swim or other session: minutes and distance"; })()}</span></button>
@@ -4389,15 +4411,30 @@ function enterGym() {
     x.sets.forEach((st, j) => { if (st.done == null) st.done = !!(same && j < (sx.sets || []).length); });
     if (!x.sets.length) x.sets.push({ reps: "", weight: "", done: false });
   });
-  if (!d.gym) { d.gym = true; d.gymStep = "plan"; const k = d.exercises.findIndex(x => gymNext(x) >= 0); d.gymI = k >= 0 ? k : d.exercises.length - 1; }
+  for (const it of cList(d)) if (it.done == null) it.done = !!it.id; // cardio already saved counts as done
+  if (!d.gym) { d.gym = true; d.gymStep = "plan"; d.gymI = gymPending(d); }
   S.sheet = "gym"; S.error = ""; renderSheet();
 }
 /* Gym mode goes in three steps, shown at the top: 1 Plan (what you'll do), 2 Lift (one set at a time), 3 Save (review, then save). */
 const GYM_STEPS = [["plan", "Plan"], ["train", "Lift"], ["review", "Save"]];
 const gymStepOf = d => d.gymStep || "train"; // drafts from before the steps were added were mid-workout
 const gymNamed = d => d.exercises.filter(x => x.name.trim());
+const gymHas = d => gymNamed(d).length > 0 || (d.cItems || []).length > 0;
+/* Gym mode steps through the exercises, then the cardio: d.gymI past the last exercise is a cardio activity. */
+const gymLen = d => d.exercises.length + (d.cItems || []).length;
+function gymPending(d) {
+  const k = d.exercises.findIndex(x => gymNext(x) >= 0), c = (d.cItems || []).findIndex(it => !it.done);
+  return k >= 0 ? k : c >= 0 ? d.exercises.length + c : Math.max(0, gymLen(d) - 1);
+}
+// The next thing to do after item `at`: [index, name], or null when everything is done
+function gymNextUp(d, at) {
+  const e = d.exercises.findIndex((y, k) => k !== at && gymNext(y) >= 0);
+  if (e >= 0) return [e, d.exercises[e].name.trim() || `exercise ${e + 1}`];
+  const c = (d.cItems || []).findIndex((it, k) => d.exercises.length + k !== at && !it.done);
+  return c >= 0 ? [d.exercises.length + c, cName(d.cItems[c])] : null;
+}
 const gymSteps = (d, step) => {
-  const at = GYM_STEPS.findIndex(([k]) => k === step), can = gymNamed(d).length > 0;
+  const at = GYM_STEPS.findIndex(([k]) => k === step), can = gymHas(d);
   return `<ol class="gym-steps" aria-label="Gym mode steps">${GYM_STEPS.map(([k, l], n) => `<li class="${n === at ? "cur" : n < at ? "past" : ""}">
     <button type="button" data-gym="step" data-step="${k}"${n === at ? ' aria-current="step"' : ""}${k !== "plan" && !can ? " disabled" : ""}><b>${n < at ? "✓" : n + 1}</b>${l}</button></li>`).join("")}</ol>`;
 };
@@ -4431,33 +4468,46 @@ function gymPlanHTML(d) {
       <button class="x" type="button" data-gym="rm" data-i="${i}" aria-label="Remove ${esc(x.name)}">${XSVG}</button>
       ${!LIB[x.name.trim()] && !(x.p.length || x.s.length) ? `<div id="mus-${i}">${musclesHTML(x, i)}</div>` : ""}</li>`;
   }).join("");
-  const total = items.reduce((a, [x]) => a + x.sets.length, 0);
+  const total = items.reduce((a, [x]) => a + x.sets.length, 0), cl = d.cItems || [], nc = cl.length;
+  const cRows = cl.map((it, k) => {
+    const a = CARDIO[it.activity] || CARDIO.run, m = Number(it.minutes) || 0, lc = lastCardio(it.activity, it.id);
+    const sub = it.done ? `<small class="ok">Done · ${esc(cardioLine(it))}</small>` : lc ? `<small>Last time: ${esc(cardioLine(lc))}</small>` : `<small>Cardio</small>`;
+    return `<li class="gym-pl gym-pl-c"><span class="n">${items.length + k + 1}</span>
+      <div><select class="gym-csel" data-ci="${k}:activity" aria-label="Cardio activity">${C_IDS.map(c => `<option value="${c}"${c === it.activity ? " selected" : ""}>${esc(CARDIO[c][0])}</option>`).join("")}</select>${sub}</div>
+      <div class="gym-cnt" role="group" aria-label="Minutes of ${esc(a[0])}"><button type="button" data-gym="cmin" data-v="-5" data-i="${k}" aria-label="5 minutes less"${m <= 5 ? " disabled" : ""}>−</button><span><b>${m ? fmt(m) : "–"}</b> min</span><button type="button" data-gym="cmin" data-v="5" data-i="${k}" aria-label="5 minutes more"${m >= 600 ? " disabled" : ""}>+</button></div>
+      <button class="x" type="button" data-gym="c-rm" data-i="${k}" aria-label="Remove ${esc(a[0])}">${XSVG}</button></li>`;
+  }).join("");
+  const cText = nc === 1 ? "1 cardio activity" : `${nc} cardio activities`;
+  const summary = [items.length ? `${plural(items.length, "exercise")}, ${plural(total, "set")}` : "", nc ? cText : ""].filter(Boolean).join(" and ");
   return sheetFrame("Gym mode", `${gymSteps(d, "plan")}
     <h3 class="gym-h">Plan your workout</h3>
-    <p class="gym-intro">${items.length ? `${plural(items.length, "exercise")}, ${plural(total, "set")}. Change the sets or add more, then ${started ? "carry on" : "start"}. You can still change things as you go.`
+    <p class="gym-intro">${items.length || nc ? `${summary}. Change ${items.length ? "the sets" : "the minutes"} or add more, then ${started || cl.some(it => it.done) ? "carry on" : "start"}. You can still change things as you go.`
       : "Add the exercises you'll do and how many sets of each. Then you'll go through them one set at a time, with a rest timer."}</p>
     ${sug}
-    ${items.length ? `<ol class="gym-plan">${rows}</ol>` : sug ? "" : `<p class="gym-empty">No exercises yet.</p>`}
-    <button class="btn gym-addex" type="button" data-gym="add">+ Add exercise</button>`,
-    `<button class="btn ghost" type="button" data-gym="form">Edit as a list</button><div class="right"><button class="btn primary" type="button" data-gym="step" data-step="train"${items.length ? "" : " disabled"}>${started ? "Continue ›" : "Start workout ›"}</button></div>`);
+    ${items.length || nc ? `<ol class="gym-plan">${rows}${cRows}</ol>` : sug ? "" : `<p class="gym-empty">No exercises yet.</p>`}
+    <div class="gym-adds"><button class="btn gym-addex" type="button" data-gym="add">+ Add exercise</button><button class="btn gym-addex" type="button" data-gym="c-add">+ Add cardio</button></div>`,
+    `<button class="btn ghost" type="button" data-gym="form">Edit as a list</button><div class="right"><button class="btn primary" type="button" data-gym="step" data-step="train"${items.length || nc ? "" : " disabled"}>${started || cl.some(it => it.done) ? "Continue ›" : "Start workout ›"}</button></div>`);
 }
 /* Step 3: what you did, then save. Only ticked sets are saved. */
 function gymReviewHTML(d) {
   const named = gymNamed(d), g = gymCount(d);
   const doneW = { unit: d.unit, exercises: named.map(x => ({ sets: x.sets.filter(st => st.done).map(st => ({ reps: Number(st.reps) || 0, weight: Number(st.weight) || 0 })) })) };
-  const xp = g.done ? xpFor(doneW) : 0, nEx = named.filter(x => x.sets.some(st => st.done)).length;
+  const cl = d.cItems || [], cDone = cl.filter(it => it.done);
+  const xp = (g.done ? xpFor(doneW) : 0) + cDone.reduce((a, it) => a + xpFor({ kind: "cardio", minutes: it.minutes }), 0), nEx = named.filter(x => x.sets.some(st => st.done)).length;
   const rows = named.map(x => {
     const done = x.sets.filter(st => st.done), left = x.sets.length - done.length;
     return `<li class="${done.length ? "" : "skip"}"><div class="gym-rv-h"><b>${esc(x.name)}</b><span>${done.length ? `✓ ${plural(done.length, "set")}` : "Not started"}</span></div>
       ${done.length ? `<p>${esc(groupSets(done.map(st => setLine(st, d.unit))))}</p>` : ""}
       ${left ? `<small>${done.length ? `${plural(left, "planned set")} not done, so ${left === 1 ? "it won't be" : "they won't be"} saved` : "Won't be saved"}</small>` : ""}</li>`;
-  }).join("");
+  }).join("") + cl.map(it => `<li class="${it.done ? "" : "skip"}"><div class="gym-rv-h"><b>${esc(cName(it))}</b><span>${it.done ? "✓ Done" : "Not started"}</span></div>
+      ${it.done ? `<p>${esc(cardioLine(it))}</p>` : `<small>Won't be saved</small>`}</li>`).join("");
+  const any = g.done || cDone.length;
   return sheetFrame("Gym mode", `${gymSteps(d, "review")}
     <h3 class="gym-h">Review and save</h3>
-    <p class="gym-intro">${g.done ? "Here's what you ticked. Only these sets are saved." : "Nothing is ticked yet. Go back to Lift and tap Done after each set."}</p>
-    <div class="gym-rv-stats"><div><b class="num">${g.done}</b><small>${g.done === 1 ? "set" : "sets"} done</small></div><div><b class="num">${nEx}</b><small>${nEx === 1 ? "exercise" : "exercises"}</small></div><div><b class="num">+${xp}</b><small>XP from sets</small></div></div>
+    <p class="gym-intro">${any ? `Here's what you ticked. Only ${cl.length ? "these" : "these sets"} are saved.` : "Nothing is ticked yet. Go back to Lift and tap Done after each set."}</p>
+    <div class="gym-rv-stats"><div><b class="num">${g.done}</b><small>${g.done === 1 ? "set" : "sets"} done</small></div><div><b class="num">${cl.length ? nEx + cDone.length : nEx}</b><small>${cl.length ? (nEx + cDone.length === 1 ? "exercise or cardio" : "exercises and cardio") : nEx === 1 ? "exercise" : "exercises"}</small></div><div><b class="num">+${xp}</b><small>${cl.length ? "XP" : "XP from sets"}</small></div></div>
     <ul class="gym-rv">${rows}</ul>`,
-    `<button class="btn ghost" type="button" data-gym="step" data-step="train">‹ Back to lifting</button><div class="right"><button class="btn primary" type="button" data-gym="save"${g.done ? "" : " disabled"}>Save workout</button></div>`);
+    `<button class="btn ghost" type="button" data-gym="step" data-step="train">‹ Back to lifting</button><div class="right"><button class="btn primary" type="button" data-gym="save"${any ? "" : " disabled"}>Save workout</button></div>`);
 }
 /* A newly chosen exercise in gym mode gets a set count and starting numbers: the next step up from last time,
    with as many sets as last time (2–5), or 3 empty sets for one you haven't done. */
@@ -4469,19 +4519,55 @@ function gymPrepEx(x) {
   if (l) { x.sug = `${pr.text}. ${pr.why}.`; x.sugText = pr.text; } else { delete x.sug; delete x.sugText; }
 }
 /* Step 2: one exercise at a time. */
-function gymTrainHTML(d) {
-  const i = Math.min(Math.max(0, d.gymI || 0), d.exercises.length - 1), x = d.exercises[i], n = d.exercises.length;
-  const g = gymCount(d), cur = gymNext(x), name = x.name.trim(), unit = d.unit;
-  const ss = name ? exSessions(name) : [], last = ss[ss.length - 1];
-  const nextEx = d.exercises.findIndex((y, k) => k !== i && gymNext(y) >= 0);
-  const strip = `<div class="gym-strip"><div class="gym-bar" role="progressbar" aria-label="Sets done" aria-valuemin="0" aria-valuemax="${g.total}" aria-valuenow="${g.done}"><span style="width:${g.total ? (g.done / g.total) * 100 : 0}%"></span></div>
-    <p>${g.done >= g.total ? `<b>All ${plural(g.total, "set")} done</b>` : `<b>Set ${g.done + 1} of ${g.total}</b>`}${name && cur >= 0 ? ` · ${esc(name)} ${cur + 1} of ${x.sets.length}` : ""}</p></div>`;
-  const rest = d.rest ? (() => { const left = restLeft(d.rest), over = left <= 0;
-    return `<div class="gym-rest${over ? " over" : ""}" id="gymRest" role="timer" aria-live="off">
+function gymRestHTML(d) {
+  if (!d.rest) return "";
+  const left = restLeft(d.rest), over = left <= 0;
+  return `<div class="gym-rest${over ? " over" : ""}" id="gymRest" role="timer" aria-live="off">
       <div class="gym-rest-t" id="gymRestT">${over ? "Rest's up" : mmss(left)}<small>${over ? "next set" : "rest"}</small></div>
       <div class="gym-rest-btns"><button class="btn small" type="button" data-gym="rest-minus" aria-label="15 seconds less">−15s</button><button class="btn small" type="button" data-gym="rest-plus" aria-label="15 seconds more">+15s</button>
         <button class="btn small ghost" type="button" data-gym="rest-skip">${over ? "Hide" : "Skip"}</button></div>
-      <div class="gym-rest-bar"><span id="gymRestBar" style="width:${over ? 0 : (left / d.rest.total) * 100}%"></span></div></div>`; })() : "";
+      <div class="gym-rest-bar"><span id="gymRestBar" style="width:${over ? 0 : (left / d.rest.total) * 100}%"></span></div></div>`;
+}
+const gymTools = (more = "") => `<div class="gym-tools">${more}<button class="btn small" type="button" data-gym="addex">+ Add exercise</button><button class="btn small" type="button" data-gym="c-add">+ Add cardio</button>
+  <button class="btn small ghost" type="button" data-gym="sound" aria-pressed="${prefs.restSound !== false}">Timer sound: ${prefs.restSound !== false ? "on" : "off"}</button></div>`;
+const gymFoot = `<button class="btn ghost" type="button" data-gym="step" data-step="plan">‹ Plan</button><div class="right"><button class="btn primary" type="button" data-gym="step" data-step="review">Finish ›</button></div>`;
+/* A cardio activity in the Lift step: fill in the minutes (and distance), then Done. No rest timer after it. */
+function gymCardioHTML(d, k) {
+  const cl = d.cItems, it = cl[k], nE = d.exercises.length, at = nE + k, N = gymLen(d), a = CARDIO[it.activity] || CARDIO.run;
+  const g = gymCount(d), lc = lastCardio(it.activity, it.id), up = gymNextUp(d, at);
+  const strip = `<div class="gym-strip"><div class="gym-bar" role="progressbar" aria-label="Sets done" aria-valuemin="0" aria-valuemax="${g.total}" aria-valuenow="${g.done}"><span style="width:${g.total ? (g.done / g.total) * 100 : 100}%"></span></div>
+    <p><b>Cardio${cl.length > 1 ? ` ${k + 1} of ${cl.length}` : ""}</b>${g.total ? ` · ${g.done} of ${plural(g.total, "set")} done` : ""}</p></div>`;
+  const body = it.done
+    ? `<ol class="gym-sets"><li class="done"><button type="button" data-gym="c-undo" aria-label="${esc(cName(it))}: ${esc(cardioLine(it))}, done. Tap to change it"><span>${esc(cardioLine(it))}</span><b>✓ Done</b></button></li></ol>
+      <div class="gym-complete"><p>${esc(a[0])} done</p><div class="btn-row">${up ? `<button class="btn primary" type="button" data-gym="goto" data-i="${up[0]}">Next: ${esc(up[1])}</button>`
+        : `<button class="btn primary" type="button" data-gym="step" data-step="review">Review and save ›</button>`}</div></div>`
+    : `<div class="gym-cur gym-ccur">
+      <div class="chips">${C_IDS.map(c => `<button type="button" class="chip" data-activity="${c}" data-i="${k}" aria-pressed="${it.activity === c}">${esc(CARDIO[c][0])}</button>`).join("")}</div>
+      <div class="gym-io"><div><span class="lbl">Minutes</span>${stepper(`<input class="inp num" id="c-min-${k}" type="number" inputmode="numeric" min="0" placeholder="30" value="${esc(it.minutes)}" data-ci="${k}:minutes" aria-label="Minutes">`, 5, "minutes by 5")}</div>
+        ${it.activity === "stairs"
+          ? `<div><span class="lbl">Stories</span>${stepper(`<input class="inp num" id="c-stories-${k}" type="number" inputmode="numeric" min="0" step="1" placeholder="0" value="${esc(it.stories ?? "")}" data-ci="${k}:stories" aria-label="Stories climbed">`, 5, "stories by 5")}</div>`
+          : `<div><span class="lbl">Distance (${esc(it.distUnit || distUnit())}) · optional</span>${stepper(`<input class="inp num" id="c-dist-${k}" type="number" inputmode="decimal" min="0" step="any" placeholder="0" value="${esc(it.distance)}" data-ci="${k}:distance" aria-label="Distance in ${esc(it.distUnit || distUnit())}">`, 0.5, "distance by 0.5")}</div>`}</div>
+      <button class="btn primary gym-done" type="button" data-gym="c-done">Done</button></div>`;
+  return sheetFrame("Gym mode", `${gymSteps(d, "train")}<div class="gym-top">${strip}${gymRestHTML(d)}</div>
+    <div class="gym-main">
+      <div class="gym-nav"><button class="x" type="button" data-gym="prev" aria-label="Previous"${at ? "" : " disabled"}>‹</button>
+        <h3 class="gym-ex">${esc(a[0])}<small>Cardio · ${esc(a[1].concat(a[2]).map(m => MUSCLES[m]).join(", "))}</small></h3>
+        <button class="x" type="button" data-gym="next" aria-label="Next"${at < N - 1 ? "" : " disabled"}>›</button></div>
+      ${lc ? `<p class="gym-last">Last time: ${esc(cardioLine(lc))} · ${esc(shortDate(lc.date))}</p>` : ""}
+      ${body}
+      ${gymTools()}
+    </div>`, gymFoot);
+}
+function gymTrainHTML(d) {
+  const nE = d.exercises.length, at = Math.min(Math.max(0, d.gymI || 0), gymLen(d) - 1);
+  if (at >= nE) return gymCardioHTML(d, at - nE);
+  const i = at, x = d.exercises[i], n = nE, N = gymLen(d);
+  const g = gymCount(d), cur = gymNext(x), name = x.name.trim(), unit = d.unit;
+  const ss = name ? exSessions(name) : [], last = ss[ss.length - 1];
+  const up = gymNextUp(d, i);
+  const strip = `<div class="gym-strip"><div class="gym-bar" role="progressbar" aria-label="Sets done" aria-valuemin="0" aria-valuemax="${g.total}" aria-valuenow="${g.done}"><span style="width:${g.total ? (g.done / g.total) * 100 : 0}%"></span></div>
+    <p>${g.done >= g.total ? `<b>All ${plural(g.total, "set")} done</b>` : `<b>Set ${g.done + 1} of ${g.total}</b>`}${name && cur >= 0 ? ` · ${esc(name)} ${cur + 1} of ${x.sets.length}` : ""}</p></div>`;
+  const rest = gymRestHTML(d);
   const sets = x.sets.map((st, j) => {
     if (st.done) return `<li class="done"><button type="button" data-gym-undo="${j}" aria-label="Set ${j + 1}: ${esc(setLine(st, unit))}, done. Tap to change it"><span>Set ${j + 1} · ${esc(setLine(st, unit))}</span><b>✓ Done</b></button></li>`;
     if (j !== cur) return `<li class="todo"><span>Set ${j + 1}</span><span>${String(st.reps).trim() !== "" ? esc(setLine(st, unit)) : "to do"}</span></li>`;
@@ -4493,22 +4579,20 @@ function gymTrainHTML(d) {
   }).join("");
   const complete = cur < 0 ? `<div class="gym-complete"><p>${name ? `${esc(name)}: all ${plural(x.sets.length, "set")} done` : "All sets done"}</p><div class="btn-row">
       <button class="btn" type="button" data-gym="addset">One more set</button>
-      ${nextEx >= 0 ? `<button class="btn primary" type="button" data-gym="goto" data-i="${nextEx}">Next: ${esc(d.exercises[nextEx].name.trim() || `exercise ${nextEx + 1}`)}</button>`
+      ${up ? `<button class="btn primary" type="button" data-gym="goto" data-i="${up[0]}">Next: ${esc(up[1])}</button>`
         : `<button class="btn primary" type="button" data-gym="step" data-step="review">Review and save ›</button>`}</div></div>` : "";
   return sheetFrame("Gym mode", `${gymSteps(d, "train")}<div class="gym-top">${strip}${rest}</div>
     <div class="gym-main">
       <div class="gym-nav"><button class="x" type="button" data-gym="prev" aria-label="Previous exercise"${i ? "" : " disabled"}>‹</button>
         <h3 class="gym-ex">${name ? `${esc(name)}<small>Exercise ${i + 1} of ${n}${x.p.length ? ` · ${esc(x.p.map(m => MUSCLES[m]).join(", "))}` : ""}</small>`
           : `<button type="button" class="inp ex-pick empty" data-gym="pick"><span>Choose an exercise</span></button><small>Exercise ${i + 1} of ${n}</small>`}</h3>
-        <button class="x" type="button" data-gym="next" aria-label="Next exercise"${i < n - 1 ? "" : " disabled"}>›</button></div>
+        <button class="x" type="button" data-gym="next" aria-label="Next exercise"${i < N - 1 ? "" : " disabled"}>›</button></div>
       ${name && !LIB[name] && !(x.p.length || x.s.length) ? `<div id="mus-${i}">${musclesHTML(x, i)}</div>` : ""}
       ${x.sug ? `<p class="sug-note"><b>Suggested:</b> ${esc(x.sug)}</p>` : ""}
       ${last ? `<p class="gym-last">Last time: ${esc(setsText(last.sets))} · ${esc(shortDate(last.date))}</p>` : ""}
       <ol class="gym-sets">${sets}</ol>${complete}
-      <div class="gym-tools">${cur >= 0 ? `<button class="btn small" type="button" data-gym="addset">+ Add set</button>` : ""}<button class="btn small" type="button" data-gym="addex">+ Add exercise</button>
-        <button class="btn small ghost" type="button" data-gym="sound" aria-pressed="${prefs.restSound !== false}">Timer sound: ${prefs.restSound !== false ? "on" : "off"}</button></div>
-    </div>`,
-    `<button class="btn ghost" type="button" data-gym="step" data-step="plan">‹ Plan</button><div class="right"><button class="btn primary" type="button" data-gym="step" data-step="review">Finish ›</button></div>`);
+      ${gymTools(cur >= 0 ? `<button class="btn small" type="button" data-gym="addset">+ Add set</button>` : "")}
+    </div>`, gymFoot);
 }
 // Scroll the set you're on (or the "all done" box) into view below the timer
 function gymFocus() {
@@ -4517,7 +4601,7 @@ function gymFocus() {
 function gymAction(a) {
   const d = S.draft; if (!d || !d.gym) return;
   const i = Math.min(Math.max(0, d.gymI || 0), d.exercises.length - 1), x = d.exercises[i], k = a.gym;
-  if (k === "prev" || k === "next") { d.gymI = Math.min(d.exercises.length - 1, Math.max(0, i + (k === "next" ? 1 : -1))); const sb = document.querySelector("#sheetRoot .sheet-body"); renderSheet(); if (sb) { const nb = document.querySelector("#sheetRoot .sheet-body"); if (nb) nb.scrollTop = 0; } return; }
+  if (k === "prev" || k === "next") { const at = Math.min(Math.max(0, d.gymI || 0), gymLen(d) - 1); d.gymI = Math.min(gymLen(d) - 1, Math.max(0, at + (k === "next" ? 1 : -1))); const sb = document.querySelector("#sheetRoot .sheet-body"); renderSheet(); if (sb) { const nb = document.querySelector("#sheetRoot .sheet-body"); if (nb) nb.scrollTop = 0; } return; }
   if (k === "goto") { d.gymI = +a.i; renderSheet(); const nb = document.querySelector("#sheetRoot .sheet-body"); if (nb) nb.scrollTop = 0; return; }
   if (k === "form") {
     // Nothing ticked in gym mode yet: switch to a plain form, where every set you fill in is saved
@@ -4530,13 +4614,13 @@ function gymAction(a) {
   if (k === "step") {
     const to = a.step;
     if (to !== "plan") {
-      if (!gymNamed(d).length) return toast("Add an exercise first.");
+      if (!gymHas(d)) return toast("Add an exercise or cardio first.");
       const bare = gymNamed(d).find(y => !LIB[y.name.trim()] && !(y.p.length || y.s.length));
       if (bare) return toast(`Tap the muscles “${bare.name.trim()}” works first.`);
       // Leaving the plan: drop empty rows and start at the first exercise with sets to do
       if (gymStepOf(d) === "plan") {
         d.exercises = d.exercises.filter(y => y.name.trim() || y.sets.some(st => st.done));
-        const nx = d.exercises.findIndex(y => gymNext(y) >= 0); d.gymI = nx >= 0 ? nx : d.exercises.length - 1;
+        d.gymI = gymPending(d);
       }
     }
     d.gymStep = to; S.error = "";
@@ -4557,6 +4641,24 @@ function gymAction(a) {
     return openExPick(j);
   }
   if (k === "rename") return openExPick(+a.i);
+  // Cardio: add (from last time's minutes), change the planned minutes, remove, and tick it done in the Lift step
+  if (k === "c-add") {
+    const L = cList(d), last = L[L.length - 1], act = last ? last.activity : prefs.activity || "run", lc = lastCardio(act);
+    L.push({ ...cItem(), activity: act, minutes: lc ? lc.minutes : 20, done: false });
+    if (gymStepOf(d) !== "plan") { d.gymI = gymLen(d) - 1; const nb = document.querySelector("#sheetRoot .sheet-body"); renderSheet(); const sb = document.querySelector("#sheetRoot .sheet-body"); if (nb && sb) sb.scrollTop = 0; return; }
+    return renderSheet();
+  }
+  if (k === "cmin") { const it = cList(d)[+a.i]; if (it) it.minutes = Math.min(600, Math.max(5, (Number(it.minutes) || 0) + Number(a.v))); return renderSheet(); }
+  if (k === "c-rm") return removeFromForm("ci", +a.i);
+  if (k === "c-done" || k === "c-undo") {
+    const ci = (d.gymI || 0) - d.exercises.length, it = cList(d)[ci]; if (!it) return;
+    if (k === "c-undo") { it.done = false; return renderSheet(); }
+    if (!(Number(it.minutes) > 0)) { toast("Enter the minutes first."); const m = $(`c-min-${ci}`); if (m) m.focus(); return; }
+    it.done = true; d.gymTicked = true; d.rest = null;
+    renderSheet(); gymFocus();
+    if (!gymNextUp(d, d.gymI)) toast("Everything's done. Tap Review and save.");
+    return;
+  }
   if (k === "rm") return removeFromForm("ex", +a.i);
   if (k === "sets-plus" || k === "sets-minus") {
     const y = d.exercises[+a.i]; if (!y) return;
@@ -4589,7 +4691,7 @@ function gymAction(a) {
     const g = gymCount(d), R = Math.min(600, Math.max(15, Number(prefs.rest) || 90));
     d.rest = g.done < g.total ? { end: Date.now() + R * 1000, total: R, alerted: false } : null;
     renderSheet(); gymFocus();
-    if (g.done >= g.total) toast("Every set is done. Tap Review and save.");
+    if (g.done >= g.total) toast(gymNextUp(d, i) ? `Every set is done. Next: ${gymNextUp(d, i)[1]}.` : "Every set is done. Tap Review and save.");
   }
 }
 /* Leave gym mode's "only ticked sets are saved" rule: every set in the form counts again. */
@@ -4597,6 +4699,7 @@ function gymToPlain(d) {
   const clean = !draftDirty();
   for (const k of ["gym", "gymStep", "gymI", "rest", "gymTicked"]) delete d[k];
   for (const y of d.exercises) { delete y.gymNew; for (const st of y.sets) delete st.done; }
+  for (const it of d.cItems || []) delete it.done;
   d.exercises = d.exercises.filter(y => y.name.trim());
   if (!d.exercises.length) d.exercises.push(newEx());
   if (clean) S.draftBase = JSON.stringify(d); // switching views isn't a change you'd need to undo
@@ -4669,12 +4772,14 @@ $("sheetRoot").addEventListener("touchend", e => {
 }, { passive: true });
 
 function liftSheet(d) {
-  const dw = d.cont ? dayWord(d.date) : "";
-  return sheetFrame(d.cont ? (dw === "today" ? "Today's lifts" : dw === "yesterday" ? "Yesterday's lifts" : `Lifts · ${esc(dw)}`) : d.id ? "Edit lifts" : "Log lifts", `
+  const cl = d.cItems || [], dayC = !d.id && cl.some(it => it.id); // a new workout on a day with cardio already logged
+  const dw = d.cont || dayC ? dayWord(d.date) : "";
+  return sheetFrame(d.cont || dayC ? (dw === "today" ? "Today's workout" : dw === "yesterday" ? "Yesterday's workout" : `Workout · ${esc(dw)}`) : d.id ? "Edit workout" : "New workout", `
     ${restoredNote()}${d.gym ? (() => { const g = gymCount(d); return `<div class="cont-note"><span><b>Gym mode:</b> ${g.done} of ${plural(g.total, "set")} done. Only the sets you've ticked are saved.</span>
       <span class="btn-row"><button class="btn small ghost" type="button" data-act="gym-all">Save every set</button><button class="btn small" type="button" data-act="gym">Back to gym mode</button></span></div>`; })()
-      : d.date === ymd(today()) ? `<div class="gym-enter"><span><b>Gym mode</b>Plan your exercises, then log one set at a time with a rest timer</span><button class="btn small primary" type="button" data-act="gym">Start</button></div>` : ""}${d.cont ? `<div class="cont-note"><span>Adding to the workout you logged ${dw === "today" || dw === "yesterday" ? dw : `on ${esc(dw)}`}. Add sets or exercises, then save.</span>
-      <button class="btn small ghost" type="button" data-act="lift-new">Start a separate workout</button></div>` : ""}
+      : d.date === ymd(today()) ? `<div class="gym-enter"><span><b>Gym mode</b>Plan your exercises and cardio, then log one set at a time with a rest timer</span><button class="btn small primary" type="button" data-act="gym">Start</button></div>` : ""}${d.cont ? `<div class="cont-note"><span>Adding to the workout you logged ${dw === "today" || dw === "yesterday" ? dw : `on ${esc(dw)}`}. Add sets, exercises or cardio, then save.</span>
+      <button class="btn small ghost" type="button" data-act="lift-new">Start a separate workout</button></div>`
+      : dayC ? `<div class="cont-note"><span>Your cardio from ${dw === "today" || dw === "yesterday" ? dw : esc(dw)} is below. Add lifts or more cardio, then save.</span></div>` : ""}
     <div class="field"><label for="f-date">Date</label><input class="inp" id="f-date" type="date" value="${esc(d.date)}" max="${ymd(today())}" data-f="date"></div>
     <div class="field" style="margin-top:10px"><span class="lbl">Weight unit</span>
       <div class="tags">${["lb", "kg"].map(u => `<button type="button" class="tag ${d.unit === u ? "p" : ""}" data-unit="${u}">${u}</button>`).join("")}</div></div>
@@ -4692,7 +4797,8 @@ function liftSheet(d) {
         </div>
         <div><button class="btn small" type="button" data-addset="${i}">+ Add set</button></div>
       </div>`).join("")}
-    <div style="margin-top:12px"><button class="btn" type="button" data-act="addex">+ Add exercise</button></div>`,
+    ${cl.length ? `<h4 class="lbl form-sec" id="cardioSec">Cardio</h4>${cl.map((it, i) => cItemHTML(it, i, { many: true, rm: true, planned: d.gym && it.done === false })).join("")}` : ""}
+    <div class="btn-row" style="margin-top:12px"><button class="btn" type="button" data-act="addex">+ Add exercise</button><button class="btn" type="button" data-act="lc-add">+ Add cardio</button></div>`,
     delActions(d.id ? "Save changes" : "Save workout"));
 }
 
@@ -4701,6 +4807,39 @@ const cItem = w => w ? { id: w.id || null, activity: w.activity || "run", minute
   stories: w.stories || "", name: w.name || "", createdAt: w.createdAt || null }
   : { id: null, activity: prefs.activity || "run", minutes: "", distance: "", distUnit: distUnit(), stories: "", name: "", createdAt: null };
 const cBlank = it => !it.id && [it.minutes, it.distance, it.stories, it.name].every(v => String(v ?? "").trim() === "");
+/* The lift form and gym mode also hold the day's cardio (d.cItems), so one form covers a whole workout. Each activity is
+   still saved as its own cardio session, so goals, XP and History count it exactly as before. */
+const cList = d => d.items || (d.cItems = d.cItems || []);
+const dayCardio = (date, carry = []) => cardioOn(date).map(cItem).concat(carry);
+const cNew = d => (d.cItems || []).filter(it => !it.id && !cBlank(it));
+const cName = it => (CARDIO[it.activity] || CARDIO.run)[0];
+const cardioLine = it => {
+  const m = Number(it.minutes) || 0, st = Math.round(Number(it.stories) || 0), dv = Number(it.distance) || 0;
+  return [`${fmt(m)} min`, it.activity === "stairs" ? (st ? `${st} ${st === 1 ? "story" : "stories"}` : null) : dv ? `${fmt(dv)} ${it.distUnit || distUnit()}` : null].filter(Boolean).join(" · ");
+};
+// Your last session of an activity (not counting the one being edited)
+const lastCardio = (act, exceptId) => S.workouts.filter(w => !w.sample && isCardio(w) && w.activity === act && w.id !== exceptId)
+  .sort((a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0))[0] || null;
+/* One cardio activity's fields. `rm` shows the remove button; `planned` marks one gym mode hasn't ticked yet. */
+function cItemHTML(it, i, { many, rm, planned } = {}) {
+  const a = CARDIO[it.activity] || CARDIO.run, at = it.createdAt ? new Date(it.createdAt) : null;
+  const sub = planned ? "not done yet, so it won't be saved" : it.id ? `logged${at ? ` ${at.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : ""}` : many ? "new" : "";
+  return `<div class="ex citem${planned ? " planned" : ""}">
+    <div class="citem-top"><span class="lbl">Activity ${i + 1}${sub ? ` <small>· ${sub}</small>` : ""}</span>
+      ${rm ? `<button class="x" type="button" data-crm="${i}" aria-label="Remove activity ${i + 1}">${XSVG}</button>` : ""}</div>
+    <div class="chips">${C_IDS.map(k => `<button type="button" class="chip" data-activity="${k}" data-i="${i}" aria-pressed="${it.activity === k}">${esc(CARDIO[k][0])}</button>`).join("")}</div>
+    <div class="tags">${a[1].map(m => `<span class="tag p">${esc(MUSCLES[m])}</span>`).join("")}${a[2].map(m => `<span class="tag s">${esc(MUSCLES[m])}</span>`).join("")}</div>
+    <div class="row2">
+      <div class="field"><label for="c-min-${i}">Minutes <small>±5</small></label>${stepper(`<input class="inp num" id="c-min-${i}" type="number" inputmode="numeric" min="0" placeholder="30" value="${esc(it.minutes)}" data-ci="${i}:minutes">`, 5, "minutes by 5")}</div>
+      ${cDistField(it, i)}
+    </div>
+    <div class="field"><label for="c-name-${i}">Name · optional</label><input class="inp" id="c-name-${i}" type="text" placeholder="${esc(a[0])}" value="${esc(it.name)}" data-ci="${i}:name"></div>
+  </div>`;
+}
+const cDistField = (it, i) => it.activity === "stairs"
+  ? `<div class="field"><label for="c-stories-${i}">Stories climbed <small>±5</small></label>${stepper(`<input class="inp num" id="c-stories-${i}" type="number" inputmode="numeric" min="0" step="1" placeholder="0" value="${esc(it.stories ?? "")}" data-ci="${i}:stories">`, 5, "stories by 5")}</div>`
+  : `<div class="field"><label for="c-dist-${i}">Distance · optional <small>±0.5</small></label><div class="withunit">${stepper(`<input class="inp num" id="c-dist-${i}" type="number" inputmode="decimal" min="0" step="any" placeholder="0" value="${esc(it.distance)}" data-ci="${i}:distance">`, 0.5, "distance by 0.5")}
+    ${["mi", "km"].map(u => `<button type="button" class="tag ${it.distUnit === u ? "p" : ""}" data-cunit="${u}" data-i="${i}">${u}</button>`).join("")}</div></div>`;
 function cardioSheet(d) {
   const dw = d.cont ? dayWord(d.date) : "";
   const title = d.cont ? (dw === "today" ? "Today's cardio" : dw === "yesterday" ? "Yesterday's cardio" : `Cardio · ${esc(dw)}`) : d.id ? "Edit cardio" : "Log cardio";
@@ -4708,24 +4847,7 @@ function cardioSheet(d) {
   return sheetFrame(title, `
     ${restoredNote()}${d.cont ? `<div class="cont-note"><span>Your cardio from ${dw === "today" || dw === "yesterday" ? dw : esc(dw)} is below. Fill in the new activity at the bottom, or change any of them, then save.</span></div>` : ""}
     <div class="field"><label for="c-date">Date</label><input class="inp" id="c-date" type="date" value="${esc(d.date)}" max="${ymd(today())}" data-f="date"></div>
-    ${items.map((it, i) => {
-      const a = CARDIO[it.activity] || CARDIO.run, at = it.createdAt ? new Date(it.createdAt) : null;
-      const sub = it.id ? `logged${at ? ` ${at.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : ""}` : many ? "new" : "";
-      return `<div class="ex citem">
-        <div class="citem-top"><span class="lbl">Activity ${i + 1}${sub ? ` <small>· ${sub}</small>` : ""}</span>
-          ${many ? `<button class="x" type="button" data-crm="${i}" aria-label="Remove activity ${i + 1}">${XSVG}</button>` : ""}</div>
-        <div class="chips">${C_IDS.map(k => `<button type="button" class="chip" data-activity="${k}" data-i="${i}" aria-pressed="${it.activity === k}">${esc(CARDIO[k][0])}</button>`).join("")}</div>
-        <div class="tags">${a[1].map(m => `<span class="tag p">${esc(MUSCLES[m])}</span>`).join("")}${a[2].map(m => `<span class="tag s">${esc(MUSCLES[m])}</span>`).join("")}</div>
-        <div class="row2">
-          <div class="field"><label for="c-min-${i}">Minutes <small>±5</small></label>${stepper(`<input class="inp num" id="c-min-${i}" type="number" inputmode="numeric" min="0" placeholder="30" value="${esc(it.minutes)}" data-ci="${i}:minutes">`, 5, "minutes by 5")}</div>
-          ${it.activity === "stairs"
-            ? `<div class="field"><label for="c-stories-${i}">Stories climbed <small>±5</small></label>${stepper(`<input class="inp num" id="c-stories-${i}" type="number" inputmode="numeric" min="0" step="1" placeholder="0" value="${esc(it.stories ?? "")}" data-ci="${i}:stories">`, 5, "stories by 5")}</div>`
-            : `<div class="field"><label for="c-dist-${i}">Distance · optional <small>±0.5</small></label><div class="withunit">${stepper(`<input class="inp num" id="c-dist-${i}" type="number" inputmode="decimal" min="0" step="any" placeholder="0" value="${esc(it.distance)}" data-ci="${i}:distance">`, 0.5, "distance by 0.5")}
-            ${["mi", "km"].map(u => `<button type="button" class="tag ${it.distUnit === u ? "p" : ""}" data-cunit="${u}" data-i="${i}">${u}</button>`).join("")}</div></div>`}
-        </div>
-        <div class="field"><label for="c-name-${i}">Name · optional</label><input class="inp" id="c-name-${i}" type="text" placeholder="${esc(a[0])}" value="${esc(it.name)}" data-ci="${i}:name"></div>
-      </div>`;
-    }).join("")}
+    ${items.map((it, i) => cItemHTML(it, i, { many, rm: many })).join("")}
     <button class="btn small" type="button" data-act="c-add" style="margin-top:12px">+ Add activity</button>`,
     delActions(d.id ? "Save changes" : "Save cardio"));
 }
@@ -5218,19 +5340,21 @@ $("sheetRoot").addEventListener("change", e => {
     } else if (d.cont) { openCardio(date, carry); toast(`No cardio logged ${on} yet, so this is a new session.`); }
   }
   if (e.target.id === "f-date" && S.sheet === "lift" && e.target.value) {
-    const d = S.draft, date = e.target.value;
-    if (d.id && !d.cont) return; // editing a workout from History: a new date moves it
+    const d = S.draft, date = e.target.value, cCarry = cNew(d);
+    const swapCardio = () => { d.cItems = dayCardio(date, cCarry); d.cRemoved = []; renderSheet(); };
+    if (d.id && !d.cont) return swapCardio(); // editing a workout from History: a new date moves it
     const carry = d.id ? [] : d.exercises.filter(x => (x.name || "").trim());
     if (liftOn(date, d.id)) {
-      openLift(date, carry);
+      openLift(date, carry, cCarry);
       toast(`Opened your workout from ${dayWord(date)}${carry.length ? `, with the ${carry.length === 1 ? "exercise" : "exercises"} you'd entered added` : ""}.`);
-    } else if (d.cont) { openSheet("lift", null); S.draft.date = date; renderSheet(); toast(`No lifts logged ${dayWord(date) === "today" || dayWord(date) === "yesterday" ? dayWord(date) : `on ${dayWord(date)}`} yet, so this is a new workout.`); }
+    } else if (d.cont) { openSheet("lift", null); S.draft.date = date; S.draft.cItems = dayCardio(date, cCarry); renderSheet(); toast(`No lifts logged ${dayWord(date) === "today" || dayWord(date) === "yesterday" ? dayWord(date) : `on ${dayWord(date)}`} yet, so this is a new workout.`); }
+    else swapCardio();
   }
 });
 $("sheetRoot").addEventListener("input", e => {
   const d = S.draft, t = e.target; if (!d) return;
   if (t.dataset.f) d[t.dataset.f] = t.value;
-  if (t.dataset.ci && d.items) { const [i, f] = t.dataset.ci.split(":"); d.items[+i][f] = t.value; }
+  if (t.dataset.ci && (d.items || d.cItems)) { const [i, f] = t.dataset.ci.split(":"), it = cList(d)[+i]; if (it) { it[f] = t.value; if (f === "activity") renderSheet(); } }
   if (t.dataset.goal) {
     const k = t.dataset.goal;
     if (k === "bw") d.bwInput = t.value;
@@ -5291,28 +5415,35 @@ function refocus(id) {
   el.focus(); if (el.select) try { el.select(); } catch {}
 }
 
+// Form items to cardio sessions, and saving them (unchanged ones are left alone; removed ones are deleted)
+function cardioWs(items, date) {
+  const now = Date.now();
+  const ws = items.map((it, i) => ({
+    id: it.id || `c${(now + i).toString(36)}${Math.random().toString(36).slice(2, 6)}`, kind: "cardio", date, name: (it.name || "").trim(), activity: it.activity,
+    minutes: Number(it.minutes) || 0, distance: it.activity === "stairs" ? 0 : Number(it.distance) || 0, distUnit: it.distUnit,
+    stories: it.activity === "stairs" ? Math.max(0, Math.round(Number(it.stories) || 0)) : 0, createdAt: it.createdAt || now + i }));
+  if (ws.length) { prefs.activity = ws[ws.length - 1].activity; savePrefs(); }
+  return ws;
+}
+async function storeCardio(list, ws, removed) {
+  for (const id of removed || []) { const r = await Store.remove(id, list); list = Array.isArray(r) ? r : list.filter(x => x.id !== id); }
+  for (const w of ws) {
+    const old = list.find(x => x.id === w.id);
+    if (old && ["date", "name", "activity", "minutes", "distance", "distUnit", "stories", "createdAt"].every(k => (old[k] ?? "") === (w[k] ?? ""))) continue; // unchanged
+    const r = await Store.save(w, list); list = Array.isArray(r) ? r : list.filter(x => x.id !== w.id).concat([w]);
+  }
+  return list;
+}
 async function saveCardio(d) {
   primeVoice();
   const items = d.items.filter(it => !cBlank(it) || d.items.length === 1);
   const bad = items.findIndex(it => !((Number(it.minutes) || 0) > 0));
   if (bad >= 0) { S.error = items.length > 1 ? `Enter the minutes for activity ${d.items.indexOf(items[bad]) + 1}.` : "Enter how many minutes the session took."; return renderSheet(); }
   if (!items.length && !(d.removed || []).length) { S.error = "Enter how many minutes the session took."; return renderSheet(); }
-  const now = Date.now();
-  const ws = items.map((it, i) => ({
-    id: it.id || `c${(now + i).toString(36)}${Math.random().toString(36).slice(2, 6)}`, kind: "cardio", date: d.date, name: (it.name || "").trim(), activity: it.activity,
-    minutes: Number(it.minutes) || 0, distance: it.activity === "stairs" ? 0 : Number(it.distance) || 0, distUnit: it.distUnit,
-    stories: it.activity === "stairs" ? Math.max(0, Math.round(Number(it.stories) || 0)) : 0, createdAt: it.createdAt || now + i }));
-  if (ws.length) { prefs.activity = ws[ws.length - 1].activity; savePrefs(); }
+  const ws = cardioWs(items, d.date);
   try {
     const before = xpLedger(S.workouts);
-    let list = S.workouts;
-    for (const id of d.removed || []) { const r = await Store.remove(id, list); list = Array.isArray(r) ? r : list.filter(x => x.id !== id); }
-    for (const w of ws) {
-      const old = list.find(x => x.id === w.id);
-      if (old && ["date", "name", "activity", "minutes", "distance", "distUnit", "stories", "createdAt"].every(k => (old[k] ?? "") === (w[k] ?? ""))) continue; // unchanged
-      const r = await Store.save(w, list); list = Array.isArray(r) ? r : list.filter(x => x.id !== w.id).concat([w]);
-    }
-    S.workouts = list;
+    S.workouts = await storeCardio(S.workouts, ws, d.removed);
     rangeTo(parse(d.date)); closeSheet(true); render();
     rewardXP(before, xpLedger(S.workouts), []);
   } catch (ex) { S.error = ex && ex.message && Store.mode === "local" ? ex.message : "Couldn't save the workout. Check your connection and try again."; renderSheet(); }
@@ -5369,27 +5500,34 @@ async function saveDraft() {
       name: x.name.trim(), p: x.p, s: x.s,
       sets: x.sets.filter(st => !(gym && st.done === false) && String(st.reps).trim() !== "").map(st => ({ reps: Number(st.reps) || 0, weight: Number(st.weight) || 0 }))
     })).filter(x => x.name && (!gym || x.sets.length)); // in gym mode, only sets ticked as done are saved
+    // The day's cardio in the same form: blank new ones are dropped; in gym mode, only ones ticked as done are saved
+    const cIt = (d.cItems || []).filter(it => !cBlank(it) && !(gym && it.done === false)), cRem = d.cRemoved || [];
+    const cOnly = !exercises.length && !d.id && (cIt.length > 0 || cRem.length > 0);
+    const cBad = cIt.find(it => !((Number(it.minutes) || 0) > 0));
     let err = "";
-    if (!exercises.length) err = gym ? "Tick at least one set as done, then finish." : "Add at least one exercise.";
+    if (!exercises.length && !cOnly) err = gym ? ((d.cItems || []).length ? "Tick at least one set or cardio activity as done, then finish." : "Tick at least one set as done, then finish.") : "Add at least one exercise.";
     else if (exercises.some(x => !x.p.length && !x.s.length)) err = `Choose the muscles that “${exercises.find(x => !x.p.length && !x.s.length).name}” works.`;
     else if (exercises.some(x => !x.sets.length)) err = `Enter reps for at least one set of “${exercises.find(x => !x.sets.length).name}”.`;
+    else if (cBad) err = `Enter the minutes for “${cName(cBad)}”.`;
     if (err) { S.error = err; return renderSheet(); }
-    w = { id: d.id || `w${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, date: d.date, name: (d.name || "").trim(), unit: d.unit, exercises, createdAt: d.createdAt || Date.now() };
+    w = exercises.length ? { id: d.id || `w${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, date: d.date, name: (d.name || "").trim(), unit: d.unit, exercises, createdAt: d.createdAt || Date.now() } : null;
+    var cws = cardioWs(cIt, d.date), cRemoved = cRem;
   }
   try {
     const before = xpLedger(S.workouts);
-    const prevBest = personalRecords(S.workouts.filter(x => x.id !== w.id));
-    const records = isCardio(w) ? [] : (w.exercises || []).map(x => {
+    const prevBest = w ? personalRecords(S.workouts.filter(x => x.id !== w.id)) : {};
+    const records = !w ? [] : (w.exercises || []).map(x => {
       const top = Math.max(0, ...(x.sets || []).map(st => toLb(st.weight, w.unit)));
       const prev = prevBest[x.name.trim().toLowerCase()];
       return prev && top > prev.lb + 1e-6 ? `${x.name} ${showWt(top)}` : null;
     }).filter(Boolean);
-    const r = await Store.save(w, S.workouts);
-    if (Array.isArray(r)) S.workouts = r;
-    else S.workouts = S.workouts.filter(x => x.id !== w.id).concat([w]);
-    rangeTo(parse(w.date)); closeSheet(true); render();
+    let list = await storeCardio(S.workouts, cws, cRemoved);
+    if (w) { const r = await Store.save(w, list); list = Array.isArray(r) ? r : list.filter(x => x.id !== w.id).concat([w]); }
+    S.workouts = list;
+    rangeTo(parse(d.date)); closeSheet(true); render();
     rewardXP(before, xpLedger(S.workouts), records);
-    if (d.gym) openWorkout(S.workouts.find(x => x.id === w.id) || w); // the wrap-up: sets, volume, XP and records
+    // Gym mode's wrap-up: the lifts (sets, volume, XP and records), or the cardio if that's all you did
+    if (d.gym) openWorkout(w ? S.workouts.find(x => x.id === w.id) || w : S.workouts.find(x => x.id === (cws[cws.length - 1] || {}).id));
   } catch (ex) { S.error = ex && ex.message && Store.mode === "local" ? ex.message : "Couldn't save the workout. Check your connection and try again."; renderSheet(); }
 }
 
@@ -5419,7 +5557,7 @@ $("sheetRoot").addEventListener("click", async e => {
   if (a.act === "pick-now" || a.act === "pick-gym") { openLift(ymd(today())); if (S.sheet === "lift") enterGym(); return; }
   if (a.act === "pick-past") return openLift(a.date);
   if (a.act === "pick-lift") return openLift();
-  if (a.act === "lift-new") { const dt = d.date; openSheet("lift", null); S.draft.date = dt; return renderSheet(); }
+  if (a.act === "lift-new") { const dt = d.date; openSheet("lift", null); S.draft.date = dt; S.draft.cItems = []; return renderSheet(); }
   if (a.act === "open-share") return openShare();
   if (a.act === "boss-start") return startFight(Number(a.tier));
   if (a.act === "boss-end") return endFight(Number(a.tier));
@@ -5444,8 +5582,15 @@ $("sheetRoot").addEventListener("click", async e => {
   if (a.act === "save") return saveDraft();
   if (a.act === "goals-reset") { S.draft = { ...JSON.parse(JSON.stringify(DEFAULT_GOALS)), history: d.history }; renderSheet(); return toast("Default goals filled in. Save goals to keep them."); }
   if (a.unit) { d.unit = a.unit; prefs.unit = a.unit; savePrefs(); return renderSheet(); }
-  if (a.cunit) { d.items[+a.i].distUnit = a.cunit; prefs.dist = a.cunit; savePrefs(); return renderSheet(); }
-  if (a.activity && d.items) { d.items[+a.i].activity = a.activity; return renderSheet(); }
+  if (a.cunit && (d.items || d.cItems)) { cList(d)[+a.i].distUnit = a.cunit; prefs.dist = a.cunit; savePrefs(); return renderSheet(); }
+  if (a.activity && (d.items || d.cItems)) { cList(d)[+a.i].activity = a.activity; return renderSheet(); }
+  if (a.act === "lc-add") { // cardio in the lift form
+    const L = cList(d), last = L[L.length - 1];
+    L.push({ ...cItem(), activity: last ? last.activity : prefs.activity || "run" });
+    renderSheet();
+    const it = document.querySelectorAll("#sheetRoot .citem"); if (it.length) it[it.length - 1].scrollIntoView({ block: "start", behavior: "smooth" });
+    return;
+  }
   if (a.act === "c-add") {
     const last = d.items[d.items.length - 1];
     d.items.push({ ...cItem(), activity: last ? last.activity : prefs.activity || "run" });
@@ -5501,14 +5646,17 @@ function removeFromForm(kind, i, j) {
     label = `set ${j + 1}${x.name.trim() ? ` of ${x.name.trim()}` : ""}`;
     undo = () => { if (d.exercises.includes(x)) x.sets.splice(Math.min(j, x.sets.length), 0, gone); };
   } else {
-    const [gone] = d.items.splice(i, 1), blank = !d.items.length ? cItem() : null;
-    if (gone && gone.id) d.removed = (d.removed || []).concat([gone.id]);
-    if (blank) d.items.push(blank);
-    label = `activity ${i + 1}`;
+    // The cardio form always keeps one activity; the lift form can have none. Saved ones are deleted on save.
+    const L = cList(d), rk = d.items ? "removed" : "cRemoved";
+    const [gone] = L.splice(i, 1), blank = d.items && !L.length ? cItem() : null;
+    if (!gone) return;
+    if (gone.id) d[rk] = (d[rk] || []).concat([gone.id]);
+    if (blank) L.push(blank);
+    label = d.items ? `activity ${i + 1}` : cName(gone).toLowerCase();
     undo = () => {
-      if (blank) { const k = d.items.indexOf(blank); if (k >= 0 && cBlank(blank)) d.items.splice(k, 1); }
-      d.items.splice(Math.min(i, d.items.length), 0, gone);
-      if (gone && gone.id) d.removed = (d.removed || []).filter(x => x !== gone.id);
+      if (blank) { const k = L.indexOf(blank); if (k >= 0 && cBlank(blank)) L.splice(k, 1); }
+      L.splice(Math.min(i, L.length), 0, gone);
+      if (gone.id) d[rk] = (d[rk] || []).filter(x => x !== gone.id);
     };
   }
   renderSheet();
