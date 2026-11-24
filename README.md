@@ -12,17 +12,17 @@ A mobile-friendly workout tracker. Log lifts and cardio, set daily goals, and se
 - **Heat map:** switch between Day, Week, Month, Year and All, and step back through earlier periods (see **Ranges** below). Tap a muscle to see which exercises worked it.
 - **Sets per muscle:** a set counts 1 for the main muscles and 0.5 for helper muscles. The weekly view marks a 10–20 sets per week target.
 - **Workout summary:** tapping a saved workout, in History, the calendar, the XP list or an exercise's progress page, opens a read-only summary. **Edit** opens the form, where you can change or delete it.
-  - **Lifting:** sets, volume, XP and records at the top. Then each exercise with its muscles and sets, a **New record** or **First time** tag, and a comparison with the last time you did it, such as "+5 lb on your top set · last time Nov 17: 185 × 5 · 185 × 5 lb". Bodyweight exercises compare reps. Tap an exercise's name to open its progress page.
+  - **Lifting:** sets, volume, XP and records at the top. Then each exercise with its muscles and sets, a **New record** or **First time** tag, and a comparison with the last time you did it, such as "+5 lb on your top set · last time Nov 17: 185 lb × 5 (2 sets)". Bodyweight exercises compare reps. Tap an exercise's name to open its progress page.
   - **Cardio:** time, distance (or stories), pace or speed, and XP, compared with your last session of the same activity, such as "+2m time · +0.5 mi · 51 sec/mi faster". Then the muscles it works.
   - **Both** end with how the workout's XP was earned.
 - **Calendar:** the History tab opens with a month calendar, Monday to Sunday. Each day is shaded by the XP you earned, brighter for more, with a dot for lifting and a ring for cardio. Below it are the month's totals: workout days, lifting workouts, cardio sessions and XP. Tap a day to see its workouts and XP line items, tap a workout to open it, or log lifts or cardio for that day. Use the arrows (or swipe on a phone) to change month, and **Today** to jump back.
 - **Logging a workout: the + button offers three choices.**
-  - **Lift now** (highlighted) opens gym mode for today, starting at Plan. If you've already lifted today, it says "Carry on with today's workout" with the sets so far, and that workout's sets show as done.
+  - **Gym mode** (highlighted, "Lift now: plan your exercises, then log one set at a time") opens gym mode for today, starting at Plan. If you've already lifted today, it says "Lift now, carrying on with today's workout" with the sets so far, and that workout's sets show as done.
   - **Add or edit a past workout** opens the list form on yesterday (or on the day you're looking at in the Day view). If that day has a lifting workout, it opens so you can change it or add to it; change the date for another day. Tap **Start a separate workout** at the top of the form to log a new session instead.
   - **Cardio** opens the cardio form.
 - **Changing the date in the list form:** if the new day already has a lifting workout, it opens, and anything you'd already entered is added to it. Editing a workout from History is different: changing its date moves it.
 - Example workouts are shown until you log your first one. They are never saved.
-- **Gym mode:** log as you train, in three steps shown at the top: **1 Plan › 2 Lift › 3 Save**. Start it with **+ → Lift now**, **Start this session** on the suggestion card, or the gym mode box at the top of today's lifting form.
+- **Gym mode:** log as you train, in three steps shown at the top: **1 Plan › 2 Lift › 3 Save**. Start it with **+ → Gym mode**, **Start this session** on the suggestion card, or the gym mode box at the top of today's lifting form.
   - **1 Plan:** list the exercises you'll do and how many sets of each. **+ Add exercise** opens the exercise picker. Each exercise you've done before gets as many sets as last time (2–5) and the next step up, for example "Suggested: 3 × 10 at 125 lb". A new one gets 3 sets. Use **− / +** to change the sets, tap a name to swap the exercise, or **×** to remove it (with Undo). With an empty plan, **Today's suggestion** offers the whole session: tap **Use it**. **Start workout ›** is ready once there's an exercise. From the suggestion card, the plan is already filled in.
   - **2 Lift:** one exercise at a time, with its suggestion and last time's sets. Move between exercises with ‹ and ›, or by swiping left and right. The set you're on is shown large, with big − / + buttons for reps and weight and a **Done** button. After Done, the next set starts from what you just did: the same weight, and the same reps unless different reps were planned. Tap a done set to change it, or **Skip this set** (with Undo). When an exercise is finished, **Next: …** moves on, and after the last one **Review and save ›** appears.
   - **Rest timer:** ticking a set starts a 90-second rest. **−15s** and **+15s** adjust it, and the next rest starts from your new length. When it ends, it shows "Rest's up", beeps and vibrates. iPhones can't vibrate from a web page, so they only beep. **Timer sound** turns the beep off. Where the browser supports it, the screen stays on in gym mode.
@@ -55,7 +55,7 @@ The app is split into five sections: Today, Maps, Stats, History and You. On pho
 - **History:** your workout list.
 - **You:** your profile and every setting in one place (see below).
 
-The **+** button in the middle logs a workout: **Lift now** (gym mode), **Add or edit a past workout** (the list form) or **Cardio**. On phones, forms open full screen and fit the space above the keyboard. The Save button stays pinned at the bottom, and the field you're typing in scrolls into view. Number fields have **− / +** buttons, so you rarely need the keyboard. Each tap changes reps by 1, weight by 5 lb (2.5 kg), cardio minutes by 5 and distance by 0.5. Tapping + on an empty set starts from the set above, or from what you did last time for that exercise. New sets copy the set above.
+The **+** button in the middle logs a workout: **Gym mode**, **Add or edit a past workout** (the list form) or **Cardio**. On phones, forms open full screen and fit the space above the keyboard. The Save button stays pinned at the bottom, and the field you're typing in scrolls into view. Number fields have **− / +** buttons, so you rarely need the keyboard. Each tap changes reps by 1, weight by 5 lb (2.5 kg), cardio minutes by 5 and distance by 0.5. Tapping + on an empty set starts from the set above, or from what you did last time for that exercise. New sets copy the set above.
 
 Wider screens put all five in a left sidebar, with a **Log workout** button at the top. Each tab lays its panels out in two columns, and the Maps tab uses the full width.
 
@@ -64,19 +64,21 @@ Wider screens put all five in a left sidebar, with a **Log workout** button at t
 A strip just below the leaderboard card shows where your week stands:
 
 - **Level ring:** your level, with the ring filling as you earn XP toward the next one. Tap it for the Level screen.
+- **Title and XP:** your title and "70 / 300 XP to level 4 · Gold Cloak at 10". Tap for the Level screen. (Today no longer has a separate level card: your level shows in the header chip and this ring.)
 - **This week:** seven dots, Monday to Sunday, filled for days you trained. Today is outlined and the days ahead are dashed. Below them: "2 of 4 days this week" (or the days trained, with no days goal) and your streak.
+- **What's at stake:** for example "Train 2 more days by Sunday (3 days left, including today) for +50 XP and your streak. Falling short costs 80 XP", or "Days goal met: +50 XP", followed by last week's result. When the red streak warning below is showing, this line keeps only the cost.
 - **Urgent lines,** shown only when they apply:
   - **Boss fight:** a running fight with what's left and the time left, for example "Road Wraith · 3.2 of 6.2 mi · 21h 40m left". Tap to open it.
   - **Streak:** when your streak breaks unless you train every day left this week and you haven't trained today, for example "Train today and every day through Sunday to keep your 2-week streak". Tap to log a workout.
 - **Next:** the suggestion in one line, for example "Pull · about 10 sets · +140 XP". Tap to jump to the full suggestion (it opens if folded). Hidden when you've hidden the suggestion for today.
 
-**Fold cards to one line:** the level card, the boss card, Your progress and the suggestion each have a small ⌃ button that folds them to a single line, such as "Your progress · 4 of 15 muscle goals · 60% of cardio · Nov 16–22". Tap the line to open the card again. Forged remembers which cards you folded (across devices when you're signed in), and the order stays the same.
+**Fold cards to one line:** the boss card, Your progress and the suggestion each have a small ⌃ button that folds them to a single line, such as "Your progress · 4 of 15 muscle goals · 60% of cardio · Nov 16–22". Tap the line to open the card again. Forged remembers which cards you folded (across devices when you're signed in), and the order stays the same.
 
 ## The You tab
 
 Everything about you, and every setting, in one place.
 
-- **Profile:** your level card (tap for the Level screen), then rows for **Level and titles**, **Title theme** (opens the Level screen at the themes), **Bosses** (says which boss is ready or how a fight is going, with a badge; the You tab itself shows the badge and glows while a boss waits), **Leaderboard** (on the web), **Goals** (a one-line summary, such as "4 days · 113 sets · 2h 30m of cardio a week") and **Share progress**.
+- **Profile:** your level, title and XP (tap for the Level screen), then rows for **Level and titles**, **Title theme** (opens the Level screen at the themes), **Bosses** (says which boss is ready or how a fight is going, with a badge; the You tab itself shows the badge and glows while a boss waits), **Leaderboard** (on the web), **Goals** (a one-line summary, such as "4 days · 113 sets · 2h 30m of cardio a week") and **Share progress**.
 - **Settings:**
   - **Weight unit** (lb or kg) and **Distance unit** (mi or km), applied everywhere. The lifting and cardio forms still have their own unit switches.
   - **Rest timer:** − / + changes gym mode's rest length in 15-second steps (15 seconds to 10 minutes). **Timer sound** turns the beep on or off.
@@ -135,7 +137,7 @@ Weeks run Monday to Sunday. Each week is judged by the goals in effect that week
 
 Your first week is never penalised. Total XP never goes below 0, but penalties can take you down a level.
 
-The level card shows this week's workout days, what you'll earn by hitting your goal, what you'll lose if you fall short, and last week's result.
+The at-a-glance strip on Today shows this week's workout days, what you'll earn by hitting your goal, what you'll lose if you fall short (days left always count today), and last week's result.
 
 The **History** tab has an XP chart for the selected range:
 
@@ -151,7 +153,7 @@ Tap a bar to list where its XP came from: today's bar is listed to start with. T
 
 Tap a workout in the list to open it. This week's bonuses appear on today's bar until the week ends.
 
-Saving a workout shows the XP earned. Reaching a new level or title brings up a celebration. Tap the level card to see the title ladder and recent XP.
+Saving a workout shows the XP earned. Reaching a new level or title brings up a celebration. Tap your level (the chip at the top, or your title in the at-a-glance strip) to see the title ladder and recent XP.
 
 XP is worked out from your logged workouts, so editing or deleting a workout updates it. Example workouts don't earn XP.
 
@@ -183,7 +185,7 @@ Tap an exercise in your records, or **See progress** under an exercise while log
 
 ## Sharing your progress
 
-Tap **Share progress** on the level card, or on the Level screen, to make two share images for this week. Swipe between them on a phone; wider screens show them side by side.
+Tap **Share progress** on the You tab, or on the Level screen, to make two share images for this week. Swipe between them on a phone; wider screens show them side by side.
 
 1. **Overview:** your level, title, XP bar and next title; this week's workouts, workout days, streak and total XP; the lifting heat map with your muscle goals (closest to done first) and any records you beat this week; and the title ladder.
 2. **Gauges:** the cardio rings for time, distance and stairs; the four lifting gauges (sets, muscle goals, volume against last week, and push / pull); and your boss: the fight in progress, the boss waiting, or the next one to unlock. Each gauge shows whether you're on pace, and the white dot marks today's even-pace point.
@@ -250,7 +252,7 @@ The Today tab shows an idea for what to train, worked out from your week so far.
   - Exercises new to you: a set count only, with a tip to pick a weight you can manage for 8–12 reps.
 - **Start this session:** opens gym mode on its Plan step with those exercises and set counts filled in, each marked "Suggested:" with the reason (the note isn't saved). Change anything, then **Start workout**. If you've already lifted today, they're added to that workout. Prefer one form? **Edit as a list** on the Plan step switches to it, and every set you fill in there is saved. A suggested exercise left without reps is skipped.
 - **XP within reach:** the parts of the game today's workout can move forward.
-  - **A running boss fight:** what's left, the time left and the reward, for example "Boss fight: Road Wraith. 3.2 mi to go, 22h 0m left. Win for +1,100 XP", with a **Log a run** or **Log stairs** button. For a sets boss it says how many sets the suggested session adds.
+  - **A running boss fight:** what's left, the time left and the reward, for example "Boss fight: Road Wraith. 3.2 mi to go, 21h 40m left. Win for +1,100 XP", with a **Log a run** or **Log stairs** button. For a sets boss it says how many sets the suggested session adds.
   - **Workout days:** if you haven't trained today and are short of your days goal, what training today earns, for example "Training today reaches your 4-day goal for +50 XP and a 2-week streak (+20 XP)". If the goal is out of reach, it says each day you train still saves 40 XP in missed-day penalties.
   - **Muscle goals:** which goals the suggested session would finish, for example "This session would meet the lats and biceps goals for +40 XP", plus the +100 XP bonus when it would finish every muscle goal.
 - **Other ideas** switch to another focus. A cardio option appears when you're behind on cardio time or distance, with the +75 XP each goal earns when it's met.

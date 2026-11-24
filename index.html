@@ -584,6 +584,12 @@ button.pl-row { cursor: pointer; }
 .gl-day small { font-size: 10px; font-weight: 600; color: var(--muted); }
 .gl-day.today small { color: var(--fg); }
 .gl-meta { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+.gl-title { display: block; width: 100%; margin: 0 0 8px; padding: 0; border: 0; background: transparent; color: var(--fg); text-align: left; font: inherit; cursor: pointer; }
+.gl-title b { display: block; font-family: var(--font-display); font-size: 20px; font-weight: 700; line-height: 1.05; text-transform: uppercase; letter-spacing: .03em; }
+.gl-title small { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; }
+.gl-stakes { margin: 0; font-size: 13px; color: var(--muted); }
+.gl-stakes.warn { color: var(--danger); }
+.gl-stakes.good { color: var(--h5); }
 .gl-meta b { color: var(--fg); }
 .gl-line { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 12px; padding: 10px 12px; font: inherit; font-size: 14px; cursor: pointer; }
 .gl-line .k { flex: none; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
@@ -928,7 +934,7 @@ button.tag { cursor: pointer; }
     <span class="sr-only" id="sync" role="status">Loading…</span>
     <div class="top-actions">
       <button class="boss-btn" type="button" data-open="boss" id="bossBtn" aria-label="Boss fights"><svg viewBox="0 0 24 24"><path d="M4 18h16M5 15L3 7l5 4 4-6 4 6 5-4-2 8z"/></svg><span>Boss</span><i id="bossBadge" hidden></i></button>
-      <button class="boss-btn lb-btn" type="button" data-open="leaderboard" id="lbBtn" aria-label="Leaderboard" hidden><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/></svg><span>Ranks</span></button>
+      <button class="boss-btn lb-btn" type="button" data-open="leaderboard" id="lbBtn" aria-label="Leaderboard" hidden><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/></svg><span>Leaderboard</span></button>
       <button class="lvl-chip" type="button" data-open="level" id="lvlChip" aria-label="Your level"></button>
       <button class="you-btn" type="button" data-tabbtn="you" id="youBtn" aria-label="You: profile and settings"><span id="youBtnFace"></span></button>
     </div>
@@ -937,7 +943,6 @@ button.tag { cursor: pointer; }
   <div id="lbCard" data-tab="today"></div>
   <section class="panel glance" id="glance" aria-label="This week at a glance" data-tab="today"></section>
   <div id="banner" data-tab="today"></div>
-  <section class="panel player" id="player" aria-label="Your level" data-tab="today"></section>
   <div id="bossCard" data-tab="today"></div>
   <div id="onboard" data-tab="today"></div>
 
@@ -1776,7 +1781,7 @@ function fightState(b) {
   if (r.won) return { kind: "none" };
   return r.over ? { kind: "lost", t: r.t, f } : { kind: "active", t: r.t, f, end: r.end };
 }
-const timeLeft = ms => { const m = Math.max(0, Math.round(ms / 60000)), h = Math.floor(m / 60); return h ? `${h}h ${m % 60}m left` : `${m}m left`; };
+const timeLeft = ms => { const m = Math.max(0, Math.round(ms / 60000)), h = Math.floor(m / 60); return h ? `${h}h${m % 60 ? ` ${m % 60}m` : ""} left` : `${m}m left`; };
 async function saveFights(list) {
   const g = { ...S.goals, bossFights: list.slice(-100) };
   await Store.saveGoals(g); S.goals = normGoals(g);
@@ -2199,7 +2204,7 @@ function rateText(activity, minutes, dist) {
   if (!kind || !(dist > 0) || !(minutes > 0)) return null;
   return kind === "pace" ? `${mss(minutes / dist)} /${distUnit()}` : `${fmt(dist / (minutes / 60))} ${distUnit() === "km" ? "km/h" : "mph"}`;
 }
-const hm = min => { const h = Math.floor(min / 60), m = Math.round(min % 60); return h ? `${h}h ${m}m` : `${m}m`; };
+const hm = min => { let h = Math.floor(min / 60), m = Math.round(min % 60); if (m === 60) { h++; m = 0; } return h ? (m ? `${h}h ${m}m` : `${h}h`) : `${m}m`; };
 
 /* Days covered by a range; targets are the daily goal times this. */
 const daysIn = r => Math.round((r.end - r.start) / 864e5) + 1;
@@ -2344,18 +2349,18 @@ function render() {
   const distSt = status(c.distance, distTarget, pace, "dist");
   const stairsTarget = Math.round(perDay(Number(g.stairs) || 0) * days);
   const stairsSt = status(c.stories, stairsTarget, pace, "stories");
-  const showStories = v => `${Math.round(v)} st`;
+  const showStories = v => plural(Math.round(v), "story").replace(/storys$/, "stories");
   const showDist = v => `${fmt(v)} ${distUnit()}`;
   $("cardioGoal").innerHTML = `<div class="gauges">
       ${gauge({ value: c.minutes, target: cardioTarget, label: "Time", show: hm, tick })}
       ${gauge({ value: c.distance, target: distTarget, label: "Distance", show: showDist, tick })}
-      ${gauge({ value: c.stories, target: stairsTarget, label: "Stairs", show: showStories, tick })}
+      ${gauge({ value: c.stories, target: stairsTarget, label: "Stairs", show: v => `${Math.round(v)}`, ofText: `of ${showStories(stairsTarget)}`, tick })}
     </div>
     <div class="gauges" style="margin-top:6px">${[cardioSt, distSt, stairsSt].map(st => `<div style="text-align:center">${pill(st)}</div>`).join("")}</div>
     <div class="stats g-stats">${[["Sessions", c.cardioCount], ["Avg session", c.cardioCount ? hm(c.minutes / c.cardioCount) : "–"], ["Active days", new Set(c.ws.filter(isCardio).map(w => w.date)).size]]
       .map(([k, v]) => `<div class="stat"><b>${v}</b><span>${esc(k)}</span></div>`).join("")}</div>
     ${c.cardioCount ? "" : `<p class="note">No cardio in this range yet.</p>`}
-    <p class="note">Goals: <button type="button" class="linkbtn" data-goal-edit="cardio">${hm(g.cardio)}</button>, <button type="button" class="linkbtn" data-goal-edit="distance">${showDist(Math.round(toUnit(Number(g.distance) || 0, "mi") * 10) / 10)}</button> and <button type="button" class="linkbtn" data-goal-edit="stairs">${Number(g.stairs) || 0} stories (st)</button> a week${days === 7 ? "" : `, scaled to ${days} day${days === 1 ? "" : "s"} (weekly goal ÷ 7 × ${days})`}.${tick != null ? " The white dot on each ring is where you'd be today at an even pace." : ""}</p>`;
+    <p class="note">Goals: <button type="button" class="linkbtn" data-goal-edit="cardio">${hm(g.cardio)}</button>, <button type="button" class="linkbtn" data-goal-edit="distance">${showDist(Math.round(toUnit(Number(g.distance) || 0, "mi") * 10) / 10)}</button> and <button type="button" class="linkbtn" data-goal-edit="stairs">${Number(g.stairs) || 0} stories</button> a week${days === 7 ? "" : `, scaled to ${days} day${days === 1 ? "" : "s"} (weekly goal ÷ 7 × ${days})`}.${tick != null ? " The white dot on each ring is where you'd be today at an even pace." : ""}</p>`;
 
   renderLiftGauges({ c, list, r, days, pace, isCurrent, elapsed, tick, liftTarget, liftLv });
 
@@ -2398,7 +2403,7 @@ function renderBreakdown(c, r) {
   $("breakdown").innerHTML = `<div class="table-scroll"><table class="breakdown">
     <thead><tr><th scope="col">Activity</th><th scope="col"><abbr title="Sessions">#</abbr></th><th scope="col">Time</th><th scope="col">Dist.</th><th scope="col">Avg pace</th></tr></thead>
     <tbody>${rows.map(([k, A]) => `<tr><th scope="row">${esc(CARDIO[k] ? CARDIO[k][0] : k)}</th><td class="num">${A.sessions}</td><td class="num">${hm(A.minutes)}</td>
-      <td class="num">${A.stories > 0 ? `${A.stories} st` : A.distance > 0 ? `${fmt(A.distance)} ${u}` : "–"}</td><td class="num">${rateText(k, A.pacedMin, A.distance) || "–"}</td></tr>`).join("")}</tbody>
+      <td class="num">${A.stories > 0 ? `${A.stories} ${A.stories === 1 ? "story" : "stories"}` : A.distance > 0 ? `${fmt(A.distance)} ${u}` : "–"}</td><td class="num">${rateText(k, A.pacedMin, A.distance) || "–"}</td></tr>`).join("")}</tbody>
   </table></div>
   ${highlights.length ? `<ul class="highlights">${highlights.join("")}</ul>` : ""}
   <p class="note"># is sessions. Avg pace is minutes per ${u} for runs, walks and hikes, and speed for rides. Both use only sessions where you entered a distance.</p>`;
@@ -2492,7 +2497,7 @@ function renderLiftGauges({ c, list, r, days, pace, isCurrent, elapsed, tick, li
       ${withPill(volGauge, volSt)}
       ${balGauge}
     </div>
-    <p class="note">Sets counts work toward your muscle goals (helper muscles count half; sets beyond a muscle's goal don't add more). Volume is reps × weight compared with the ${perWord} before. Push is chest, shoulders and triceps; pull is lats, traps and biceps; balanced is 40–60% push.${tick != null ? " The white dot is where you'd be today at an even pace." : ""}</p>`;
+    <p class="note">Sets count toward your muscle goals (helper muscles count half; sets beyond a muscle's goal don't add more). Volume is reps × weight compared with the ${perWord} before. Push is chest, shoulders and triceps; pull is lats, traps and biceps; balanced is 40–60% push.${tick != null ? " The white dot is where you'd be today at an even pace." : ""}</p>`;
 }
 
 function bodiesHTML(levels, sel, tips) {
@@ -2628,7 +2633,7 @@ function renderYou() {
     </ul></section>`;
 }
 /* ---------- Today at a glance, and folding Today's cards ---------- */
-const FOLD = { player: "Your level", bossCard: "Boss", summary: "Your progress", sugCard: "Suggestion" };
+const FOLD = { bossCard: "Boss", summary: "Your progress", sugCard: "Suggestion" };
 const isFolded = id => !!(prefs.fold && prefs.fold[id]);
 const CHEV_UP = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>`, CHEV_DOWN = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`;
 const foldBtn = id => `<button type="button" class="fold-btn" data-fold="${id}" aria-label="Fold ${esc(FOLD[id])} to one line" title="Fold">${CHEV_UP}</button>`;
@@ -2681,7 +2686,22 @@ function renderGlance() {
       lines.push(`<button type="button" class="gl-line" data-glance="sug"><span class="k">Next</span><span class="v">${sg.met ? "Every muscle goal is met. Rest, or anything extra" : "A rest day could be a good call"}</span><span class="chev" aria-hidden="true">›</span></button>`);
     }
   }
-  el.innerHTML = `<div class="gl-top">${ring}<div>${week}${meta}</div></div>${lines.join("")}`;
+  // Title and XP to the next level (tap for the Level screen), then this week's XP stakes and last week's result
+  const nt = nextTitle(info.level);
+  const title = `<button type="button" class="gl-title" data-open="level"><b>${esc(titleFor(info.level))}</b><small class="num">${info.into.toLocaleString()} / ${info.need.toLocaleString()} XP to level ${info.level + 1}${nt ? ` · ${esc(nt[1])} at ${nt[0]}` : ""}</small></button>`;
+  let stakes = "";
+  if (!real.length) stakes = `<p class="gl-stakes">Log a workout to earn your first XP. Each set and each minute of cardio counts.</p>`;
+  else if (wk && wk.target) {
+    const need = wk.target - wk.days, urgent = lines.some(l => l.includes("gl-line warn"));
+    const lastMon = ymd(addDays(mon, -7)), last = L.entries.filter(e => e.date >= lastMon && e.date < ymd(mon));
+    const lastNet = last.reduce((a, e) => a + e.xp, 0), lastPen = last.find(e => e.xp < 0);
+    const now = need > 0
+      ? `${urgent ? "" : `Train ${plural(need, "more day")} by Sunday (${plural(wk.left, "day")} left, including today) for +${BONUS.days} XP${wk.streak ? " and your streak" : ""}. `}Falling short costs ${wk.atRisk} XP.`
+      : `Days goal met: +${BONUS.days} XP${wk.streak > 1 ? ` and +${Math.min(BONUS.streakMax, BONUS.streakStep * (wk.streak - 1))} streak bonus` : ""}.`;
+    const lw = last.length ? (lastPen ? ` Last week you ${esc(lastPen.text.toLowerCase())}: −${Math.abs(lastPen.xp)} XP${lastNet > lastPen.xp ? ` (net ${lastNet >= 0 ? "+" : "−"}${Math.abs(lastNet)} XP with bonuses)` : ""}.` : ` Last week you earned +${lastNet} XP in weekly bonuses.`) : "";
+    stakes = `<p class="gl-stakes ${need > 0 ? (need >= wk.left ? "warn" : "") : "good"}">${now}${lw}</p>`;
+  }
+  el.innerHTML = `<div class="gl-top">${ring}<div>${title}${week}${meta}</div></div>${stakes}${lines.join("")}`;
 }
 $("glance").addEventListener("click", e => {
   if (!e.target.closest("[data-glance=sug]")) return;
@@ -2689,37 +2709,9 @@ $("glance").addEventListener("click", e => {
   const c = $("sugCard"); if (c) c.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
 });
 function renderPlayer() {
-  const L = xpLedger(S.workouts), info = levelInfo(L.total), nt = nextTitle(info.level), pct = (info.into / info.need) * 100;
-  const wk = L.week, lastMon = ymd(addDays(weekStart(today()), -7));
-  const last = L.entries.filter(e => e.date >= lastMon && e.date < ymd(weekStart(today())));
-  const lastNet = last.reduce((a, e) => a + e.xp, 0), lastPen = last.find(e => e.xp < 0);
-  let weekLine = "";
-  if (wk && wk.target) {
-    const need = wk.target - wk.days;
-    weekLine = `<div class="wk"><span class="wk-dots" aria-label="${wk.days} of ${wk.target} workout days this week">${Array.from({ length: Math.max(wk.target, wk.days) }, (_, i) => `<i class="${i < wk.days ? "on" : ""}"></i>`).join("")}</span>
-      <span><b>${wk.days} of ${wk.target}</b> workout days this week${wk.streak > 1 || (need <= 0 && wk.streak) ? ` · <b>${wk.streak}-week streak</b>` : ""}</span></div>
-      <p class="wk-msg ${need > 0 ? (need >= wk.left ? "warn" : "") : "good"}">${need > 0
-        ? `Train ${need} more day${need === 1 ? "" : "s"} by Sunday (${wk.left} day${wk.left === 1 ? "" : "s"} left) to earn +${BONUS.days} XP${wk.streak ? " and keep your streak" : ""}. Falling short costs ${wk.atRisk} XP.`
-        : `Weekly days goal met: +${BONUS.days} XP${wk.streak > 1 ? ` and +${Math.min(BONUS.streakMax, BONUS.streakStep * (wk.streak - 1))} streak bonus` : ""}.`}</p>
-      ${last.length ? `<p class="wk-last ${lastPen ? "bad" : ""}">${lastPen
-        ? `Last week you ${esc(lastPen.text.toLowerCase())}: −${Math.abs(lastPen.xp)} XP${lastNet > lastPen.xp ? ` (net ${lastNet >= 0 ? "+" : "−"}${Math.abs(lastNet)} XP with bonuses)` : ""}.`
-        : `Last week you earned +${lastNet} XP in weekly bonuses.`}</p>` : ""}`;
-  }
+  const info = levelInfo(xpLedger(S.workouts).total);
   $("lvlChip").innerHTML = `<b class="num">Lv ${info.level}</b><span>${esc(titleFor(info.level))}</span>`;
   $("lvlChip").setAttribute("aria-label", `Level ${info.level}, ${titleFor(info.level)}`);
-  $("player").classList.toggle("folded", isFolded("player"));
-  if (isFolded("player")) { $("player").innerHTML = foldRow("player", `Level ${info.level} · ${titleFor(info.level)} · ${(info.need - info.into).toLocaleString()} XP to go`); return; }
-  $("player").innerHTML = `<button type="button" class="player-btn" data-open="level">
-      <span class="lvl-badge"><small>Level</small><b class="num">${info.level}</b></span>
-      <span class="player-body">
-        <span class="player-title">${esc(titleFor(info.level))}</span>
-        <span class="xpbar" role="progressbar" aria-valuemin="0" aria-valuemax="${info.need}" aria-valuenow="${info.into}" aria-label="XP toward the next level"><span style="width:${pct}%"></span></span>
-        <span class="player-sub num">${info.into.toLocaleString()} / ${info.need.toLocaleString()} XP to level ${info.level + 1}${nt ? ` · <b>${esc(nt[1])}</b> at level ${nt[0]}` : ""}</span>
-      </span>
-      <span class="player-more" aria-hidden="true">›</span>
-    </button>
-    ${info.total === 0 && !L.entries.length ? `<p class="note" style="margin:8px 0 0">Log a workout to earn your first XP. Each set and each minute of cardio counts.</p>` : weekLine}
-    <div class="player-actions split">${foldBtn("player")}<button class="btn small" type="button" data-open="share">Share progress</button></div>`;
 }
 
 function levelSheet() {
@@ -2743,7 +2735,7 @@ function levelSheet() {
     <p class="note" style="margin:0 0 12px">Pick a theme you follow. It only changes the names; your level and XP stay the same.</p>
     <div class="lbl" id="titlesLbl" style="scroll-margin-top:8px">Titles · ${esc(THEMES[themeKey()].name)}</div>
     <ol class="titles">${TITLES.map(([l, t]) => `<li class="${info.level >= l ? "got" : ""}${titleFor(info.level) === t ? " now" : ""}"><span class="num">Lv ${l}</span><span class="t-name"><b>${esc(t)}</b><em>${esc(TITLES.find(x => x[1] === t)[2])}</em></span><small>${info.level >= l ? (titleFor(info.level) === t ? "Current" : "Unlocked") : `${(xpAtLevel(l) - info.total).toLocaleString()} XP to go`}</small></li>`).join("")}</ol>
-    ${recent.length ? `<div class="lbl" style="margin-top:14px">Recent XP</div><ul class="acts">${recent.map(x => `<li class="${x.xp < 0 ? "neg" : x.weekly ? "bonus" : ""}"><span>${esc(x.text)}${x.weekly ? "" : ` · ${esc(x.date)}`}</span><span class="num">${x.xp < 0 ? "−" : "+"}${Math.abs(x.xp)} XP</span></li>`).join("")}</ul>` : ""}`,
+    ${recent.length ? `<div class="lbl" style="margin-top:14px">Recent XP</div><ul class="acts">${recent.map(x => `<li class="${x.xp < 0 ? "neg" : x.weekly ? "bonus" : ""}"><span>${esc(x.text)}${x.weekly ? "" : ` · ${esc(shortDate(x.date))}`}</span><span class="num">${x.xp < 0 ? "−" : "+"}${Math.abs(x.xp)} XP</span></li>`).join("")}</ul>` : ""}`,
     `<button class="btn" type="button" data-act="open-share">Share progress</button><div class="right"><button class="btn primary" type="button" data-act="close">Close</button></div>`);
 }
 
@@ -3666,9 +3658,9 @@ function renderSummary({ r, c, days, elapsed, isCurrent, liftTarget, cardioTarge
   const count = k => withGoal.filter(m => liftSt[m].k === k).length;
   const met = count("met"), on = count("on"), behind = count("behind"), missed = count("missed"), todo = count("todo");
   const gaps = withGoal.filter(m => liftSt[m].k !== "met").sort((a, b) => (c.lift[a].v / liftTarget(a)) - (c.lift[b].v / liftTarget(b))).slice(0, 3);
-  const left = isCurrent && S.period !== "all" ? days - elapsed : 0;
+  const left = isCurrent && S.period !== "all" ? days - elapsed + 1 : 0; // including today, as everywhere else
   const when = S.period === "all" ? "since your first workout" : isCurrent
-    ? (left ? `${left} day${left === 1 ? "" : "s"} left in this ${S.period}` : `last day of this ${S.period}`) : "this range is over";
+    ? (left > 1 ? `${left} days left, including today` : `last day of this ${S.period}`) : "this range is over";
   const breakdown = [on && `${on} on pace`, behind && `${behind} behind`, todo && `${todo} to do`, missed && `${missed} missed`].filter(Boolean).join(" · ");
   $("summary").classList.toggle("folded", isFolded("summary"));
   if (isFolded("summary")) {
@@ -3807,7 +3799,7 @@ function addSheet() {
   // A past workout opens on yesterday, or on the day you're looking at in the Day view
   const past = S.period === "day" && ymd(S.anchor) < tk ? ymd(S.anchor) : ymd(addDays(today(), -1)), wp = liftOn(past);
   return sheetFrame("Log a workout", `<div class="addgrid">
-      <button type="button" class="addopt main" data-act="pick-now"><b>Lift now</b><span>${wt ? `Carry on with today's workout (${esc(liftTitle(wt))}, ${plural(setsIn(wt), "set")} so far), one set at a time` : "Plan your exercises, then log one set at a time with a rest timer"}</span></button>
+      <button type="button" class="addopt main" data-act="pick-now"><b>Gym mode</b><span>${wt ? `Lift now, carrying on with today's workout (${esc(liftTitle(wt))}, ${plural(setsIn(wt), "set")} so far), one set at a time` : "Lift now: plan your exercises, then log one set at a time with a rest timer"}</span></button>
       <button type="button" class="addopt" data-act="pick-past" data-date="${past}"><b>Add or edit a past workout</b><span>${wp ? `Opens your lifts from ${esc(dayWord(past))} (${esc(liftTitle(wp))}). Change the date for another day.` : `One form for logging after the fact. It opens on ${esc(dayWord(past))}; change the date for another day.`}</span></button>
       <button type="button" class="addopt" data-act="pick-cardio"><b>Cardio</b><span>${(() => { const cs = cardioOn(date); return cs.length
         ? `Continue ${date === ymd(today()) ? "today's cardio" : `your cardio from ${esc(dayWord(date))}`}: ${esc([...new Set(cs.map(c => (CARDIO[c.activity] || CARDIO.run)[0]))].join(", "))}`
@@ -4047,7 +4039,7 @@ function liftSummary(w) {
       const dTop = weighted ? cur.topLb - prev.topLb : cur.topReps - prev.topReps, dReps = cur.top.reps - prev.top.reps, dVol = cur.volume - prev.volume;
       const what = weighted ? (dTop ? `${sumDelta(dTop, v => showWt(v))} on your top set` : dReps ? `${sumDelta(dReps, v => plural(v, "rep"))} on your top set` : dVol ? `${sumDelta(dVol, v => compactWt(v))} volume` : "Same as last time")
         : (dTop ? `${sumDelta(dTop, v => plural(v, "rep"))} in your best set` : cur.reps !== prev.reps ? `${sumDelta(cur.reps - prev.reps, v => plural(v, "rep"))} in total` : "Same as last time");
-      cmp = `<p class="sum-cmp">${what} <small>· last time ${esc(shortDate(prev.date))}: ${esc(prev.sets.map(setText).join(" · "))}${weighted ? ` ${wtUnit()}` : ""}</small></p>`;
+      cmp = `<p class="sum-cmp">${what} <small>· last time ${esc(shortDate(prev.date))}: ${esc(setsText(prev.sets))}</small></p>`;
     }
     const mus = [...(x.p || []).map(m => MUSCLES[m]), ...(x.s || []).map(m => `${MUSCLES[m]} (helper)`)].join(", ");
     return `<div class="sum-ex">
@@ -4119,7 +4111,10 @@ function exSessions(name) {
   return out.sort((a, b) => a.date.localeCompare(b.date) || a.at - b.at);
 }
 const wtNum = lb => wtUnit() === "kg" ? lb / LB_PER_KG : lb;
-const setText = st => st.lb > 0 ? `${fmt(wtNum(st.lb))} × ${st.reps}` : `${st.reps} reps`;
+const setText = st => st.lb > 0 ? `${fmt(wtNum(st.lb))} ${wtUnit()} × ${st.reps}` : `${st.reps} reps`; // 185 lb × 5, as everywhere
+// A list of sets with runs of the same set grouped: "135 lb × 8 (3 sets) · 155 lb × 6"
+const groupSets = texts => { const g = []; for (const t of texts) { const l = g[g.length - 1]; if (l && l.t === t) l.n++; else g.push({ t, n: 1 }); } return g.map(x => (x.n > 1 ? `${x.t} (${x.n} sets)` : x.t)).join(" · "); };
+const setsText = sets => groupSets(sets.map(setText));
 function progChart(ss, metric) {
   const val = x => metric === "e1rm" ? wtNum(x.e1rm) : metric === "volume" ? wtNum(x.volume) : metric === "reps" ? x.topReps : metric === "total" ? x.reps : wtNum(x.topLb);
   const pts = ss.map((x, i) => ({ x, i, v: val(x) })).filter(p => p.v > 0);
@@ -4149,7 +4144,7 @@ function progTip(x, metric) {
   if (metric === "volume") return `${d}: ${compactWt(x.volume)} across ${plural(x.sets.length, "set")}`;
   if (metric === "reps") return `${d}: ${x.topReps} reps in the best set`;
   if (metric === "total") return `${d}: ${x.reps} reps across ${plural(x.sets.length, "set")}`;
-  return `${d}: top set ${setText(x.top)} ${x.top.lb > 0 ? wtUnit() : ""}`.trim();
+  return `${d}: top set ${setText(x.top)}`;
 }
 function progHTML() {
   const st = S.prog, ss = exSessions(st.name), weighted = ss.some(x => x.topLb > 0);
@@ -4178,7 +4173,7 @@ function progHTML() {
     <div class="lbl" style="margin-top:16px">${plural(ss.length, "session")} since ${esc(shortDate(first.date))} · newest first</div>
     <ul class="prog-list">${[...ss].reverse().map(x => { const isBest = x === bestS;
       const body = `<span class="pl-top"><b>${esc(shortDate(x.date))}${x.date.slice(0, 4) !== String(new Date().getFullYear()) ? ` ${x.date.slice(0, 4)}` : ""}</b>${isBest ? `<i class="pl-best">Best</i>` : ""}<span class="num">${weighted ? esc(compactWt(x.volume)) : esc(plural(x.reps, "rep"))}</span></span>
-        <span class="pl-sets num">${esc(x.sets.map(setText).join(" · "))}${weighted ? ` ${wtUnit()}` : ""}</span>`;
+        <span class="pl-sets num">${esc(setsText(x.sets))}</span>`;
       return `<li>${canOpen ? `<button type="button" class="pl-row" data-w="${esc(x.w.id)}">${body}</button>` : `<div class="pl-row">${body}</div>`}</li>`; }).join("")}</ul>
     ${canOpen ? `<p class="note" style="margin:8px 0 0">Tap a session to open that workout.</p>` : ""}`;
 }
@@ -4340,7 +4335,7 @@ function renderSheet() {
   if (S.sheet === "summary") root.innerHTML = summarySheet();
   if (S.sheet === "leaderboard") root.innerHTML = lbSheet();
   if (S.sheet === "bodyweight") root.innerHTML = bodyWeightSheet(d);
-  if (S.sheet === "backup") root.innerHTML = sheetFrame("Backup and restore", backupSection(true), `<div class="right"><button class="btn primary" type="button" data-act="close">Done</button></div>`);
+  if (S.sheet === "backup") root.innerHTML = sheetFrame("Backup and restore", backupSection(true), `<div class="right"><button class="btn primary" type="button" data-act="close">Close</button></div>`);
   if (S.sheet === "goal1") root.innerHTML = goal1Sheet(d);
   if (S.sheet === "goalwiz") root.innerHTML = goalWizSheet(d);
   // Re-rendering the same form (adding a set, picking an option) keeps your scroll position.
@@ -4353,7 +4348,7 @@ function renderSheet() {
 /* ---------- Gym mode: one exercise at a time, tick each set as you finish it, with a rest timer ---------- */
 const gymCount = d => { let total = 0, done = 0; for (const x of d.exercises) for (const st of x.sets) { total++; if (st.done) done++; } return { total, done }; };
 const gymNext = x => x.sets.findIndex(st => !st.done);
-const setLine = (st, unit) => Number(st.weight) > 0 ? `${fmt(Number(st.weight))} × ${fmt(Number(st.reps) || 0)} ${unit}` : `${fmt(Number(st.reps) || 0)} reps`; // as elsewhere: 185 × 5 lb
+const setLine = (st, unit) => Number(st.weight) > 0 ? `${fmt(Number(st.weight))} ${unit} × ${fmt(Number(st.reps) || 0)}` : `${fmt(Number(st.reps) || 0)} reps`; // as elsewhere: 185 lb × 5
 const restLeft = r => Math.max(0, Math.ceil((r.end - Date.now()) / 1000));
 const mmss = n => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, "0")}`;
 /* Sets already in a saved workout count as done; everything else (new or suggested) is still to do. */
@@ -4400,7 +4395,7 @@ function gymPlanHTML(d) {
     const done = x.sets.filter(st => st.done).length, ss = exSessions(x.name.trim()), last = ss[ss.length - 1];
     const sub = done ? `<small class="ok">${done} of ${plural(x.sets.length, "set")} done</small>`
       : x.sugText ? `<small>Suggested: ${esc(x.sugText)}</small>`
-      : last ? `<small>Last time: ${esc(last.sets.map(st => setText(st)).join(", "))}${last.topLb > 0 ? ` ${esc(wtUnit())}` : ""}</small>` : `<small>New to you</small>`;
+      : last ? `<small>Last time: ${esc(setsText(last.sets))}</small>` : `<small>New to you</small>`;
     return `<li class="gym-pl"><span class="n">${n + 1}</span>
       <div><button type="button" class="gym-pl-name" data-gym="rename" data-i="${i}" aria-label="${esc(x.name)}: tap to change the exercise">${esc(x.name)}</button>${sub}</div>
       <div class="gym-cnt" role="group" aria-label="Sets of ${esc(x.name)}"><button type="button" data-gym="sets-minus" data-i="${i}" aria-label="One set fewer"${x.sets.length <= Math.max(1, done) ? " disabled" : ""}>−</button><span><b>${x.sets.length}</b> ${x.sets.length === 1 ? "set" : "sets"}</span><button type="button" data-gym="sets-plus" data-i="${i}" aria-label="One more set"${x.sets.length >= 12 ? " disabled" : ""}>+</button></div>
@@ -4425,7 +4420,7 @@ function gymReviewHTML(d) {
   const rows = named.map(x => {
     const done = x.sets.filter(st => st.done), left = x.sets.length - done.length;
     return `<li class="${done.length ? "" : "skip"}"><div class="gym-rv-h"><b>${esc(x.name)}</b><span>${done.length ? `✓ ${plural(done.length, "set")}` : "Not started"}</span></div>
-      ${done.length ? `<p>${done.map(st => esc(setLine(st, d.unit))).join(" · ")}</p>` : ""}
+      ${done.length ? `<p>${esc(groupSets(done.map(st => setLine(st, d.unit))))}</p>` : ""}
       ${left ? `<small>${done.length ? `${plural(left, "planned set")} not done, so ${left === 1 ? "it won't be" : "they won't be"} saved` : "Won't be saved"}</small>` : ""}</li>`;
   }).join("");
   return sheetFrame("Gym mode", `${gymSteps(d, "review")}
@@ -4479,7 +4474,7 @@ function gymTrainHTML(d) {
         <button class="x" type="button" data-gym="next" aria-label="Next exercise"${i < n - 1 ? "" : " disabled"}>›</button></div>
       ${name && !LIB[name] && !(x.p.length || x.s.length) ? `<div id="mus-${i}">${musclesHTML(x, i)}</div>` : ""}
       ${x.sug ? `<p class="sug-note"><b>Suggested:</b> ${esc(x.sug)}</p>` : ""}
-      ${last ? `<p class="gym-last">Last time: ${esc(last.sets.map(st => setText(st)).join(", "))}${last.topLb > 0 ? ` ${esc(wtUnit())}` : ""} · ${esc(shortDate(last.date))}</p>` : ""}
+      ${last ? `<p class="gym-last">Last time: ${esc(setsText(last.sets))} · ${esc(shortDate(last.date))}</p>` : ""}
       <ol class="gym-sets">${sets}</ol>${complete}
       <div class="gym-tools">${cur >= 0 ? `<button class="btn small" type="button" data-gym="addset">+ Add set</button>` : ""}<button class="btn small" type="button" data-gym="addex">+ Add exercise</button>
         <button class="btn small ghost" type="button" data-gym="sound" aria-pressed="${prefs.restSound !== false}">Timer sound: ${prefs.restSound !== false ? "on" : "off"}</button></div>
@@ -4829,7 +4824,7 @@ function lbSheet() {
     <p class="note" style="margin:-4px 0 12px">${esc(lbResets(board))}${board === "week" || board === "month" ? `. All XP earned ${board === "week" ? "this week" : "this month"}, as on your History page.` : "."}</p>
     ${list}${entry}
     ${st.err ? `<div class="err" role="alert">${esc(st.err)}</div>` : ""}`,
-    `<button class="btn ghost" type="button" data-act="lb-refresh"${d.loading ? " disabled" : ""}>${d.loading ? "Refreshing…" : "Refresh"}</button><div class="right"><button class="btn primary" type="button" data-act="close">Done</button></div>`);
+    `<button class="btn ghost" type="button" data-act="lb-refresh"${d.loading ? " disabled" : ""}>${d.loading ? "Refreshing…" : "Refresh"}</button><div class="right"><button class="btn primary" type="button" data-act="close">Close</button></div>`);
 }
 async function lbAction(a) {
   const st = S.lb; if (!st) return;
@@ -4903,7 +4898,7 @@ function accountSheet() {
       <p class="note" style="margin-top:14px">Your workouts, goals (with their history), body weight, boss fights and settings (title theme, units, rest timer, folded cards, each tab's range and more) sync to every device you sign in on. Anything you log offline is kept here and sent when you're back online.</p>
       ${S.confirmOut ? `<div class="err" role="alert">${plural(n, "change")} haven't synced yet and will be lost if you sign out now. Tap Sign out again to sign out anyway, or Sync now to try first.</div>` : ""}`,
       `<button class="btn ghost" type="button" data-act="auth-signout">Sign out</button>
-       <div class="right"><button class="btn" type="button" data-act="auth-sync"${Store.syncing ? " disabled" : ""}>Sync now</button><button class="btn primary" type="button" data-act="close">Done</button></div>`);
+       <div class="right"><button class="btn" type="button" data-act="auth-sync"${Store.syncing ? " disabled" : ""}>Sync now</button><button class="btn primary" type="button" data-act="close">Close</button></div>`);
   }
   const busy = a.busy ? " disabled" : "";
   return sheetFrame("Sign in", `
