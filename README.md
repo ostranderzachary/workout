@@ -68,6 +68,12 @@ Wider screens put all five in a left sidebar, with a **Log workout** button at t
   - **You:** every row and setting has its icon.
   - **Cardio activity buttons and gym mode's cardio step.**
 - **Readable text:** nothing on screen is smaller than 11 px. Labels are 12 px, and notes are 13 px. The cardio and lifting rings show just the number inside; the goal ("of 2h 30m") sits under the label at a readable size.
+- **Colours, each with one job:**
+  - **Green** is progress: the heat maps, goal bars, week dots and done ticks.
+  - **Gold** is XP and rewards: XP amounts, the level chip, ring and badge, the XP bar, bonus stars, bonus bars in the XP chart, the level-up screen and the leaderboard.
+  - **Purple** is bosses, and **red** is a goal at risk.
+- **Heat steps you can tell apart:** the five greens get brighter in even steps (each about 1.5× the one below), starting clearly above the grey for "None yet". A muscle with a set or two no longer looks untrained.
+- **A little depth:** the greys and borders lean slightly toward the green, with the same brightness, so contrast is unchanged. The at-a-glance card and gym mode's current set sit on a slightly raised tone. The level ring, the + button and today on the calendar have a soft glow.
 - **Explanations fold away:** the paragraphs explaining how a chart works sit behind a small **ⓘ How this works** line: on the cardio rings, the lifting gauges, the lifting goals, personal records, the cardio breakdown, the XP chart and the weekly bonuses. Tap it to open it in place; it stays open until you leave the app. The map's **How to read this map** works the same way. The cardio goals with their change links stay in view.
 
 ## Today at a glance
