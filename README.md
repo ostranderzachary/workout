@@ -47,7 +47,7 @@ The app is split into five sections: Today, Maps, Stats, History and You. On pho
 - **Flame** (left): the Forged mark, a forge flame in the heat-map greens. Tap it to go back to Today.
 - **Crown:** your boss fights. It glows and shows a badge with the number waiting when a boss is ready.
 - **Trophy:** the leaderboard (on the web; not in the Claude artifact version).
-- **Level:** your level (and title on wider screens). Tap it for the Level screen: XP, titles and title theme.
+- **Level:** your level (and title on wider screens). Tap it for the Level screen: XP, **How to earn XP** (a list grouped into every workout, weekly bonuses, boss fights and missed days, one rule a line with the XP on the right), titles and title theme.
 - **Profile** (phones only; You is in the sidebar on wider screens): opens the You tab. It shows your initial once you're signed in. The sync status is a quiet line under your email on the You tab's Account row (red only when Forged can't reach your account), and in full on the Account screen.
 
 - **Today:** the leaderboard card, the at-a-glance strip, your level, the get-started checklist, your progress summary and the suggestion for today.
@@ -74,6 +74,8 @@ Wider screens put all five in a left sidebar, with a **Log workout** button at t
   - **Purple** is bosses, and **red** is a goal at risk.
 - **Heat steps you can tell apart:** the five greens get brighter in even steps (each about 1.5× the one below), starting clearly above the grey for "None yet". A muscle with a set or two no longer looks untrained.
 - **A little depth:** the greys and borders lean slightly toward the green, with the same brightness, so contrast is unchanged. The at-a-glance card and gym mode's current set sit on a slightly raised tone. The level ring, the + button and today on the calendar have a soft glow.
+- **Calmer labels:** card titles and big names keep their condensed capitals; the small labels (Suggestion for today, Most behind, Next, Sessions, table headings, form labels) are bold sentence case.
+- **Disabled buttons** are clearly off: no fill, a dashed outline and grey text. An empty gym mode plan says "Nothing planned yet. Add an exercise or cardio to start."
 - **Explanations fold away:** the paragraphs explaining how a chart works sit behind a small **ⓘ How this works** line: on the cardio rings, the lifting gauges, the lifting goals, personal records, the cardio breakdown, the XP chart and the weekly bonuses. Tap it to open it in place; it stays open until you leave the app. The map's **How to read this map** works the same way. The cardio goals with their change links stay in view.
 
 ## Today at a glance
@@ -284,7 +286,8 @@ The Today tab shows an idea for what to train, worked out from your week so far.
 - **Get started checklist:** walks new users through setting goals, logging lifts and logging cardio. Each step ticks off when done. You can hide it.
 - **Your progress:** shows how many muscle goals are met, how much of the cardio goal is done, the days left in the range, and the muscles furthest behind. Tap one to see it on the map.
 - **Pace:** in the current week, month or year, each goal is on pace, behind, or met. The comparison is with how far through the range you are; for example, 2 of 7 days in, you'd be on pace with 2/7 of the goal. The thin line on each bar marks that point. Past ranges show *Goal met* or *Missed*.
-- **Red only when it matters:** a goal a little behind just shows what's to go ("2h to go") in a neutral colour. It turns red, "Behind pace · 10 sets to go", only when what's left looks hard to fit into the days left, today included. For sets, a muscle can take about half its weekly goal (at least 5 sets) per session with a day's rest between, so with 3 days left 10 shoulder sets is fine but on Sunday it's at risk. For cardio time, distance and stairs, it's red when you'd need more than twice the usual daily pace.
+- **Red only when it matters**, everywhere: on Stats, under the cardio rings (where the pill just says "At risk"; the amount left is above it, and the full reason is read out by screen readers) and in Today's **Most behind** chips, which are outlined in grey unless that muscle is at risk.
+- **How the red is decided:** a goal a little behind just shows what's to go ("2h to go") in a neutral colour. It turns red, "At risk · 10 sets to go", only when what's left looks hard to fit into the days left, today included. For sets, a muscle can take about half its weekly goal (at least 5 sets) per session with a day's rest between, so with 3 days left 10 shoulder sets is fine but on Sunday it's at risk. For cardio time, distance and stairs, it's red when you'd need more than twice the usual daily pace.
 - **Lifting goals on Stats** are grouped: **Behind** (open, with how many are at risk, those listed first), **On pace** and **Goal met** (folded), and **Missed** or **To go** for past ranges and All. Tap a heading to open or close it. Each row is one line (muscle, bar, sets done / target); only an at-risk row adds a red line saying why.
 - **Legend:** each map labels its colour steps (none yet, under 25%, 25–49%, 50–74%, 75–99%, goal met). "How to read this map" explains how sets and minutes are counted.
 

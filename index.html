@@ -133,7 +133,8 @@ body[data-tab="today"] #periods, body[data-tab="today"] #rangeNav, body[data-tab
 .sum-sub { font-size: 13px; color: var(--muted); }
 .sum-gaps { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 12px 0 0; }
 .sum-gaps .lbl { margin-right: 4px; }
-.gap { border: 1px solid var(--danger); background: transparent; border-radius: 999px; padding: 4px 10px; font-size: 13px; font-weight: 600; }
+.gap { border: 1px solid var(--muted); background: transparent; border-radius: 999px; padding: 4px 10px; font-size: 13px; font-weight: 600; }
+.gap.risk { border-color: var(--danger); color: var(--danger); }
 .gap span { color: var(--muted); font-weight: 500; }
 .linkbtn { border: 0; background: none; padding: 0; color: var(--fg); text-decoration: underline; text-underline-offset: 3px; font-size: inherit; }
 .onboard { margin-bottom: 12px; border-color: var(--h3); }
@@ -178,7 +179,7 @@ body[data-tab="today"] #periods, body[data-tab="today"] #rangeNav, body[data-tab
 @media (min-width: 600px) { .share-prev { grid-auto-flow: row; grid-template-columns: 1fr 1fr; overflow: visible; } }
 .share-wait { max-width: 420px; aspect-ratio: 4 / 5; margin: 0 auto; display: grid; place-items: center; border-radius: 14px; background: var(--bg); color: var(--muted); }
 .share-hint { margin-top: 10px; }
-.btn:disabled { opacity: .45; cursor: default; }
+.btn:disabled, .btn.primary:disabled { opacity: 1; background: transparent; color: var(--muted); border: 1px dashed var(--line); box-shadow: none; cursor: not-allowed; }
 .btn-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .import-box { border: 1px solid var(--h3); border-radius: 12px; padding: 12px 14px; margin-top: 6px; background: var(--bg); }
 label.btn { cursor: pointer; display: inline-block; }
@@ -641,6 +642,7 @@ button.pl-row { cursor: pointer; }
 .gym-sug { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; padding: 12px 14px; border: 1px solid var(--h3); border-radius: 14px; background: var(--bg); }
 .gym-sug b { display: block; font-size: 16px; }
 .gym-sug small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+.gym-sug .btn { flex: none; white-space: nowrap; }
 .gym-empty { margin: 0; padding: 18px 12px; text-align: center; color: var(--muted); font-size: 14px; border: 1px dashed var(--line); border-radius: 14px; }
 .gym-plan { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .gym-pl { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 10px 10px 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); }
@@ -998,6 +1000,24 @@ button.tag { cursor: pointer; }
 .addopt span { font-size: 14px; color: var(--muted); }
 .err { color: var(--danger); font-size: 14px; margin-top: 10px; }
 .confirm { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+/* Small labels in sentence case (card titles and names keep their capitals) */
+.stat span, .fig .cap, .legend-title, .auth-or, .tour-step, .prog-tiles .stat span, .sug-tag, .boss-tag, .wiz-n, .gl-line .k,
+.cel-title, .bars-hl, .theme-head, .gauge figcaption b, .breakdown thead th, .highlights span, .field label, .lbl, .set > .n {
+  text-transform: none; letter-spacing: 0; }
+.stat span, .fig .cap, .legend-title, .prog-tiles .stat span, .wiz-n, .gl-line .k, .bars-hl, .theme-head, .breakdown thead th, .highlights span, .field label, .lbl { font-size: 13px; }
+.sug-tag, .boss-tag, .tour-step { font-size: 13px; font-weight: 700; }
+.gauge figcaption b { font-size: 15px; }
+/* How to earn XP: one rule a line, the XP on the right */
+.xr-h { margin: 0 0 4px; font-weight: 700; color: var(--fg); font-size: 15px; }
+.xr { margin: 0; display: grid; }
+.xr-g { margin: 12px 0 4px; font-size: 13px; font-weight: 700; color: var(--fg); }
+.xr-g:first-child { margin-top: 4px; }
+.xr-g small { font-weight: 500; color: var(--muted); }
+.xr-r { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 6px 0; border-top: 1px solid var(--line); }
+.xr-r dt { min-width: 0; color: var(--fg); font-size: 14px; }
+.xr-r dt small { display: block; color: var(--muted); font-size: 13px; margin-top: 1px; }
+.xr-r dd { margin: 0; flex: none; font-weight: 700; color: var(--xp); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.xr-r dd.neg { color: var(--danger); }
 </style>
 
 <div class="wrap">
@@ -2318,7 +2338,7 @@ function status(v, t, pace, unitWord) {
   if (pace.days > 1) {
     const daysLeft = Math.max(1, pace.days - pace.elapsed + 1), weekly = (t * 7) / pace.days;
     const risk = unitWord === "set" ? left > Math.max(5, Math.ceil(weekly / 2)) * Math.ceil(daysLeft / 2) : left / daysLeft > (2 * t) / pace.days;
-    return { k: "behind", risk, txt: risk ? `Behind pace · ${togo}` : togo };
+    return { k: "behind", risk, txt: risk ? `At risk · ${togo}` : togo };
   }
   return { k: "todo", txt: togo };
 }
@@ -2430,7 +2450,7 @@ function render() {
       ${gauge({ value: c.distance, target: distTarget, label: "Distance", show: showDist, tick })}
       ${gauge({ value: c.stories, target: stairsTarget, label: "Stairs", show: v => `${Math.round(v)}`, ofText: `of ${showStories(stairsTarget)}`, tick })}
     </div>
-    <div class="gauges" style="margin-top:6px">${[cardioSt, distSt, stairsSt].map(st => `<div style="text-align:center">${pill(st)}</div>`).join("")}</div>
+    <div class="gauges" style="margin-top:6px">${[cardioSt, distSt, stairsSt].map(st => `<div style="text-align:center">${st.risk ? `<span class="pill behind risk" title="${esc(st.txt)}" aria-label="${esc(st.txt)}">At risk</span>` : pill({ ...st, txt: st.txt.replace(/ (stories|story) (to go|short)$/, " $2") })}</div>`).join("")}</div>
     <div class="stats g-stats">${[["Sessions", c.cardioCount], ["Avg session", c.cardioCount ? hm(c.minutes / c.cardioCount) : "–"], ["Active days", new Set(c.ws.filter(isCardio).map(w => w.date)).size]]
       .map(([k, v]) => `<div class="stat"><b>${v}</b><span>${esc(k)}</span></div>`).join("")}</div>
     ${c.cardioCount ? "" : `<p class="note">No cardio in this range yet.</p>`}
@@ -2571,8 +2591,7 @@ function renderLiftGauges({ c, list, r, days, pace, isCurrent, elapsed, tick, li
       ${arc(0, 0.4, "dial-off")}${arc(0.4, 0.6, "dial-ok")}${arc(0.6, 1, "dial-off")}
       ${tot ? `<line class="dial-needle" x1="${cx}" y1="${cy}" x2="${nx}" y2="${ny}"/>` : ""}<circle class="dial-hub" cx="${cx}" cy="${cy}" r="5"/>
       <text class="g-of" x="${pt(0, DR)[0]}" y="${cy + 18}" text-anchor="middle">Pull</text><text class="g-of" x="${pt(1, DR)[0]}" y="${cy + 18}" text-anchor="middle">Push</text>
-      <text class="g-of" x="${cx}" y="${cy + 26}" text-anchor="middle">${tot ? `${fmt(push)} : ${fmt(pull)} sets` : ""}</text>
-    </svg><figcaption><b>Push / pull</b><span class="num">${tot ? `${Math.round(f * 100)}% push` : "–"}</span>${pill(balSt)}</figcaption></figure>`;
+    </svg><figcaption><b>Push / pull</b><span class="num">${tot ? `${Math.round(f * 100)}% push · ${fmt(push)} : ${fmt(pull)} sets` : "–"}</span>${pill(balSt)}</figcaption></figure>`;
 
   const withPill = (g, st) => g.replace("</figcaption>", `${pill(st)}</figcaption>`);
   $("liftGauges").innerHTML = `<div class="gauges four">
@@ -2816,12 +2835,28 @@ function levelSheet() {
   return sheetFrame(`Level ${info.level} · ${esc(titleFor(info.level))}`, `
     <div class="xpbar big"><span style="width:${(info.into / info.need) * 100}%"></span></div>
     <p class="num" style="margin:6px 0 14px">${info.into.toLocaleString()} of ${info.need.toLocaleString()} XP to level ${info.level + 1} · ${info.total.toLocaleString()} XP in total</p>
-    <div class="explain"><p><b>How to earn XP</b></p>
-      <p>Lifting workout: <b>${XP.workout} XP</b> + <b>${XP.perSet}–${XP.perSet * (1 + XP.weightBonus)} XP per set</b> (up to ${XP.maxSets} sets). Heavier sets earn a little more: 45 lb is ${setXP(45, "lb")} XP, 135 lb is ${setXP(135, "lb")}, 225 lb is ${setXP(225, "lb")}, and ${XP.fullAt} lb or more is ${setXP(XP.fullAt, "lb")}.<br>Cardio session: <b>${XP.session} XP</b> + <b>${XP.perMin} XP per minute</b> (up to ${XP.maxMin} minutes).</p>
-      <p><b>Weekly bonuses</b> (Monday–Sunday): +${BONUS.muscle} XP per muscle goal met, +${BONUS.allMuscles} XP if every muscle goal is met, +${BONUS.cardio} XP for your cardio time goal, +${BONUS.distance} XP for your distance goal, +${BONUS.days} XP for training on your goal number of days. Hitting your days goal week after week adds a streak bonus of +${BONUS.streakStep} XP for each week in a row (up to +${BONUS.streakMax}).</p>
-      <p><b>Boss fights:</b> every 5 levels a boss appears with a hard challenge: a long run, a big stair climb, a high set count or a heavy volume day. Start a fight when you're ready and complete it within 24 hours. The reward is worth about two levels at that point and grows 5% more with each boss.</p>
-      <p><b>Missed days:</b> when a week ends short of your workout-days goal, you lose ${BONUS.missedDay} XP per missed day and your streak resets. Your first week is never penalised, and XP never drops below 0, though it can drop you a level.</p>
-      <p>Each level needs 100 XP more than the one before. You earn a new title every 10 levels.</p>
+    <div class="explain xp-rules">${(() => {
+      const r = (t, xp, sub = "", neg) => `<div class="xr-r"><dt>${t}${sub ? `<small>${sub}</small>` : ""}</dt><dd${neg ? ' class="neg"' : ""}>${xp}</dd></div>`;
+      return `<p class="xr-h">How to earn XP</p><dl class="xr">
+        <div class="xr-g">Every workout</div>
+        ${r("Logging a lifting workout", `+${XP.workout} XP`)}
+        ${r(`Each set, up to ${XP.maxSets}`, `+${XP.perSet}–${XP.perSet * (1 + XP.weightBonus)} XP`, `Heavier sets earn a little more: 45 lb ${setXP(45, "lb")}, 135 lb ${setXP(135, "lb")}, 225 lb ${setXP(225, "lb")}, ${XP.fullAt} lb or more ${setXP(XP.fullAt, "lb")}`)}
+        ${r("Logging a cardio session", `+${XP.session} XP`)}
+        ${r(`Each cardio minute, up to ${XP.maxMin}`, `+${XP.perMin} XP`)}
+        <div class="xr-g">Weekly bonuses <small>· Monday to Sunday</small></div>
+        ${r("Each muscle goal met", `+${BONUS.muscle} XP`)}
+        ${r("Every muscle goal met", `+${BONUS.allMuscles} XP`)}
+        ${r("Cardio time goal met", `+${BONUS.cardio} XP`)}
+        ${r("Distance goal met", `+${BONUS.distance} XP`)}
+        ${r("Days goal met", `+${BONUS.days} XP`)}
+        ${r("Streak: each week in a row you meet it", `+${BONUS.streakStep} XP`, `Up to +${BONUS.streakMax} XP a week`)}
+        <div class="xr-g">Boss fights <small>· every 5 levels</small></div>
+        ${r("Beat the challenge within 24 hours", "≈ 2 levels", "A long run, a big stair climb, a high set count or a heavy volume day. Start it when you're ready; each boss is worth 5% more.")}
+        <div class="xr-g">Missed days</div>
+        ${r("Each day short of your days goal", `−${BONUS.missedDay} XP`, "Your streak resets too. Never in your first week, and XP never drops below 0, though it can drop you a level.", true)}
+      </dl>
+      <p class="note">Each level needs 100 XP more than the one before. You earn a new title every 10 levels.</p>`;
+    })()}
       <button class="btn small" type="button" data-act="tour">Take the quick tour again</button></div>
     <div class="lbl" id="themeLbl" style="scroll-margin-top:8px">Title theme</div>
     <div class="themes">${themeGroups().map(([name, ks]) => `<div class="theme-group" role="group" aria-label="${esc(name)}"><span class="theme-head">${esc(name)}</span>
@@ -3804,7 +3839,7 @@ function renderSummary({ r, c, days, elapsed, isCurrent, liftTarget, cardioTarge
         <div class="track big"><span class="fill" style="width:${cardioTarget ? Math.min(100, (c.minutes / cardioTarget) * 100) : 0}%;background:var(--h${level(c.minutes, cardioTarget) || 1})"></span></div>
         <div style="margin-top:6px">${pill(cardioSt)}</div></div>
     </div>
-    ${gaps.length ? `<p class="sum-gaps"><span class="lbl">Most behind</span> ${gaps.map(m => `<button type="button" class="gap" data-m="${m}">${esc(MUSCLES[m])} <span class="num">${fmt(c.lift[m].v)}/${fmt(liftTarget(m))}</span></button>`).join("")}</p>` :
+    ${gaps.length ? `<p class="sum-gaps"><span class="lbl">Most behind</span> ${gaps.map(m => `<button type="button" class="gap${liftSt[m].risk ? " risk" : ""}" data-m="${m}"${liftSt[m].risk ? ` title="${esc(liftSt[m].txt)}"` : ""}>${esc(MUSCLES[m])} <span class="num">${fmt(c.lift[m].v)}/${fmt(liftTarget(m))}</span></button>`).join("")}</p>` :
       withGoal.length ? `<p class="sum-gaps"><span class="pill met">Every muscle goal met</span></p>` : ""}
     <p class="note" style="margin-top:6px">Goals: ${fmt(withGoal.reduce((a, m) => a + (Number(g.sets[m]) || 0), 0))} sets and ${hm(g.cardio)} of cardio a week. <button class="linkbtn" type="button" data-act="goals">Change goals</button></p>`;
 }
@@ -4578,7 +4613,7 @@ function gymPlanHTML(d) {
     <p class="gym-intro">${items.length || nc ? `${summary}. Change ${items.length ? "the sets" : "the minutes"} or add more, then ${started || cl.some(it => it.done) ? "carry on" : "start"}. You can still change things as you go.`
       : "Add the exercises you'll do and how many sets of each. Then you'll go through them one set at a time, with a rest timer."}</p>
     ${sug}
-    ${items.length || nc ? `<ol class="gym-plan">${rows}${cRows}</ol>` : sug ? "" : `<p class="gym-empty">No exercises yet.</p>`}
+    ${items.length || nc ? `<ol class="gym-plan">${rows}${cRows}</ol>` : sug ? "" : `<p class="gym-empty">Nothing planned yet. Add an exercise or cardio to start.</p>`}
     <div class="gym-adds"><button class="btn gym-addex" type="button" data-gym="add">+ Add exercise</button><button class="btn gym-addex" type="button" data-gym="c-add">+ Add cardio</button></div>`,
     `<button class="btn ghost" type="button" data-gym="form">Edit as a list</button><div class="right"><button class="btn primary" type="button" data-gym="step" data-step="train"${items.length || nc ? "" : " disabled"}>${started || cl.some(it => it.done) ? "Continue ›" : "Start workout ›"}</button></div>`);
 }
