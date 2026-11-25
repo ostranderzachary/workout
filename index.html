@@ -80,12 +80,12 @@ body[data-tab="today"] #periods, body[data-tab="today"] #rangeNav, body[data-tab
 
 .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
 .stat b { display: block; font-family: var(--font-display); font-weight: 700; font-size: 26px; line-height: 1.05; font-variant-numeric: tabular-nums; }
-.stat span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.stat span { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
 
 .bodies { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
 .fig { text-align: center; min-width: 0; }
 .fig svg { width: 100%; max-width: 230px; height: auto; display: block; margin: 0 auto; }
-.fig .cap { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-top: 4px; }
+.fig .cap { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-top: 4px; }
 .sil { fill: var(--body); }
 .m { fill: var(--idle); stroke: var(--surface); stroke-width: 1.2; cursor: pointer; transition: fill .25s ease, opacity .2s ease; }
 .m.l1 { fill: var(--h1); } .m.l2 { fill: var(--h2); } .m.l3 { fill: var(--h3); } .m.l4 { fill: var(--h4); } .m.l5 { fill: var(--h5); }
@@ -95,13 +95,19 @@ body[data-tab="today"] #periods, body[data-tab="today"] #rangeNav, body[data-tab
 @media (prefers-reduced-motion: reduce) { .m { transition: none; } }
 
 .legend { margin-top: 12px; font-size: 12px; color: var(--muted); text-align: center; }
-.legend-title { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
+.legend-title { display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
 .legend .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; }
-.legend .steps li { display: grid; gap: 4px; justify-items: center; line-height: 1.2; font-size: 11px; }
+.legend .steps li { display: grid; gap: 4px; justify-items: center; line-height: 1.2; font-size: 12px; }
 .legend .steps i { width: 100%; height: 10px; border-radius: 3px; display: block; }
-.howto { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; font-size: 14px; }
-.howto summary { cursor: pointer; font-weight: 600; color: var(--fg); }
-.howto p { margin: 8px 0 0; color: var(--muted); max-width: 65ch; }
+.howto { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 4px; }
+.howto p { margin: 8px 0 0; color: var(--muted); max-width: 65ch; font-size: 14px; }
+.why { margin-top: 8px; font-size: 13px; }
+.why summary { list-style: none; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; cursor: pointer; color: var(--muted); font-weight: 600; border-radius: 8px; padding: 0 4px 0 0; }
+.why summary::-webkit-details-marker { display: none; }
+.why summary:hover { color: var(--fg); }
+.why summary .ic { width: 17px; height: 17px; }
+.why[open] summary { color: var(--fg); }
+.why-body { margin: 2px 0 0; padding: 8px 10px; border-left: 2px solid var(--line); color: var(--muted); font-size: 13px; line-height: 1.5; max-width: 65ch; }
 .tap-hint { text-align: center; }
 .sel-line { margin: 4px 0 6px; font-size: 14px; }
 .pill { display: inline-block; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 600; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
@@ -137,12 +143,12 @@ body[data-tab="today"] #periods, body[data-tab="today"] #rangeNav, body[data-tab
 @media (max-width: 599px) { .ob-body > span { display: none; } .ob-steps { gap: 8px; } .onboard .note { font-size: 13px; } }
 .lvl-chip { display: grid; justify-items: start; line-height: 1.1; border: 1px solid var(--h3); background: var(--surface); border-radius: 12px; padding: 5px 10px; text-align: left; }
 .lvl-chip b { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--h5); }
-.lvl-chip span { font-size: 11px; color: var(--muted); max-width: 14ch; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lvl-chip span { font-size: 12px; color: var(--muted); max-width: 14ch; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 420px) { .lvl-chip span { display: none; } }
 .player { margin-bottom: 12px; padding: 12px 14px; }
 .player-btn { width: 100%; display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 14px; align-items: center; border: 0; background: transparent; padding: 0; text-align: left; }
 .lvl-badge { width: 64px; height: 64px; border-radius: 16px; display: grid; place-items: center; align-content: center; background: linear-gradient(160deg, var(--h4), var(--h2)); color: #0b1a0f; }
-.lvl-badge small { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.lvl-badge small { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
 .lvl-badge b { font-family: var(--font-display); font-size: 32px; font-weight: 700; line-height: .9; }
 .player-body { display: grid; gap: 6px; min-width: 0; }
 .player-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; line-height: 1; }
@@ -230,7 +236,7 @@ label.btn { cursor: pointer; display: inline-block; }
 .tour-ico { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; background: linear-gradient(135deg, var(--h4), var(--h2)); color: #0b1a0f; margin-bottom: 12px; }
 .tour-ico svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .tour-ico.boss { background: linear-gradient(135deg, #a99bff, #5a48d6); color: #0d0b1f; box-shadow: 0 0 22px var(--boss-glow); }
-.tour-step { margin: 0; font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--h5); }
+.tour-step { margin: 0; font-size: 12px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--h5); }
 .tour-card.is-boss .tour-step { color: var(--boss); }
 .tour-card h3 { margin: 4px 0 8px; font-family: var(--font-display); font-size: 26px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; line-height: 1.05; }
 .tour-card p.tour-body { margin: 0; font-size: 15px; line-height: 1.5; color: var(--muted); }
@@ -294,12 +300,12 @@ input[type="date"].inp::-webkit-date-and-time-value { text-align: left; }
 .lb-row.p3 .lb-place { background: linear-gradient(135deg, #f0b07a, #a8622e); color: #2a1300; border: 0; }
 .lb-who { display: grid; gap: 1px; min-width: 0; }
 .lb-who b { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lb-who b i { font-style: normal; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--h5); margin-left: 6px; }
+.lb-who b i { font-style: normal; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--h5); margin-left: 6px; }
 .lb-who span { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lb-who em { font-style: normal; color: var(--fg); }
 .lb-score { text-align: right; display: grid; gap: 1px; }
 .lb-score b { font-family: var(--font-display); font-size: 20px; line-height: 1; }
-.lb-score small { font-size: 11px; color: var(--muted); }
+.lb-score small { font-size: 12px; color: var(--muted); }
 .lb-gap { text-align: center; color: var(--muted); font-size: 18px; line-height: 1; padding: 2px 0; }
 .lb-empty { padding: 22px 12px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 14px; }
 .lb-mine { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; font-size: 14px; }
@@ -355,7 +361,7 @@ button.xi-main { cursor: pointer; }
 .overlay.prog-overlay { z-index: 32; }
 .prog-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
 .prog-tiles .stat { background: var(--bg); border-radius: 12px; padding: 10px 12px; display: grid; gap: 2px; }
-.prog-tiles .stat span { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.prog-tiles .stat span { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .prog-tiles .stat b { font-family: var(--font-display); font-size: 20px; line-height: 1.1; }
 .prog-tiles .stat b.up { color: var(--h5); } .prog-tiles .stat b.down { color: var(--danger); }
 .prog-tiles .stat small { font-size: 12px; color: var(--muted); }
@@ -367,7 +373,7 @@ button.pl-row { cursor: pointer; }
 .pl-top { display: flex; align-items: center; gap: 8px; }
 .pl-top b { font-size: 14px; }
 .pl-top .num { margin-left: auto; font-size: 13px; color: var(--muted); }
-.pl-best { font-style: normal; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #0b1a0f; background: var(--h5); border-radius: 4px; padding: 1px 6px; }
+.pl-best { font-style: normal; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #0b1a0f; background: var(--h5); border-radius: 4px; padding: 1px 6px; }
 .pl-sets { font-size: 13px; color: var(--muted); }
 .best-line .linkbtn { color: var(--h4); }
 /* History calendar */
@@ -375,7 +381,7 @@ button.pl-row { cursor: pointer; }
 .cal-title { flex: 1; text-align: center; font-family: var(--font-display); font-size: 20px; text-transform: uppercase; letter-spacing: .03em; }
 .cal-head-r { display: flex; align-items: center; gap: 6px; }
 .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; touch-action: pan-y; }
-.cal-dow { text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); padding-bottom: 2px; }
+.cal-dow { text-align: center; font-size: 12px; font-weight: 700; color: var(--muted); padding-bottom: 2px; }
 .cal-day { position: relative; aspect-ratio: 1; min-height: 38px; border-radius: 10px; border: 0; background: var(--bg); color: var(--fg); font: inherit; display: grid; place-items: center; padding: 0; cursor: pointer; }
 .cal-day.blank { background: none; cursor: default; }
 .cal-day:disabled { opacity: .35; cursor: default; }
@@ -399,7 +405,7 @@ button.pl-row { cursor: pointer; }
 .sum-ex { background: var(--bg); border-radius: 12px; padding: 12px; margin-top: 8px; }
 .sum-ex-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .sum-name { font-size: 16px; font-weight: 700; color: var(--fg); text-decoration-color: var(--line); }
-.sum-tag { font-style: normal; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; border: 1px solid var(--line); color: var(--muted); border-radius: 4px; padding: 1px 6px; }
+.sum-tag { font-style: normal; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; border: 1px solid var(--line); color: var(--muted); border-radius: 4px; padding: 1px 6px; }
 .sum-tag.rec { background: var(--h5); border-color: var(--h5); color: #0b1a0f; }
 .sum-mus { margin: 3px 0 0; font-size: 12px; color: var(--muted); }
 .sum-sets { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
@@ -414,7 +420,7 @@ button.pl-row { cursor: pointer; }
 /* Suggestion for today */
 .sug-card { margin: 12px 0 0; }
 .sug-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
-.sug-tag { font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--h5); }
+.sug-tag { font-size: 12px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--h5); }
 .sug-hide { font-size: 13px; color: var(--muted); }
 .sug-title { margin: 6px 0 0; font-family: var(--font-display); font-size: 26px; text-transform: uppercase; letter-spacing: .02em; line-height: 1.1; }
 .sug-title small { display: block; font-family: var(--font-body); font-size: 14px; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--muted); margin-top: 2px; }
@@ -449,7 +455,7 @@ button.pl-row { cursor: pointer; }
 @media (min-width: 900px) { .tabbar .side-only { display: flex !important; } }
 .boss-card { margin-bottom: 12px; border-color: var(--boss); box-shadow: 0 0 22px var(--boss-glow); background: linear-gradient(160deg, rgba(139, 123, 255, .14), var(--surface) 60%); }
 .boss-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.boss-tag { font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--boss); margin: 0; }
+.boss-tag { font-size: 12px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--boss); margin: 0; }
 .boss-name, .boss-big { margin: 4px 0; font-family: var(--font-display); font-size: 30px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; line-height: 1.05; color: var(--fg); text-shadow: 0 0 18px var(--boss-glow); }
 .boss-chal { margin: 0 0 10px; font-size: 14px; color: var(--muted); } .boss-chal b { color: var(--fg); }
 .boss-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
@@ -477,7 +483,7 @@ button.pl-row { cursor: pointer; }
 .records li { align-items: baseline; }
 .records b { color: var(--fg); }
 .records small { color: var(--muted); margin-left: 6px; }
-.xp-tag { display: inline-block; font-size: 11px; font-weight: 700; color: var(--h5); }
+.xp-tag { display: inline-block; font-size: 12px; font-weight: 700; color: var(--h5); }
 .titles { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; }
 .titles li { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px 10px; border-radius: 10px; color: var(--muted); font-size: 14px; }
 .titles li b { color: var(--muted); font-weight: 600; }
@@ -555,7 +561,7 @@ button.pl-row { cursor: pointer; }
 .you-list { list-style: none; margin: 0; padding: 0; }
 .you-list > li + li { border-top: 1px solid var(--line); }
 .you-row { width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px 2px; border: 0; background: transparent; color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
-.you-row > span:first-child, .you-set > span:first-child { flex: 1; min-width: 0; }
+.you-row > span:first-of-type, .you-set > span:first-of-type { flex: 1; min-width: 0; }
 .you-row b, .you-set b { display: block; font-size: 15px; }
 .you-row small, .you-set small { display: block; margin-top: 2px; color: var(--muted); font-size: 13px; }
 .you-row .chev { flex: none; color: var(--muted); font-size: 20px; line-height: 1; }
@@ -576,7 +582,7 @@ button.pl-row { cursor: pointer; }
 .gl-ring .bg { stroke: var(--bg); }
 .gl-ring .fg { stroke: var(--h5); stroke-linecap: round; }
 .gl-ring span { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; line-height: 1; }
-.gl-ring small { font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.gl-ring small { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .gl-ring b { font-family: var(--font-display); font-size: 22px; font-weight: 700; }
 .gl-week { display: flex; gap: 6px; }
 .gl-day { display: grid; justify-items: center; gap: 3px; }
@@ -585,7 +591,7 @@ button.pl-row { cursor: pointer; }
 .gl-day.today i { border-color: var(--fg); }
 .gl-day.today.on i { border-color: var(--h5); box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--fg); }
 .gl-day.future i { opacity: .5; border-style: dashed; }
-.gl-day small { font-size: 10px; font-weight: 600; color: var(--muted); }
+.gl-day small { font-size: 12px; font-weight: 600; color: var(--muted); }
 .gl-day.today small { color: var(--fg); }
 .gl-meta { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
 .gl-title { display: block; width: 100%; margin: 0 0 8px; padding: 0; border: 0; background: transparent; color: var(--fg); text-align: left; font: inherit; cursor: pointer; }
@@ -596,7 +602,7 @@ button.pl-row { cursor: pointer; }
 .gl-stakes.good { color: var(--h5); }
 .gl-meta b { color: var(--fg); }
 .gl-line { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 12px; padding: 10px 12px; font: inherit; font-size: 14px; cursor: pointer; }
-.gl-line .k { flex: none; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.gl-line .k { flex: none; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .gl-line .v { flex: 1; min-width: 0; }
 .gl-line .chev { flex: none; color: var(--muted); font-size: 18px; line-height: 1; }
 .gl-line.boss { border-color: var(--boss); }
@@ -710,7 +716,7 @@ body[data-sheet="gym"] .toast { bottom: auto; top: calc(10px + env(safe-area-ins
 .you-ctl { flex: none; display: inline-flex; align-items: center; gap: 8px; }
 /* Rows with a Test button: when there isn't room beside the text, the buttons drop below it */
 .you-set.wrap { flex-wrap: wrap; row-gap: 10px; }
-.you-set.wrap > span:first-child { flex: 1 1 140px; }
+.you-set.wrap > span:first-of-type { flex: 1 1 140px; }
 .you-set.wrap > .you-ctl { margin-left: auto; }
 .gym-rest.over .gym-rest-t { color: var(--h5); }
 .set.planned .inp { opacity: .55; }
@@ -760,14 +766,32 @@ body[data-sheet="gym"] .toast { bottom: auto; top: calc(10px + env(safe-area-ins
 .bars-h .chev { color: var(--muted); font-size: 20px; line-height: 1; transition: transform .15s ease; text-align: center; }
 .bars-h[aria-expanded="true"] .chev { transform: rotate(90deg); }
 @media (prefers-reduced-motion: reduce) { .bars-h .chev { transition: none; } }
-.note { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
+.note { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+/* Icons: one line set (24×24, round strokes), drawn in the current text colour */
+.ic-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+.ic { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; vertical-align: middle; }
+.wk-ic { display: inline-grid; place-items: center; flex: none; width: 30px; height: 30px; border-radius: 9px; background: var(--bg); color: var(--fg); border: 1px solid var(--line); }
+.wk-ic .ic { width: 18px; height: 18px; }
+.wk-ic.cardio { background: color-mix(in srgb, var(--h3) 22%, transparent); border-color: color-mix(in srgb, var(--h3) 45%, transparent); color: var(--h5); }
+.wk-ic.bonus { background: var(--h5); border-color: var(--h5); color: #0b1a0f; }
+.wk-ic.boss { background: var(--boss); border-color: var(--boss); color: #0d0b1f; }
+.wk-ic.pen { background: transparent; border-color: var(--danger); color: var(--danger); }
+.history .t { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.history .t .tt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history .s { padding-left: 38px; }
+.chip .ic { width: 16px; height: 16px; margin: -2px 6px 0 -2px; }
+.badge .ic { width: 13px; height: 13px; margin: -2px 4px 0 0; stroke-width: 2.2; }
+.you-ic { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--bg); color: var(--h5); }
+.you-ic .ic { width: 19px; height: 19px; }
+.addopt-ic { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: var(--surface); color: var(--h5); border: 1px solid var(--line); }
+.addopt-ic .ic { width: 24px; height: 24px; }
 
 .history { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .history button { width: 100%; text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 10px 12px; display: grid; grid-template-columns: 52px minmax(0,1fr); gap: 12px; align-items: center; }
 .history button:hover { border-color: var(--muted); }
 .date-chip { text-align: center; line-height: 1; }
 .date-chip b { display: block; font-family: var(--font-display); font-size: 26px; font-weight: 700; }
-.date-chip span { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.date-chip span { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
 .history .t { font-weight: 600; }
 /* A day with several entries: one card, one date, a row per entry */
 .hday-card { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 6px 6px 6px 12px; display: grid; grid-template-columns: 52px minmax(0,1fr); gap: 6px 12px; align-items: center; }
@@ -789,7 +813,7 @@ body:not([data-tab="you"]) [data-tab="you"] { display: none !important; }
   body { padding-block: 0 calc(96px + env(safe-area-inset-bottom, 0px)); }
   .tabbar { display: grid; grid-template-columns: repeat(5, 1fr); align-items: end; position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--surface); border-top: 1px solid var(--line);
     padding: 4px max(8px, env(safe-area-inset-right, 0px)) calc(4px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
-  .tabbar button { border: 0; background: transparent; color: var(--muted); display: grid; justify-items: center; gap: 2px; font-size: 11px; font-weight: 600; padding: 6px 0; min-height: 54px; align-content: center; }
+  .tabbar button { border: 0; background: transparent; color: var(--muted); display: grid; justify-items: center; gap: 2px; font-size: 12px; font-weight: 600; padding: 6px 0; min-height: 54px; align-content: center; }
   .tabbar button svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .tabbar button[aria-current="page"] { color: var(--h5); }
   .tabbar .tab-add { justify-self: center; width: 58px; height: 58px; min-height: 0; padding: 0; border-radius: 50%; background: var(--h4); color: #0b1a0f; margin-bottom: 6px; place-items: center; box-shadow: 0 6px 18px rgba(0,0,0,.5); }
@@ -821,7 +845,7 @@ body:not([data-tab="you"]) [data-tab="you"] { display: none !important; }
 .badge.cardio { background: var(--h3); border-color: var(--h3); color: #0b1a0f; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .themes { margin: 8px 0 6px; display: grid; gap: 12px; }
-.theme-head { display: block; margin-bottom: 6px; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.theme-head { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 .chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 13px; font-weight: 600; font-size: 14px; }
 .chip[aria-pressed="true"] { background: var(--ink-btn); color: var(--ink-btn-fg); border-color: var(--ink-btn); }
 .withunit { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 6px; align-items: center; }
@@ -855,8 +879,8 @@ details.how p { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
 .g-track { fill: none; stroke: var(--bg); stroke-width: 13; }
 .g-fill { fill: none; stroke-width: 13; transition: stroke-dasharray .4s ease; }
 .g-tick { fill: var(--fg); stroke: var(--surface); stroke-width: 2.5; }
-.g-val { fill: var(--fg); font-family: var(--font-display); font-weight: 700; font-size: 24px; text-anchor: middle; font-variant-numeric: tabular-nums; }
-.g-of { fill: var(--muted); font-family: var(--font-body); font-size: 11px; text-anchor: middle; }
+.g-val { fill: var(--fg); font-family: var(--font-display); font-weight: 700; font-size: 26px; text-anchor: middle; font-variant-numeric: tabular-nums; }
+.g-of { fill: var(--muted); font-family: var(--font-body); font-size: 15px; text-anchor: middle; }
 .gauge figcaption { display: grid; justify-items: center; gap: 4px; text-align: center; font-size: 13px; color: var(--muted); }
 .gauge figcaption b { color: var(--fg); font-size: 14px; text-transform: uppercase; letter-spacing: .06em; }
 .g-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
@@ -871,12 +895,12 @@ details.how p { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
 .breakdown { width: 100%; border-collapse: collapse; font-size: 14px; }
 .breakdown abbr { text-decoration: none; }
 .breakdown th, .breakdown td { text-align: right; padding: 7px 0 7px 8px; border-top: 1px solid var(--line); white-space: nowrap; }
-.breakdown thead th { border-top: 0; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.breakdown thead th { border-top: 0; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
 .breakdown th:first-child { text-align: left; padding-left: 0; }
 .breakdown tbody th { font-weight: 600; }
 .highlights { list-style: none; margin: 12px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
 .highlights li { background: var(--bg); border-radius: 10px; padding: 8px 10px; display: grid; gap: 1px; }
-.highlights span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.highlights span { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
 .highlights b { font-family: var(--font-display); font-size: 22px; font-weight: 700; }
 .highlights small { font-size: 12px; color: var(--muted); }
 .acts { list-style: none; margin: 10px 0 0; padding: 0; font-size: 14px; }
@@ -909,7 +933,7 @@ button.tag { cursor: pointer; }
 .stepper .inp:focus-visible { outline-offset: -2px; }
 .stp { -webkit-tap-highlight-color: transparent; border: 0; background: var(--surface); color: var(--fg); font-size: 22px; font-weight: 600; line-height: 1; min-height: 40px; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
 .stp:active { background: var(--h2); }
-.field label small { text-transform: none; letter-spacing: 0; font-weight: 500; }
+.field label small { font-size: 12px; text-transform: none; letter-spacing: 0; font-weight: 500; }
 .x { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: transparent; display: grid; place-items: center; color: var(--muted); }
 .x svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.4; fill: none; stroke-linecap: round; }
 .sheet-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; margin-top: 16px; }
@@ -954,10 +978,13 @@ button.tag { cursor: pointer; }
   .btn.small { padding: 9px 14px; font-size: 14px; }
 }
 .addgrid { display: grid; gap: 10px; }
-.addopt { display: grid; gap: 4px; text-align: left; border: 1px solid var(--line); background: var(--bg); border-radius: 14px; padding: 16px; }
+.addopt { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 14px; row-gap: 2px; align-items: center; text-align: left; border: 1px solid var(--line); background: var(--bg); border-radius: 14px; padding: 14px 16px; }
+.addopt > .addopt-ic { grid-row: 1 / span 2; align-self: center; }
+.addopt > b, .addopt > span:not(.addopt-ic) { grid-column: 2; }
+.addopt.main .addopt-ic { background: var(--h5); border-color: var(--h5); color: #0b1a0f; }
 .addopt.main { border-color: var(--h4); }
 .addopt.main b { color: var(--h5); }
-.addopt b { font-family: var(--font-display); font-size: 24px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; color: var(--h5); }
+.addopt b { font-family: var(--font-display); font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; color: var(--h5); }
 .addopt span { font-size: 14px; color: var(--muted); }
 .err { color: var(--danger); font-size: 14px; margin-top: 10px; }
 .confirm { display: flex; align-items: center; gap: 8px; font-size: 14px; }
@@ -1005,7 +1032,7 @@ button.tag { cursor: pointer; }
         <div class="stats" id="liftStats"></div>
         <div class="bodies" id="liftBodies"></div>
         <div class="legend" id="liftLegend"></div>
-        <details class="howto"><summary>How to read this map</summary>
+        <details class="howto why" data-ex="map"><summary><svg class="ic" aria-hidden="true"><use href="#i-info"/></svg><span>How to read this map</span></summary>
           <p>Each muscle is coloured by how much of its lifting goal you've done in the range above. The brighter the green, the closer you are; bright lime means the goal is met. Grey means nothing logged for that muscle yet.</p>
           <p>An exercise counts a full set for the muscles it mainly works and half a set for the muscles that help. A bench press set is 1 set for chest and ½ for triceps and shoulders.</p>
           <p>Tap a muscle to see its numbers and which exercises counted.</p></details>
@@ -1040,7 +1067,7 @@ button.tag { cursor: pointer; }
       <section class="panel" data-tab="stats">
         <h2 id="barsTitle">Lifting goals</h2>
         <ul class="bars" id="bars"></ul>
-        <p class="note" id="barsNote"></p>
+        <div id="barsNote"></div>
       </section>
       <section class="panel" data-tab="stats">
         <h2 id="breakdownTitle">Cardio breakdown</h2>
@@ -1064,6 +1091,7 @@ button.tag { cursor: pointer; }
   <button type="button" class="side-only lb-side" data-open="leaderboard" hidden><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/></svg><span>Leaderboard</span></button>
 </nav>
 <div id="sheetRoot"></div>
+<svg class="ic-sprite" width="0" height="0" aria-hidden="true" focusable="false"><defs><symbol id="i-lift" viewBox="0 0 24 24"><path d="M2.5 10v4M21.5 10v4"/><rect x="5" y="7" width="3" height="10" rx="1"/><rect x="16" y="7" width="3" height="10" rx="1"/><path d="M8 12h8"/></symbol><symbol id="i-run" viewBox="0 0 24 24"><circle cx="15.5" cy="4.5" r="2"/><path d="M8 21l3-6 3 2.5V21"/><path d="M11 15l2-6.5-4.5 1.5L6 13"/><path d="M13 8.5l2.5 3.5H19"/></symbol><symbol id="i-walk" viewBox="0 0 24 24"><circle cx="13" cy="4.5" r="2"/><path d="M9.5 21l2.5-7 2.5 2.5V21"/><path d="M12 14l.8-5.5L9.5 11v3"/><path d="M12.8 8.5l1.7 3.5 2.5 1"/></symbol><symbol id="i-hike" viewBox="0 0 24 24"><path d="M2.5 20l6.5-11 4 6.5 2.5-3.5 6 8z"/><path d="M7.4 11.7l1.6 1.3 1.6-1.3"/></symbol><symbol id="i-cycle" viewBox="0 0 24 24"><circle cx="6" cy="16.5" r="3.5"/><circle cx="18" cy="16.5" r="3.5"/><path d="M6 16.5l3.5-7h6L18 16.5"/><path d="M9.5 9.5l3 7H6"/><path d="M13 6.5h3"/></symbol><symbol id="i-swim" viewBox="0 0 24 24"><circle cx="17" cy="6" r="2"/><path d="M4 12.5l5-3.5 3.5 2.5"/><path d="M2.5 16.5c1.5 0 2.2-1.2 3.6-1.2s2.2 1.2 3.6 1.2 2.2-1.2 3.6-1.2 2.2 1.2 3.6 1.2 2.2-1.2 3.6-1.2"/><path d="M2.5 20.5c1.5 0 2.2-1.2 3.6-1.2s2.2 1.2 3.6 1.2 2.2-1.2 3.6-1.2 2.2 1.2 3.6 1.2 2.2-1.2 3.6-1.2"/></symbol><symbol id="i-row" viewBox="0 0 24 24"><circle cx="9.5" cy="6" r="2"/><path d="M9.5 8.5l1 5.5"/><path d="M4 10.5l13 4.5"/><path d="M2.5 15h19l-2.5 4.5H5z"/></symbol><symbol id="i-elliptical" viewBox="0 0 24 24"><path d="M12 12c-2-3-4.2-4.5-6.3-4.5a4.5 4.5 0 0 0 0 9c2.1 0 4.3-1.5 6.3-4.5s4.2-4.5 6.3-4.5a4.5 4.5 0 0 1 0 9c-2.1 0-4.3-1.5-6.3-4.5z"/></symbol><symbol id="i-stairs" viewBox="0 0 24 24"><path d="M3 20h5v-4.5h4.5V11H17V6.5h4"/><path d="M3 20h18"/></symbol><symbol id="i-hiit" viewBox="0 0 24 24"><path d="M13.5 2.5L5 13.5h6.5L10.5 21.5 19 10.5h-6.5z"/></symbol><symbol id="i-jumprope" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><path d="M12 7.5v6.5M12 14l-2 4.5M12 14l2 4.5M12 9.5l-4.5-1.5M12 9.5l4.5-1.5"/><path d="M7.5 8C3 13 5 21.5 12 21.5S21 13 16.5 8"/></symbol><symbol id="i-bonus" viewBox="0 0 24 24"><path d="M12 3l2.6 5.5 6 .8-4.4 4.2 1.1 6L12 16.6l-5.3 2.9 1.1-6-4.4-4.2 6-.8z"/></symbol><symbol id="i-boss" viewBox="0 0 24 24"><path d="M4 18h16M5 15L3 7l5 4 4-6 4 6 5-4-2 8z"/></symbol><symbol id="i-penalty" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></symbol><symbol id="i-gym" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.5 2M9.5 2.5h5M12 2.5V6M18.5 6.5l1.5-1.5"/></symbol><symbol id="i-past" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M9 15l2 2 4-4"/></symbol><symbol id="i-cardio" viewBox="0 0 24 24"><path d="M2.5 12h4l2.5-5 4 10 2.5-5h6"/></symbol><symbol id="i-level" viewBox="0 0 24 24"><path d="M6 13l6-6 6 6M6 19l6-6 6 6"/></symbol><symbol id="i-theme" viewBox="0 0 24 24"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19"/><path d="M9 7.5h6"/></symbol><symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/></symbol><symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></symbol><symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3.5M8 7.5l4-4 4 4"/><path d="M5 12.5v6A2.5 2.5 0 0 0 7.5 21h9a2.5 2.5 0 0 0 2.5-2.5v-6"/></symbol><symbol id="i-scale" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M8 10a4 4 0 0 1 8 0z"/><path d="M12 10l1.5-2"/></symbol><symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol><symbol id="i-backup" viewBox="0 0 24 24"><path d="M7 18.5a4.5 4.5 0 0 1-.6-9A6 6 0 0 1 18 9.6a4.5 4.5 0 0 1-.5 8.9z"/><path d="M12 11.5v5M9.5 14l2.5-2.5 2.5 2.5"/></symbol><symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.6.3-1 .8-1 1.5v.5"/><path d="M12 17h.01"/></symbol><symbol id="i-kettlebell" viewBox="0 0 24 24"><path d="M9 8.5a3 3 0 1 1 6 0"/><path d="M7.5 9.5h9l1.4 9a2 2 0 0 1-2 2.3H8.1a2 2 0 0 1-2-2.3z"/></symbol><symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.5"/></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol><symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16.5v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/></symbol><symbol id="i-voice" viewBox="0 0 24 24"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></symbol><symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.5h.01"/></symbol></defs></svg>
 <div id="celebrate"></div>
 <div id="bossPop"></div>
 <div id="tour"></div>
@@ -2256,7 +2284,14 @@ function compute(list, r) {
 /* ---------- Render ---------- */
 const LEGEND_STEPS = [["var(--idle)", "None yet"], ["var(--h1)", "Under 25%"], ["var(--h2)", "25–49%"], ["var(--h3)", "50–74%"], ["var(--h4)", "75–99%"], ["var(--h5)", "Goal met"]];
 const legendHTML = `<span class="legend-title">Share of goal done</span><ol class="steps">${LEGEND_STEPS.map(([c, t]) => `<li><i style="background:${c}"></i>${t}</li>`).join("")}</ol>`;
+// An icon from the sprite. `label` makes it announced (role="img"); without one it's decoration.
+const ic = (n, label) => `<svg class="ic"${label ? ` role="img" aria-label="${esc(label)}"` : ' aria-hidden="true"'}><use href="#i-${n}"/></svg>`;
+const actIc = act => (CARDIO[act] ? act : "cardio");
 const plural = (n, w) => `${fmt(n)} ${w}${Math.abs(n - 1) < 1e-9 ? "" : "s"}`;
+/* An explanation that folds away: a short "How this works" line that opens in place. */
+S.explain = {};
+const explain = (k, html, label = "How this works") => `<details class="why" data-ex="${k}"${S.explain[k] ? " open" : ""}><summary>${ic("info")}<span>${label}</span></summary><div class="why-body">${html}</div></details>`;
+document.addEventListener("toggle", e => { const d = e.target; if (d && d.matches && d.matches("details.why")) S.explain[d.dataset.ex] = d.open; }, true);
 /* The lifting goal groups on Stats, in order: [status, heading, open at first]. Taps open and close them for the visit. */
 const BAR_GROUPS = [["behind", "Behind", true], ["todo", "To go", true], ["missed", "Missed", true], ["on", "On pace", false], ["met", "Goal met", false], ["none", "No goal", false]];
 S.barsOpen = {};
@@ -2370,8 +2405,8 @@ function render() {
     return `<li class="bars-grp"><button type="button" class="bars-h" data-bgrp="${gp.k}" aria-expanded="${gp.open}"><span class="bars-hl">${esc(gp.label)}${risky ? ` <small class="st-risk">${risky} at risk</small>` : ""}</span><b class="num">${gp.ms.length}</b><span class="chev" aria-hidden="true">›</span></button></li>`
       + (gp.open ? gp.ms.map(barRow).join("") : "");
   }).join("");
-  $("barsNote").innerHTML = `Sets done / target for ${esc(r.label)}. ${days === 7 ? "Targets are your weekly goals." : `Targets are your weekly goal scaled to ${days} day${days === 1 ? "" : "s"} (weekly goal ÷ 7 × ${days}).`}` +
-    (isCurrent && pace.days > 1 && elapsed < days ? ` The thin line on each bar is where you'd be today at an even pace, ${elapsed} of ${days} days in.` : "") + ` Tap a muscle to see it on the map, or the pencil to change its goal.`;
+  $("barsNote").innerHTML = explain("bars", `Sets done / target for ${esc(r.label)}. ${days === 7 ? "Targets are your weekly goals." : `Targets are your weekly goal scaled to ${days} day${days === 1 ? "" : "s"} (weekly goal ÷ 7 × ${days}).`}` +
+    (isCurrent && pace.days > 1 && elapsed < days ? ` The thin line on each bar is where you'd be today at an even pace, ${elapsed} of ${days} days in.` : "") + ` Tap a muscle to see it on the map, or the pencil to change its goal.`);
 
   // Cardio gauges: time and distance against their goals for this range
   const tick = isCurrent && pace.days > 1 && elapsed < days ? elapsed / days : null;
@@ -2389,7 +2424,8 @@ function render() {
     <div class="stats g-stats">${[["Sessions", c.cardioCount], ["Avg session", c.cardioCount ? hm(c.minutes / c.cardioCount) : "–"], ["Active days", new Set(c.ws.filter(isCardio).map(w => w.date)).size]]
       .map(([k, v]) => `<div class="stat"><b>${v}</b><span>${esc(k)}</span></div>`).join("")}</div>
     ${c.cardioCount ? "" : `<p class="note">No cardio in this range yet.</p>`}
-    <p class="note">Goals: <button type="button" class="linkbtn" data-goal-edit="cardio">${hm(g.cardio)}</button>, <button type="button" class="linkbtn" data-goal-edit="distance">${showDist(Math.round(toUnit(Number(g.distance) || 0, "mi") * 10) / 10)}</button> and <button type="button" class="linkbtn" data-goal-edit="stairs">${Number(g.stairs) || 0} stories</button> a week${days === 7 ? "" : `, scaled to ${days} day${days === 1 ? "" : "s"} (weekly goal ÷ 7 × ${days})`}.${tick != null ? " The white dot on each ring is where you'd be today at an even pace." : ""}</p>`;
+    <p class="note">Goals: <button type="button" class="linkbtn" data-goal-edit="cardio">${hm(g.cardio)}</button>, <button type="button" class="linkbtn" data-goal-edit="distance">${showDist(Math.round(toUnit(Number(g.distance) || 0, "mi") * 10) / 10)}</button> and <button type="button" class="linkbtn" data-goal-edit="stairs">${Number(g.stairs) || 0} stories</button> a week${days === 7 ? "" : `, scaled to ${days} day${days === 1 ? "" : "s"} (weekly goal ÷ 7 × ${days})`}.</p>
+    ${tick != null ? explain("cardio", "Each ring fills toward its goal for the range above. The white dot on each ring is where you'd be today at an even pace.") : ""}`;
 
   renderLiftGauges({ c, list, r, days, pace, isCurrent, elapsed, tick, liftTarget, liftLv });
 
@@ -2416,10 +2452,10 @@ function histRow(w, chip) {
       const wd = toUnit(Number(w.distance) || 0, w.distUnit || "mi");
       const st = Number(w.stories) || 0;
       const bits = [`${fmt(Number(w.minutes) || 0)} min`, st ? `${st} ${st === 1 ? "story" : "stories"}` : null, wd ? `${fmt(wd)} ${distUnit()}` : null, rateText(w.activity, Number(w.minutes) || 0, wd)].filter(Boolean);
-      return `<li${w.sample ? "" : ` data-swipe="w:${esc(w.id)}"`}><button type="button" data-w="${esc(w.id)}">${chip}<span style="min-width:0"><div class="t"><span class="badge cardio">${esc(a[0])}</span>${esc(w.name || a[0])}</div><div class="s num">${w.sample ? "" : `<span class="xp-tag">+${xpFor(w)} XP</span> `}${esc(bits.join(" · "))}</div></span></button></li>`;
+      return `<li${w.sample ? "" : ` data-swipe="w:${esc(w.id)}"`}><button type="button" data-w="${esc(w.id)}">${chip}<span style="min-width:0"><div class="t"><span class="wk-ic cardio">${ic(actIc(w.activity), a[0])}</span><span class="tt">${esc(w.name || a[0])}${w.name && w.name !== a[0] ? ` <span class="num" style="color:var(--muted);font-weight:500">· ${esc(a[0])}</span>` : ""}</span></div><div class="s num">${w.sample ? "" : `<span class="xp-tag">+${xpFor(w)} XP</span> `}${esc(bits.join(" · "))}</div></span></button></li>`;
     }
     const n = (w.exercises || []).reduce((a, x) => a + (x.sets || []).length, 0);
-    return `<li${w.sample ? "" : ` data-swipe="w:${esc(w.id)}"`}><button type="button" data-w="${esc(w.id)}">${chip}<span style="min-width:0"><div class="t"><span class="badge">Lift</span>${esc(liftTitle(w))} <span class="num" style="color:var(--muted);font-weight:500">· ${plural(n, "set")}</span></div>` +
+    return `<li${w.sample ? "" : ` data-swipe="w:${esc(w.id)}"`}><button type="button" data-w="${esc(w.id)}">${chip}<span style="min-width:0"><div class="t"><span class="wk-ic">${ic("lift", "Lift")}</span><span class="tt">${esc(liftTitle(w))} <span class="num" style="color:var(--muted);font-weight:500">· ${plural(n, "set")}</span></span></div>` +
       `<div class="s">${w.sample ? "" : `<span class="xp-tag">+${xpFor(w)} XP</span> `}${esc((w.exercises || []).map(x => x.name).join(", "))}</div></span></button></li>`;
   }
 }
@@ -2441,7 +2477,7 @@ function renderBreakdown(c, r) {
       <td class="num">${A.stories > 0 ? `${A.stories} ${A.stories === 1 ? "story" : "stories"}` : A.distance > 0 ? `${fmt(A.distance)} ${u}` : "–"}</td><td class="num">${rateText(k, A.pacedMin, A.distance) || "–"}</td></tr>`).join("")}</tbody>
   </table></div>
   ${highlights.length ? `<ul class="highlights">${highlights.join("")}</ul>` : ""}
-  <p class="note"># is sessions. Avg pace is minutes per ${u} for runs, walks and hikes, and speed for rides. Both use only sessions where you entered a distance.</p>`;
+  ${explain("breakdown", `# is sessions. Avg pace is minutes per ${u} for runs, walks and hikes, and speed for rides. Both use only sessions where you entered a distance.`)}`;
 }
 
 /* A doughnut gauge: the ring fills toward the target; a dot on the ring marks today's even-pace point. */
@@ -2456,9 +2492,12 @@ function gauge({ value, target, label, show, tick, caption, ofText }) {
       <circle class="g-track" cx="66" cy="66" r="${R}"/>
       ${frac > 0 ? `<circle class="g-fill" cx="66" cy="66" r="${R}" style="stroke:var(--h${lv || 1})" stroke-linecap="round" stroke-dasharray="${(frac * C).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 66 66)"/>` : ""}
       ${tickSvg}
-      <text class="g-val" x="66" y="66">${esc(show(value))}</text>
-      <text class="g-of" x="66" y="84">${esc(ofText ?? (target ? `of ${show(target)}` : "no goal set"))}</text>
-    </svg><figcaption><b>${esc(label)}</b><span class="num">${esc(caption ?? (target ? `${pctOf(value, target)}% of goal` : "Set a goal in Goals"))}</span></figcaption></figure>`;
+      <text class="g-val" x="66" y="75">${esc(show(value))}</text>
+    </svg><figcaption><b>${esc(label)}</b>${(() => {
+      const of = ofText ?? (target ? `of ${show(target)}` : "No goal set");
+      return caption == null && target ? `<span class="num">${esc(of)}</span>`
+        : `<span class="num">${esc(of)}</span><span class="num">${esc(caption ?? "Set a goal in Goals")}</span>`;
+    })()}</figcaption></figure>`;
 }
 
 /* ---------- Lifting gauges: sets toward goals, muscle goals met, volume vs last period, push/pull balance ---------- */
@@ -2532,7 +2571,7 @@ function renderLiftGauges({ c, list, r, days, pace, isCurrent, elapsed, tick, li
       ${withPill(volGauge, volSt)}
       ${balGauge}
     </div>
-    <p class="note">Sets count toward your muscle goals (helper muscles count half; sets beyond a muscle's goal don't add more). Volume is reps × weight compared with the ${perWord} before. Push is chest, shoulders and triceps; pull is lats, traps and biceps; balanced is 40–60% push.${tick != null ? " The white dot is where you'd be today at an even pace." : ""}</p>`;
+    ${explain("lift", `Sets count toward your muscle goals (helper muscles count half; sets beyond a muscle's goal don't add more). Volume is reps × weight compared with the ${perWord} before. Push is chest, shoulders and triceps; pull is lats, traps and biceps; balanced is 40–60% push.${tick != null ? " The white dot is where you'd be today at an even pace." : ""}`)}`;
 }
 
 function bodiesHTML(levels, sel, tips) {
@@ -2635,9 +2674,12 @@ function renderYou() {
   const goalSub = `${g.days ? `${plural(g.days, "day")} · ` : ""}${fmt(sets)} sets · ${hm(g.cardio)} of cardio a week`;
   const bw = latestWeight(), signedIn = Store.mode === "cloud" && Store.user;
   const rest = Math.min(600, Math.max(15, Number(prefs.rest) || 90)), sound = prefs.restSound !== false, voice = prefs.levelVoice !== false;
-  const row = (attrs, title, sub, extra = "") => `<li><button type="button" class="you-row" ${attrs}><span><b>${title}</b><small>${esc(sub)}</small></span>${extra}<span class="chev" aria-hidden="true">›</span></button></li>`;
+  const YOU_IC = { "Level and titles": "level", "Title theme": "theme", "Bosses": "boss", "Leaderboard": "trophy", "Goals": "target", "Share progress": "share", "Body weight": "scale",
+    "Sign in": "user", "Backup and restore": "backup", "Quick tour": "help", "Weight unit": "kettlebell", "Distance unit": "route", "Rest timer": "clock", "Timer sound": "bell", "Level-up voice": "voice" };
+  const youIc = t => YOU_IC[t] ? `<i class="you-ic">${ic(YOU_IC[t])}</i>` : "";
+  const row = (attrs, title, sub, extra = "") => `<li><button type="button" class="you-row" ${attrs}>${youIc(title)}<span><b>${title}</b><small>${esc(sub)}</small></span>${extra}<span class="chev" aria-hidden="true">›</span></button></li>`;
   const seg = (act, cur, opts, label) => `<div class="seg" role="group" aria-label="${esc(label)}">${opts.map(([v, t]) => `<button type="button" data-act="${act}" data-v="${v}" aria-pressed="${cur === v}">${t}</button>`).join("")}</div>`;
-  const setting = (title, sub, ctl) => `<li class="you-set${ctl.includes("you-ctl") ? " wrap" : ""}"><span><b>${title}</b><small>${sub}</small></span>${ctl}</li>`;
+  const setting = (title, sub, ctl) => `<li class="you-set${ctl.includes("you-ctl") ? " wrap" : ""}">${youIc(title)}<span><b>${title}</b><small>${sub}</small></span>${ctl}</li>`;
   el.innerHTML = `<section class="panel player you-head" aria-label="Your level">
       <button type="button" class="player-btn" data-open="level">
         <span class="lvl-badge"><small>Level</small><b class="num">${info.level}</b></span>
@@ -2662,7 +2704,7 @@ function renderYou() {
       ${setting("Level-up voice", "Says “You have leveled up” when you reach a new level", `<span class="you-ctl">${voice ? `<button type="button" class="btn small" data-act="you-test-voice">Test</button>` : ""}${seg("you-voice", voice ? "on" : "off", [["on", "On"], ["off", "Off"]], "Level-up voice")}</span>`)}
       ${row('data-open="weight"', "Body weight", bw ? `${showWt(bw.lb)} · ${shortDate(bw.date)}` : "Not recorded yet")}
       ${web ? (signedIn
-        ? `<li><button type="button" class="you-row" data-open="account"><span><b>Account</b><small>${esc(`${Store.lbRow ? `${Store.lbRow.display_name} · ` : ""}${Store.user.email}`)}</small><small class="you-sync${Store.statusKind() === "warn" ? " warn" : ""}" role="status">${esc($("sync").textContent)}</small></span><span class="chev" aria-hidden="true">›</span></button></li>`
+        ? `<li><button type="button" class="you-row" data-open="account"><i class="you-ic">${ic("user")}</i><span><b>Account</b><small>${esc(`${Store.lbRow ? `${Store.lbRow.display_name} · ` : ""}${Store.user.email}`)}</small><small class="you-sync${Store.statusKind() === "warn" ? " warn" : ""}" role="status">${esc($("sync").textContent)}</small></span><span class="chev" aria-hidden="true">›</span></button></li>`
         : row('data-open="account"', "Sign in", "Not signed in: everything stays in this browser")) : ""}
       ${row('data-act="you-backup"', "Backup and restore", "Export or import a backup file")}
       ${row('data-act="you-tour"', "Quick tour", "How goals, levels and bosses work")}
@@ -2934,7 +2976,8 @@ function renderXpChart(r) {
       ${bars}
     </svg></div>
     <p class="chart-readout" id="xpReadout" aria-live="polite">${esc(selB ? tipOf(selB) : "Tap a bar to see its details.")}</p>
-    <p class="xp-legend"><span><i class="xb-work"></i>Workouts</span>${has("bonus") ? `<span><i class="xb-bonus"></i>Bonuses and bosses</span>` : ""}${has("pen") ? `<span><i class="xb-pen"></i>Penalties</span>` : ""}<span class="note" style="margin:0">One bar per ${unitWord}. Tap one to list its XP.</span></p>
+    <p class="xp-legend"><span><i class="xb-work"></i>Workouts</span>${has("bonus") ? `<span><i class="xb-bonus"></i>Bonuses and bosses</span>` : ""}${has("pen") ? `<span><i class="xb-pen"></i>Penalties</span>` : ""}</p>
+    ${explain("xp", `One bar per ${unitWord}. Tap one to list its XP.`)}
     ${selB ? xpItemsHTML(selB, by, labelOf(selB), keyOf) : ""}`;
 }
 /* Where each XP in a bar came from: every workout (broken down into its parts), bonus, boss reward and penalty. */
@@ -2963,18 +3006,18 @@ function xpItemsHTML(b, by, label, keyOf, id = "xpItems") {
     const a = isCardio(w) ? CARDIO[w.activity] || CARDIO.run : null;
     const title = a ? (w.name || a[0]) + (Number(w.distance) > 0 ? ` · ${fmt(Number(w.distance))} ${w.distUnit || "mi"}` : w.stories ? ` · ${w.stories} stories` : "") : liftTitle(w);
     return `<li class="xi"><button type="button" class="xi-main" data-w="${esc(w.id)}" aria-label="${esc(title)}: ${sign(xpFor(w))} XP. Open this workout">
-        <span class="badge${a ? " cardio" : ""}">${a ? "Cardio" : "Lift"}</span><span class="xi-t"><b>${esc(title)}</b><small>${esc(when(w))}</small></span><span class="xi-xp num">${sign(xpFor(w))}</span></button>
+        <span class="wk-ic${a ? " cardio" : ""}">${a ? ic(actIc(w.activity), a[0]) : ic("lift", "Lift")}</span><span class="xi-t"><b>${esc(title)}</b><small>${esc(when(w))}</small></span><span class="xi-xp num">${sign(xpFor(w))}</span></button>
       <ul class="xi-sub">${xpParts(w).map(([t, x]) => `<li><span>${esc(t)}</span><span class="num">${sign(x)}</span></li>`).join("")}</ul></li>`;
   }).concat(es.map(e => {
-    const kind = e.boss ? ["boss", "Boss"] : e.xp < 0 ? ["pen", "Penalty"] : ["bonus", "Bonus"];
+    const kind = e.boss ? ["boss", "Boss", "boss"] : e.xp < 0 ? ["pen", "Penalty", "penalty"] : ["bonus", "Bonus", "bonus"];
     const note = e.boss ? (by === "day" ? "" : shortDate(e.date)) : e.label + (e.date === ymd(today()) && !e.boss ? " · so far" : "");
-    return `<li class="xi"><div class="xi-main"><span class="badge ${kind[0]}">${kind[1]}</span><span class="xi-t"><b>${esc(e.text)}</b>${note ? `<small>${esc(note)}</small>` : ""}</span><span class="xi-xp num${e.xp < 0 ? " neg" : ""}">${sign(e.xp)}</span></div></li>`;
+    return `<li class="xi"><div class="xi-main"><span class="wk-ic ${kind[0]}">${ic(kind[2], kind[1])}</span><span class="xi-t"><b>${esc(e.text)}</b>${note ? `<small>${esc(note)}</small>` : ""}</span><span class="xi-xp num${e.xp < 0 ? " neg" : ""}">${sign(e.xp)}</span></div></li>`;
   }));
   const total = b.work + b.bonus + b.pen;
   return `<div class="xp-items" id="${id}">
       <div class="xi-head"><b>${esc(by === "day" ? label : by === "week" ? label : label)}</b><span class="num">${sign(total)} XP</span></div>
       ${lines.length ? `<ul class="xi-list">${lines.join("")}</ul>` : `<p class="note" style="margin:6px 0 0">No XP ${by === "day" ? "on this day" : `in this ${by}`}.</p>`}
-      ${es.some(e => !e.boss && e.date === ymd(today())) ? `<p class="note" style="margin:8px 0 0">This week's bonuses show on today until the week ends.</p>` : ""}
+      ${es.some(e => !e.boss && e.date === ymd(today())) ? explain("bonus", "This week's bonuses show on today until the week ends.") : ""}
     </div>`;
 }
 function chartTap(containerId, selector, readoutId, remember) {
@@ -3043,7 +3086,7 @@ function renderRecords() {
     .sort((a, b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name));
   $("records").innerHTML = rows.length
     ? `<ul class="acts records">${rows.map(r => `<li><button type="button" class="rec-row" data-prog="${esc(r.name)}"><span>${esc(r.name)}</span><span class="num">${r.best} <small>${esc(shortDate(r.date))}</small><i aria-hidden="true">›</i></span></button></li>`).join("")}</ul>
-       <p class="note">Your best set for each exercise, newest records first. Tap one to see its progress.</p>`
+       ${explain("records", "Your best set for each exercise, newest records first. Tap one to see its progress.")}`
     : `<p class="note" style="margin:0">Log a lift and your best for each exercise shows up here.</p>`;
 }
 /* Most reps in a single set, for exercises logged without weight (pull-ups, push-ups and the like) */
@@ -3878,9 +3921,9 @@ function addSheet() {
   const past = S.period === "day" && ymd(S.anchor) < tk ? ymd(S.anchor) : ymd(addDays(today(), -1)), wp = liftOn(past);
   const pastBits = [wp ? liftTitle(wp) : null, ...new Set(cardioOn(past).map(cName))].filter(Boolean);
   return sheetFrame("Log a workout", `<div class="addgrid">
-      <button type="button" class="addopt main" data-act="pick-now"><b>Gym mode</b><span>${wt ? `Lift now, carrying on with today's workout (${esc(liftTitle(wt))}, ${plural(setsIn(wt), "set")} so far), one set at a time` : "Lift now: plan your exercises and cardio, then log one set at a time with a rest timer"}</span></button>
-      <button type="button" class="addopt" data-act="pick-past" data-date="${past}"><b>Add or edit a past workout</b><span>${pastBits.length ? `Opens your workout from ${esc(dayWord(past))} (${esc(pastBits.join(", "))}). Change the date for another day.` : `Lifts and cardio in one form, for logging after the fact. It opens on ${esc(dayWord(past))}; change the date for another day.`}</span></button>
-      <button type="button" class="addopt" data-act="pick-cardio"><b>Cardio</b><span>${(() => { const cs = cardioOn(date); return cs.length
+      <button type="button" class="addopt main" data-act="pick-now"><span class="addopt-ic">${ic("gym")}</span><b>Gym mode</b><span>${wt ? `Lift now, carrying on with today's workout (${esc(liftTitle(wt))}, ${plural(setsIn(wt), "set")} so far), one set at a time` : "Lift now: plan your exercises and cardio, then log one set at a time with a rest timer"}</span></button>
+      <button type="button" class="addopt" data-act="pick-past" data-date="${past}"><span class="addopt-ic">${ic("past")}</span><b>Add or edit a past workout</b><span>${pastBits.length ? `Opens your workout from ${esc(dayWord(past))} (${esc(pastBits.join(", "))}). Change the date for another day.` : `Lifts and cardio in one form, for logging after the fact. It opens on ${esc(dayWord(past))}; change the date for another day.`}</span></button>
+      <button type="button" class="addopt" data-act="pick-cardio"><span class="addopt-ic">${ic("cardio")}</span><b>Cardio</b><span>${(() => { const cs = cardioOn(date); return cs.length
         ? `Continue ${date === ymd(today()) ? "today's cardio" : `your cardio from ${esc(dayWord(date))}`}: ${esc([...new Set(cs.map(c => (CARDIO[c.activity] || CARDIO.run)[0]))].join(", "))}`
         : "A run, ride, swim or other session: minutes and distance"; })()}</span></button>
     </div>`, `<div class="right"><button class="btn ghost" type="button" data-act="close">Cancel</button></div>`, { compact: true });
@@ -4175,7 +4218,7 @@ function summarySheet() {
   const t = w.createdAt ? new Date(w.createdAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
   const { tiles, body } = cardio ? cardioSummary(w) : liftSummary(w);
   return sheetFrame(esc(title), `
-    <p class="sum-when"><span class="badge${cardio ? " cardio" : ""}">${cardio ? esc(a[0]) : "Lift"}</span>${esc(longDate(w.date))}${t ? ` · logged ${esc(t)}` : ""}</p>
+    <p class="sum-when"><span class="badge${cardio ? " cardio" : ""}">${ic(cardio ? actIc(w.activity) : "lift")}${cardio ? esc(a[0]) : "Lift"}</span>${esc(longDate(w.date))}${t ? ` · logged ${esc(t)}` : ""}</p>
     <div class="prog-tiles sum-tiles">${tiles.map(([k, v]) => `<div class="stat"><span>${esc(k)}</span><b class="num">${esc(v)}</b></div>`).join("")}</div>
     ${body}
     <div class="lbl" style="margin-top:14px">XP for this workout</div>
@@ -4583,7 +4626,7 @@ function gymCardioHTML(d, k) {
       <div class="gym-complete"><p>${esc(a[0])} done</p><div class="btn-row">${up ? `<button class="btn primary" type="button" data-gym="goto" data-i="${up[0]}">Next: ${esc(up[1])}</button>`
         : `<button class="btn primary" type="button" data-gym="step" data-step="review">Review and save ›</button>`}</div></div>`
     : `<div class="gym-cur gym-ccur">
-      <div class="chips">${C_IDS.map(c => `<button type="button" class="chip" data-activity="${c}" data-i="${k}" aria-pressed="${it.activity === c}">${esc(CARDIO[c][0])}</button>`).join("")}</div>
+      <div class="chips">${C_IDS.map(c => `<button type="button" class="chip" data-activity="${c}" data-i="${k}" aria-pressed="${it.activity === c}">${ic(c)}${esc(CARDIO[c][0])}</button>`).join("")}</div>
       <div class="gym-io"><div><span class="lbl">Minutes</span>${stepper(`<input class="inp num" id="c-min-${k}" type="number" inputmode="numeric" min="0" placeholder="30" value="${esc(it.minutes)}" data-ci="${k}:minutes" aria-label="Minutes">`, 5, "minutes by 5")}</div>
         ${it.activity === "stairs"
           ? `<div><span class="lbl">Stories</span>${stepper(`<input class="inp num" id="c-stories-${k}" type="number" inputmode="numeric" min="0" step="1" placeholder="0" value="${esc(it.stories ?? "")}" data-ci="${k}:stories" aria-label="Stories climbed">`, 5, "stories by 5")}</div>`
@@ -4592,7 +4635,7 @@ function gymCardioHTML(d, k) {
   return sheetFrame("Gym mode", `${gymSteps(d, "train")}<div class="gym-top">${strip}${gymRestHTML(d)}</div>
     <div class="gym-main">
       <div class="gym-nav"><button class="x" type="button" data-gym="prev" aria-label="Previous"${at ? "" : " disabled"}>‹</button>
-        <h3 class="gym-ex">${esc(a[0])}<small>Cardio · ${esc(a[1].concat(a[2]).map(m => MUSCLES[m]).join(", "))}</small></h3>
+        <h3 class="gym-ex">${ic(actIc(it.activity))} ${esc(a[0])}<small>Cardio · ${esc(a[1].concat(a[2]).map(m => MUSCLES[m]).join(", "))}</small></h3>
         <button class="x" type="button" data-gym="next" aria-label="Next"${at < N - 1 ? "" : " disabled"}>›</button></div>
       ${lc ? `<p class="gym-last">Last time: ${esc(cardioLine(lc))} · ${esc(shortDate(lc.date))}</p>` : ""}
       ${body}
@@ -4868,7 +4911,7 @@ function cItemHTML(it, i, { many, rm, planned } = {}) {
   return `<div class="ex citem${planned ? " planned" : ""}">
     <div class="citem-top"><span class="lbl">Activity ${i + 1}${sub ? ` <small>· ${sub}</small>` : ""}</span>
       ${rm ? `<button class="x" type="button" data-crm="${i}" aria-label="Remove activity ${i + 1}">${XSVG}</button>` : ""}</div>
-    <div class="chips">${C_IDS.map(k => `<button type="button" class="chip" data-activity="${k}" data-i="${i}" aria-pressed="${it.activity === k}">${esc(CARDIO[k][0])}</button>`).join("")}</div>
+    <div class="chips">${C_IDS.map(k => `<button type="button" class="chip" data-activity="${k}" data-i="${i}" aria-pressed="${it.activity === k}">${ic(k)}${esc(CARDIO[k][0])}</button>`).join("")}</div>
     <div class="tags">${a[1].map(m => `<span class="tag p">${esc(MUSCLES[m])}</span>`).join("")}${a[2].map(m => `<span class="tag s">${esc(MUSCLES[m])}</span>`).join("")}</div>
     <div class="row2">
       <div class="field"><label for="c-min-${i}">Minutes <small>±5</small></label>${stepper(`<input class="inp num" id="c-min-${i}" type="number" inputmode="numeric" min="0" placeholder="30" value="${esc(it.minutes)}" data-ci="${i}:minutes">`, 5, "minutes by 5")}</div>

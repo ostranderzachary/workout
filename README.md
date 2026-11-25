@@ -61,6 +61,15 @@ The **+** button in the middle logs a workout: **Gym mode**, **Add or edit a pas
 
 Wider screens put all five in a left sidebar, with a **Log workout** button at the top. Each tab lays its panels out in two columns, and the Maps tab uses the full width.
 
+**Look and readability:**
+- **Icons:** one simple line-icon set, matching the tab bar, built into the page (no downloads):
+  - **History and the XP list:** each workout has an icon tile: a dumbbell for lifts, and the activity for cardio (run, walk, hike, cycle, swim, row, elliptical, stairs, HIIT, jump rope). Bonuses get a star, bosses a crown, penalties a minus. A named cardio session shows its activity next to the name, for example "Commute · Cycle". Screen readers hear the icon's name.
+  - **The + menu:** a stopwatch for Gym mode, a calendar for a past workout, and a pulse line for Cardio.
+  - **You:** every row and setting has its icon.
+  - **Cardio activity buttons and gym mode's cardio step.**
+- **Readable text:** nothing on screen is smaller than 11 px. Labels are 12 px, and notes are 13 px. The cardio and lifting rings show just the number inside; the goal ("of 2h 30m") sits under the label at a readable size.
+- **Explanations fold away:** the paragraphs explaining how a chart works sit behind a small **ⓘ How this works** line: on the cardio rings, the lifting gauges, the lifting goals, personal records, the cardio breakdown, the XP chart and the weekly bonuses. Tap it to open it in place; it stays open until you leave the app. The map's **How to read this map** works the same way. The cardio goals with their change links stay in view.
+
 ## Today at a glance
 
 A strip just below the leaderboard card shows where your week stands:
