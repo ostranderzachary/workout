@@ -643,6 +643,7 @@ button.pl-row { cursor: pointer; }
 .gym-sug b { display: block; font-size: 16px; }
 .gym-sug small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
 .gym-sug .btn { flex: none; white-space: nowrap; }
+.gym-snd { grid-column: 1 / -1; margin: 8px 0 0; font-size: 13px; color: var(--xp); }
 .gym-empty { margin: 0; padding: 18px 12px; text-align: center; color: var(--muted); font-size: 14px; border: 1px dashed var(--line); border-radius: 14px; }
 .gym-plan { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .gym-pl { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 10px 10px 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); }
@@ -2729,7 +2730,7 @@ function renderYou() {
       ${setting("Weight unit", "Lifting and body weight", seg("you-unit", wtUnit(), [["lb", "lb"], ["kg", "kg"]], "Weight unit"))}
       ${setting("Distance unit", "Cardio distance and goals", seg("you-dist", distUnit(), [["mi", "mi"], ["km", "km"]], "Distance unit"))}
       ${setting("Rest timer", "Gym mode starts it after each set", `<div class="gym-cnt" role="group" aria-label="Rest length"><button type="button" data-act="you-rest" data-v="-15" aria-label="15 seconds less"${rest <= 15 ? " disabled" : ""}>−</button><span><b class="num">${mmss(rest)}</b></span><button type="button" data-act="you-rest" data-v="15" aria-label="15 seconds more"${rest >= 600 ? " disabled" : ""}>+</button></div>`)}
-      ${setting("Timer sound", "Beeps when the rest is over. On iPhone, the ring/silent switch must be on ring", `<span class="you-ctl">${sound ? `<button type="button" class="btn small" data-act="you-test-sound">Test</button>` : ""}${seg("you-sound", sound ? "on" : "off", [["on", "On"], ["off", "Off"]], "Timer sound")}</span>`)}
+      ${setting("Timer sound", "A soft chime when the rest is over. On iPhone, the ring/silent switch must be on ring", `<span class="you-ctl">${sound ? `<button type="button" class="btn small" data-act="you-test-sound">Test</button>` : ""}${seg("you-sound", sound ? "on" : "off", [["on", "On"], ["off", "Off"]], "Timer sound")}</span>`)}
       ${setting("Level-up voice", "Says “You have leveled up” when you reach a new level", `<span class="you-ctl">${voice ? `<button type="button" class="btn small" data-act="you-test-voice">Test</button>` : ""}${seg("you-voice", voice ? "on" : "off", [["on", "On"], ["off", "Off"]], "Level-up voice")}</span>`)}
       ${row('data-open="weight"', "Body weight", bw ? `${showWt(bw.lb)} · ${shortDate(bw.date)}` : "Not recorded yet")}
       ${web ? (signedIn
@@ -4666,7 +4667,8 @@ function gymRestHTML(d) {
       <div class="gym-rest-t" id="gymRestT">${over ? "Rest's up" : mmss(left)}<small>${over ? "next set" : "rest"}</small></div>
       <div class="gym-rest-btns"><button class="btn small" type="button" data-gym="rest-minus" aria-label="15 seconds less">−15s</button><button class="btn small" type="button" data-gym="rest-plus" aria-label="15 seconds more">+15s</button>
         <button class="btn small ghost" type="button" data-gym="rest-skip">${over ? "Hide" : "Skip"}</button></div>
-      <div class="gym-rest-bar"><span id="gymRestBar" style="width:${over ? 0 : (left / d.rest.total) * 100}%"></span></div></div>`;
+      <div class="gym-rest-bar"><span id="gymRestBar" style="width:${over ? 0 : (left / d.rest.total) * 100}%"></span></div>
+      ${audioStale && prefs.restSound !== false && !over ? `<p class="gym-snd" id="gymSoundHint">Sound paused while your phone was locked. Tap anywhere to turn it back on.</p>` : ""}</div>`;
 }
 const gymTools = (more = "") => `<div class="gym-tools">${more}<button class="btn small" type="button" data-gym="addex">+ Add exercise</button><button class="btn small" type="button" data-gym="c-add">+ Add cardio</button>
   <button class="btn small ghost" type="button" data-gym="sound" aria-pressed="${prefs.restSound !== false}">Timer sound: ${prefs.restSound !== false ? "on" : "off"}</button></div>`;
@@ -4849,22 +4851,50 @@ function gymToPlain(d) {
    plays on time even if the browser would refuse to start sound later without a tap, and whichever gym mode view is
    showing. It's rebooked when the rest changes (±15s) and cancelled when it's skipped or gym mode closes. */
 let audioCtx = null, restBooked = null; // { end, nodes }
+/* Locking the phone or switching apps can leave the page's audio silent for good (iPhone Safari especially), even
+   after it says it's running again. So after the page has been hidden, the next tap starts a fresh audio context. */
+let audioStale = false;
+function freshAudio() {
+  try { if (audioCtx && audioCtx.state !== "closed") audioCtx.close(); } catch {}
+  audioCtx = null; restBooked = null;
+  try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch { audioCtx = null; return; }
+  // Play a silent blip inside the tap: iPhones only let a new audio context make sound after that
+  try { const buf = audioCtx.createBuffer(1, 1, 22050), src = audioCtx.createBufferSource(); src.buffer = buf; src.connect(audioCtx.destination); src.start(0); } catch {}
+}
 function unlockAudio() {
   if (prefs.restSound === false) return;
-  try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state !== "running") audioCtx.resume(); } catch { audioCtx = null; }
+  try {
+    if (!audioCtx || audioStale || audioCtx.state === "closed" || audioCtx.state === "interrupted") { cancelRestSound(); freshAudio(); audioStale = false; }
+    if (audioCtx && audioCtx.state !== "running") audioCtx.resume();
+  } catch { audioCtx = null; }
 }
-// Two double beeps and a rising triple over about two seconds: loud and distinctive enough to hear in a gym
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) { if (audioCtx) audioStale = true; return; }
+  if (audioStale && S.sheet === "gym") renderSheet(); // shows "Tap anywhere to turn the sound back on"
+});
+// The first tap after coming back (anywhere, not just Done) turns the sound back on and rebooks the rest's chime
+document.addEventListener("pointerdown", () => {
+  if (!audioStale || prefs.restSound === false || !S.draft || !S.draft.gym) return;
+  unlockAudio(); syncRestSound();
+  const h = $("gymSoundHint"); if (h) h.remove();
+}, true);
+/* The rest-over chime: three soft bell notes rising (E, G♯, B), then once more, quieter. About 3 seconds.
+   Each note is a sine with a faint overtone and a slow fade, so it's clear without being harsh. */
+const CHIME = [659.25, 830.61, 987.77];
 function beeps(at) {
   const nodes = [];
   if (!audioCtx) return nodes;
   const t0 = Math.max(audioCtx.currentTime + 0.02, at);
-  [0, 0.16, 0.7, 0.86, 1.4, 1.56, 1.72].forEach((dt, k) => {
-    const o = audioCtx.createOscillator(), g = audioCtx.createGain(), t = t0 + dt;
-    o.type = "triangle"; o.frequency.value = k >= 4 ? 1320 : 988;
-    o.connect(g); g.connect(audioCtx.destination);
-    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.9, t + 0.015); g.gain.setValueAtTime(0.9, t + 0.09); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
-    o.start(t); o.stop(t + 0.14); nodes.push(o);
-  });
+  [[0, 0.32], [1.5, 0.18]].forEach(([round, vol]) => CHIME.forEach((f, k) => {
+    const t = t0 + round + k * 0.22;
+    for (const [mul, gain] of [[1, vol], [2.01, vol * 0.16]]) {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = "sine"; o.frequency.value = f * mul;
+      o.connect(g); g.connect(audioCtx.destination);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.3);
+      o.start(t); o.stop(t + 1.35); nodes.push(o);
+    }
+  }));
   return nodes;
 }
 function cancelRestSound() { if (restBooked) { for (const o of restBooked.nodes) try { o.stop(0); o.disconnect(); } catch {} restBooked = null; } }
@@ -4877,7 +4907,7 @@ function syncRestSound() {
   try { restBooked = { end: r.end, nodes: beeps(audioCtx.currentTime + (r.end - Date.now()) / 1000) }; } catch { restBooked = null; }
 }
 function restAlert() {
-  try { if (navigator.vibrate) navigator.vibrate([250, 120, 250, 120, 400]); } catch {}
+  try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch {}
   // Booked and the audio clock was running: it's already playing. Otherwise play now (works if audio is still on).
   const booked = restBooked && audioCtx && audioCtx.state === "running";
   restBooked = null;
@@ -5849,7 +5879,7 @@ document.addEventListener("click", e => {
   if (k === "you-sound") { prefs.restSound = b.dataset.v === "on"; savePrefs(); if (!prefs.restSound) cancelRestSound(); renderYou(); }
   if (k === "you-voice") { prefs.levelVoice = b.dataset.v === "on"; savePrefs(); if (!prefs.levelVoice) try { speechSynthesis.cancel(); } catch {} renderYou(); }
   if (k === "you-test-voice") { if (!voiceOn()) toast("This browser can't speak. The level-up screen still shows."); else { speakLevelUp(); voiceReady = true; toast("That's the level-up voice. Can't hear it? Check the volume."); } }
-  if (k === "you-test-sound") { unlockAudio(); try { if (navigator.vibrate) navigator.vibrate([250, 120, 250]); beeps(0); } catch {} toast("That's the rest timer sound. Can't hear it? Check the volume, and on iPhone the ring/silent switch."); }
+  if (k === "you-test-sound") { unlockAudio(); try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); beeps(0); } catch {} toast("That's the rest timer sound. Can't hear it? Check the volume, and on iPhone the ring/silent switch."); }
   if (k === "you-backup") openSheet("backup", null);
   if (k === "you-tour") { setTab("today"); startTour(0); }
   if (k === "level") openSheet("level", null);
