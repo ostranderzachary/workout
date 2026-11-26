@@ -101,7 +101,7 @@ Everything about you, and every setting, in one place.
 - **Settings:**
   - **Weight unit** (lb or kg) and **Distance unit** (mi or km), applied everywhere. The lifting and cardio forms still have their own unit switches.
   - **Rest timer:** − / + changes gym mode's rest length in 15-second steps (15 seconds to 10 minutes). **Timer sound** turns the chime on or off; **Test** plays it now, so you can check the volume (and, on iPhone, that the ring/silent switch is on ring).
-  - **Level-up voice:** says "You have leveled up" each time a save takes you to a new level. **Test** plays it now; On / Off turns it on or off. The Save tap readies the voice, so it still speaks when the save takes a moment to sync.
+  - **Level-up voice:** each time a save takes you to a new level, says "You are now level 7", a little slower than normal speech. When the level brings a new title it adds it: "You are now level 10, and your new title is Gold Cloak". **Test** says your current level now; On / Off turns it on or off. The Save tap readies the voice, so it still speaks when the save takes a moment to sync.
   - **Body weight:** your latest weigh-in; tap to record a new one.
   - **Account** or **Sign in** (on the web), with your email and sync status.
   - **Backup and restore** and **Quick tour**.
@@ -173,7 +173,7 @@ Tap a bar to list where its XP came from: today's bar is listed to start with. T
 
 Tap a workout in the list to open it. This week's bonuses appear on today's bar until the week ends.
 
-Saving a workout shows the XP earned. Reaching a new level or title brings up a celebration, and a voice says "You have leveled up" (using the phone's built-in speech; turn it off under You → **Level-up voice**). Tap your level (the chip at the top, or your title in the at-a-glance strip) to see the title ladder and recent XP.
+Saving a workout shows the XP earned. Reaching a new level or title brings up a celebration, and a voice says "You are now level 7", plus "and your new title is …" when you earn one (using the phone's built-in speech; turn it off under You → **Level-up voice**). Tap your level (the chip at the top, or your title in the at-a-glance strip) to see the title ladder and recent XP.
 
 XP is worked out from your logged workouts, so editing or deleting a workout updates it.
 

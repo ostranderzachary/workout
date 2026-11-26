@@ -2731,7 +2731,7 @@ function renderYou() {
       ${setting("Distance unit", "Cardio distance and goals", seg("you-dist", distUnit(), [["mi", "mi"], ["km", "km"]], "Distance unit"))}
       ${setting("Rest timer", "Gym mode starts it after each set", `<div class="gym-cnt" role="group" aria-label="Rest length"><button type="button" data-act="you-rest" data-v="-15" aria-label="15 seconds less"${rest <= 15 ? " disabled" : ""}>−</button><span><b class="num">${mmss(rest)}</b></span><button type="button" data-act="you-rest" data-v="15" aria-label="15 seconds more"${rest >= 600 ? " disabled" : ""}>+</button></div>`)}
       ${setting("Timer sound", "A soft chime when the rest is over. On iPhone, the ring/silent switch must be on ring", `<span class="you-ctl">${sound ? `<button type="button" class="btn small" data-act="you-test-sound">Test</button>` : ""}${seg("you-sound", sound ? "on" : "off", [["on", "On"], ["off", "Off"]], "Timer sound")}</span>`)}
-      ${setting("Level-up voice", "Says “You have leveled up” when you reach a new level", `<span class="you-ctl">${voice ? `<button type="button" class="btn small" data-act="you-test-voice">Test</button>` : ""}${seg("you-voice", voice ? "on" : "off", [["on", "On"], ["off", "Off"]], "Level-up voice")}</span>`)}
+      ${setting("Level-up voice", "Says your new level when you reach one, and your new title when you earn one", `<span class="you-ctl">${voice ? `<button type="button" class="btn small" data-act="you-test-voice">Test</button>` : ""}${seg("you-voice", voice ? "on" : "off", [["on", "On"], ["off", "Off"]], "Level-up voice")}</span>`)}
       ${row('data-open="weight"', "Body weight", bw ? `${showWt(bw.lb)} · ${shortDate(bw.date)}` : "Not recorded yet")}
       ${web ? (signedIn
         ? `<li><button type="button" class="you-row" data-open="account"><i class="you-ic">${ic("user")}</i><span><b>Account</b><small>${esc(`${Store.lbRow ? `${Store.lbRow.display_name} · ` : ""}${Store.user.email}`)}</small><small class="you-sync${Store.statusKind() === "warn" ? " warn" : ""}" role="status">${esc($("sync").textContent)}</small></span><span class="chev" aria-hidden="true">›</span></button></li>`
@@ -3388,7 +3388,8 @@ function bossSheet() {
     `<div class="right"><button class="btn primary" type="button" data-act="close">Close</button></div>`);
 }
 
-/* Level-up voice: says "You have leveled up" when a save takes you to a new level. Phones only let a page speak after
+/* Level-up voice: says "You are now level 7" when a save takes you to a new level, and "and your new title is
+   Gold Cloak" when that level also brings a new title. Spoken a little slower than normal. Phones only let a page speak after
    a tap, and the save can finish after a moment (cloud sync), so the Save tap itself readies the voice first. */
 const voiceOn = () => prefs.levelVoice !== false && "speechSynthesis" in window && typeof SpeechSynthesisUtterance !== "undefined";
 let voiceReady = false;
@@ -3396,12 +3397,14 @@ function primeVoice() {
   if (voiceReady || !voiceOn()) return;
   try { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); voiceReady = true; } catch {}
 }
-function speakLevelUp() {
+// What the voice says for reaching `level`, with the new title if there is one
+const levelUpLine = (level, title) => `You are now level ${level}${title ? `, and your new title is ${title}` : ""}.`;
+function speakLevelUp(level, title) {
   if (!voiceOn()) return;
   try {
     speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance("You have leveled up"), vs = speechSynthesis.getVoices();
-    u.lang = "en-US"; u.rate = 1; u.pitch = 1; u.volume = 1;
+    const u = new SpeechSynthesisUtterance(levelUpLine(level, title)), vs = speechSynthesis.getVoices();
+    u.lang = "en-US"; u.rate = 0.85; u.pitch = 1; u.volume = 1;
     const v = vs.find(x => x.lang === "en-US" && x.default) || vs.find(x => x.lang === "en-US") || vs.find(x => /^en/i.test(x.lang));
     if (v) u.voice = v;
     speechSynthesis.speak(u);
@@ -3416,7 +3419,7 @@ function rewardXP(beforeL, afterL, records = []) {
   const extra = fresh.length ? ` · ${fresh.map(e => `${e.text} +${e.xp}`).join(", ")}` : "";
   const a = levelInfo(before).level, b = levelInfo(after).level;
   const win = fresh.find(e => e.boss);
-  if (b > a) speakLevelUp();
+  if (b > a) speakLevelUp(b, titleFor(b) !== titleFor(a) ? titleFor(b) : null);
   if (win) {
     const bd = (afterL.bosses || []).find(x => x.tier === win.boss), newTitle = b > a && titleFor(b) !== titleFor(a) ? titleFor(b) : null;
     $("celebrate").innerHTML = `<div class="overlay celebrate" data-act="cel-close"><div class="cel-card boss-window" role="dialog" aria-modal="true" aria-labelledby="celH">
@@ -5878,7 +5881,7 @@ document.addEventListener("click", e => {
   if (k === "you-rest") { prefs.rest = Math.min(600, Math.max(15, (Number(prefs.rest) || 90) + Number(b.dataset.v))); savePrefs(); renderYou(); }
   if (k === "you-sound") { prefs.restSound = b.dataset.v === "on"; savePrefs(); if (!prefs.restSound) cancelRestSound(); renderYou(); }
   if (k === "you-voice") { prefs.levelVoice = b.dataset.v === "on"; savePrefs(); if (!prefs.levelVoice) try { speechSynthesis.cancel(); } catch {} renderYou(); }
-  if (k === "you-test-voice") { if (!voiceOn()) toast("This browser can't speak. The level-up screen still shows."); else { speakLevelUp(); voiceReady = true; toast("That's the level-up voice. Can't hear it? Check the volume."); } }
+  if (k === "you-test-voice") { if (!voiceOn()) toast("This browser can't speak. The level-up screen still shows."); else { const lv = levelInfo(xpLedger(S.workouts).total).level; speakLevelUp(lv); voiceReady = true; toast("That's the level-up voice. Can't hear it? Check the volume."); } }
   if (k === "you-test-sound") { unlockAudio(); try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); beeps(0); } catch {} toast("That's the rest timer sound. Can't hear it? Check the volume, and on iPhone the ring/silent switch."); }
   if (k === "you-backup") openSheet("backup", null);
   if (k === "you-tour") { setTab("today"); startTour(0); }
