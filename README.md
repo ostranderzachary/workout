@@ -57,7 +57,7 @@ The app is split into five sections: Today, Maps, Stats, History and You. On pho
 - **History:** your workout list. A day with more than one entry (say lifts and a run) shows them in one card under a single date. Each entry still opens, and swipes to delete, on its own.
 - **You:** your profile and every setting in one place (see below).
 
-The **+** button in the middle logs a workout: **Gym mode**, **Add or edit a past workout** (the list form, with lifts and cardio) or **Cardio**. On phones, forms open full screen and fit the space above the keyboard. The Save button stays pinned at the bottom, and the field you're typing in scrolls into view. Number fields have **− / +** buttons, so you rarely need the keyboard. Each tap changes reps by 1, weight by 5 lb (2.5 kg), cardio minutes by 5 and distance by 0.5. Tapping + on an empty set starts from the set above, or from what you did last time for that exercise. New sets copy the set above.
+The **+** button in the middle logs a workout: **Gym mode**, **Add or edit a past workout** (the list form, with lifts and cardio) or **Cardio**. On phones, forms open full screen and fit the space above the keyboard. The Save button stays pinned at the bottom, and the field you're typing in scrolls into view. Number fields have **− / +** buttons, so you rarely need the keyboard. Each tap changes reps by 1, weight by 5 lb (2.5 kg), cardio minutes by 5 and distance by 0. Weight snaps to whole steps: from 37.5 lb, + goes to 40 and − to 35.5. Tapping + on an empty set starts from the set above, or from what you did last time for that exercise. New sets copy the set above.
 
 Wider screens put all five in a left sidebar, with a **Log workout** button at the top. Each tab lays its panels out in two columns, and the Maps tab uses the full width.
 
@@ -268,7 +268,9 @@ The Today tab shows an idea for what to train, worked out from your week so far.
 - **A session you could do:** for those muscles, the exercises you did most recently, or a common pick for one you haven't trained. A muscle that needs more than 5 sets gets a second exercise. Tap a name to see its progress.
 - **How many sets:** the sets still to go are spread across the exercises, 2–5 sets each. Helper muscles count half, so a Lat Pulldown also counts toward biceps. The session is kept to about 18 sets; anything over that is left for another day, and the card says roughly how much.
 - **The next step up,** worked out from last time:
-  - Every set at your top weight hit its reps: about 5 lb more (2.5 lb under 40 lb; 2.5 kg or 1 kg in kilograms). For example "Back Squat 4 × 5 at 230 lb · Up 5 lb: you hit every rep at 225 lb".
+  - Every set at your top weight hit its reps: one weight step more, the same step as the − / + buttons (5 lb, or 2.5 kg), so suggestions always land on weights you can load. For example "Back Squat 4 × 5 at 230 lb · Up 5 lb: you hit every rep at 225 lb".
+  - Light weights, where one step is more than a 10% jump (under 50 lb, or 25 kg), go up in reps first: "4 × 12 at 35 lb · Same weight, more reps: you hit every rep at 35 lb. Add 5 lb once you reach 12". Two more reps each time, up to 12; then one step up and back to 8 reps ("3 × 8 at 40 lb").
+  - A weight between steps (say 37.5 lb from before) rounds up to the next step (40 lb).
   - Reps dropped off: the same weight, aiming for the full reps on every set.
   - Bodyweight exercises: one more rep than your best.
   - Exercises new to you: a set count only, with a tip to pick a weight you can manage for 8–12 reps.

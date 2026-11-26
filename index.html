@@ -4146,6 +4146,8 @@ function planSession(pick, ex) {
 }
 /* The next step for an exercise: more weight if every set at the top weight hit its reps last time,
    the same weight if reps dropped off, one more rep for bodyweight moves. */
+// Light weights: reps climb to REP_TOP before the weight goes up a step, then start again at REP_RESET
+const REP_TOP = 12, REP_RESET = 8;
 function progression(e, sets) {
   const ss = e.fresh ? [] : exSessions(e.name), l = ss[ss.length - 1], u = wtUnit();
   const rows = (reps, weight) => Array.from({ length: sets }, () => ({ reps, weight }));
@@ -4156,10 +4158,19 @@ function progression(e, sets) {
       text: `${plural(sets, "set")} · aim for ${r} reps`, why: `One more rep than your best last time (${l.topReps}, ${shortDate(l.date)})` };
   }
   const atTop = l.sets.filter(st => Math.abs(st.lb - l.topLb) < 0.01), first = atTop[0].reps || 8, hit = atTop.every(st => st.reps >= first);
-  const last = Math.round(wtNum(l.topLb) * 2) / 2, inc = u === "kg" ? (last < 20 ? 1 : 2.5) : (last < 40 ? 2.5 : 5), w = hit ? last + inc : last;
-  return { rows: rows(first, w), text: `${sets} × ${first} at ${fmt(w)} ${u}`,
-    why: hit ? `Up ${fmt(inc)} ${u}: you hit every rep at ${fmt(last)} ${u} on ${shortDate(l.date)}`
-      : `Same weight: aim for ${first} on every set (last time ${atTop.map(st => st.reps).join(", ")} at ${fmt(last)} ${u})` };
+  const last = Math.round(wtNum(l.topLb) * 2) / 2, step = weightStep(u), when = `${fmt(last)} ${u} on ${shortDate(l.date)}`;
+  if (!hit) return { rows: rows(first, last), text: `${sets} × ${first} at ${fmt(last)} ${u}`,
+    why: `Same weight: aim for ${first} on every set (last time ${atTop.map(st => st.reps).join(", ")} at ${fmt(last)} ${u})` };
+  const onGrid = Math.abs(last / step - Math.round(last / step)) < 1e-6, up = (Math.floor(last / step + 1e-6) + 1) * step;
+  if (!onGrid) return { rows: rows(first, up), text: `${sets} × ${first} at ${fmt(up)} ${u}`, why: `Up to ${fmt(up)} ${u}: you hit every rep at ${when}` };
+  if (step / last > 0.1 && first < REP_TOP) {
+    const r = Math.min(REP_TOP, first + 2);
+    return { rows: rows(r, last), text: `${sets} × ${r} at ${fmt(last)} ${u}`,
+      why: `Same weight, more reps: you hit every rep at ${when}. Add ${fmt(step)} ${u} once you reach ${REP_TOP}` };
+  }
+  const r = step / last > 0.1 ? REP_RESET : first;
+  return { rows: rows(r, up), text: `${sets} × ${r} at ${fmt(up)} ${u}`,
+    why: `Up ${fmt(step)} ${u}${r !== first ? `, back to ${r} reps` : ""}: you hit every rep at ${when}` };
 }
 function suggestedExercises() {
   const sg = suggestion(); if (!sg || !sg.ex || !sg.ex.length) return null;
@@ -5530,6 +5541,9 @@ function stepInput(btn) {
     const start = stepStart(input);
     if (delta < 0) { if (start == null) return; v = Math.max(0, start + delta); }
     else v = start != null ? start : delta;
+  } else if (input.dataset.set && input.dataset.set.endsWith("weight")) {
+    const st = Math.abs(delta), k = v / st;
+    v = Math.max(0, (delta > 0 ? Math.floor(k + 1e-6) + 1 : Math.ceil(k - 1e-6) - 1) * st);
   } else v = Math.max(0, v + delta);
   input.value = String(Number(v.toFixed(dec + (input.dataset.set && input.dataset.set.endsWith("weight") ? 1 : 0))));
   input.dispatchEvent(new Event("input", { bubbles: true }));
