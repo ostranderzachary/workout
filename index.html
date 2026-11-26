@@ -3388,7 +3388,7 @@ function bossSheet() {
     `<div class="right"><button class="btn primary" type="button" data-act="close">Close</button></div>`);
 }
 
-/* Level-up voice: says "You are now level 7" when a save takes you to a new level, and "and your new title is
+/* Level-up voice: says "You have leveled up, you are now level 7" when a save takes you to a new level, and "and your new title is
    Gold Cloak" when that level also brings a new title. Spoken a little slower than normal. Phones only let a page speak after
    a tap, and the save can finish after a moment (cloud sync), so the Save tap itself readies the voice first. */
 const voiceOn = () => prefs.levelVoice !== false && "speechSynthesis" in window && typeof SpeechSynthesisUtterance !== "undefined";
@@ -3398,7 +3398,7 @@ function primeVoice() {
   try { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); voiceReady = true; } catch {}
 }
 // What the voice says for reaching `level`, with the new title if there is one
-const levelUpLine = (level, title) => `You are now level ${level}${title ? `, and your new title is ${title}` : ""}.`;
+const levelUpLine = (level, title) => `You have leveled up, you are now level ${level}${title ? `, and your new title is ${title}` : ""}.`;
 function speakLevelUp(level, title) {
   if (!voiceOn()) return;
   try {
