@@ -245,7 +245,7 @@ A short bodyweight challenge you can do at home or in the office, any time of da
 - **XP:**
   - **+50 XP** for a day with all four done.
   - **+10 XP for each day in a row** before it, up to +50 (day 2 earns +60, day 6 and on +100).
-  - **−15 XP** for a missed day, but never the day you turn it on, and the **first miss each week** (Monday to Sunday) is free and keeps your streak.
+  - **−15 XP** for a missed day, which also ends your streak. Never the day you turn it on.
   - It shows in the XP list and chart like other bonuses, with a medal icon, and on the Level screen's **How to earn XP**.
 - **Muscles:** the reps count toward your muscle goals and heat map: about 20 reps, or a minute of plank, is one set (rounded to half sets). 100 push-ups is 5 sets for chest, and half that for triceps, shoulders and abs. They don't earn per-set XP; the challenge bonus is the XP.
 - **Targets:** **Change targets** in the challenge sheet raises or lowers each one (reps in 10s, plank in 30-second steps). New targets count from today; earlier days keep theirs.

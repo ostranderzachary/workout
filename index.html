@@ -1780,29 +1780,28 @@ const chDay = k => ((chCfg() || {}).days || {})[k] || null;
 const chT = k => { const d = chDay(k); return { ...chTargets(), ...(d && d.t ? d.t : {}) }; };
 const chDone = k => { const d = chDay(k), t = chT(k); return !!d && CH_ITEMS.every(it => (Number(d[it.k]) || 0) >= t[it.k]); };
 /* The challenge's XP: +50 for a day with all four done, a streak bonus of +10 for each day in a row before it (up to +50),
-   and −15 for a missed day. The day you turn it on is never penalised, and the first miss each Monday–Sunday week is
-   free: no XP lost, and your streak carries on. Today stays open until midnight. */
+   and −15 for a missed day (which also ends the streak). The day you turn it on is never penalised. Today stays open
+   until midnight. */
 function chLedger() {
-  const c = chCfg(), entries = [], freeUsed = new Set(), todayK = ymd(today());
+  const c = chCfg(), entries = [], todayK = ymd(today());
   let streak = 0;
-  if (!c) return { entries, streak, freeUsed };
+  if (!c) return { entries, streak };
   for (const sp of c.spans) {
     streak = 0;
     const end = sp.to == null || sp.to > todayK ? todayK : sp.to;
     for (let d = parse(sp.from); ymd(d) <= end; d = addDays(d, 1)) {
-      const k = ymd(d), wk = ymd(weekStart(d)), add = (xp, text) => entries.push({ date: k, label: "Daily challenge", xp, text, ch: true });
+      const k = ymd(d), add = (xp, text) => entries.push({ date: k, label: "Daily challenge", xp, text, ch: true });
       if (chDone(k)) {
         streak++;
         add(CH_XP.done, "Daily challenge done");
         if (streak > 1) add(Math.min(CH_XP.streakMax, CH_XP.streakStep * (streak - 1)), `${streak}-day challenge streak`);
       } else if (k < todayK) {
-        if (k === sp.from) streak = 0;
-        else if (!freeUsed.has(wk)) freeUsed.add(wk);
-        else { add(-CH_XP.missed, "Daily challenge missed"); streak = 0; }
+        if (k !== sp.from) add(-CH_XP.missed, "Daily challenge missed");
+        streak = 0;
       }
     }
   }
-  return { entries, streak, freeUsed };
+  return { entries, streak };
 }
 function xpLedger(list) {
   const real = list.filter(w => !w.sample);
@@ -2956,7 +2955,7 @@ function levelSheet() {
         <div class="xr-g">Daily challenge <small>· when it's on</small></div>
         ${r("All four done in a day", `+${CH_XP.done} XP`, `${chTargets().pushup} push-ups, ${chTargets().squat} squats, a ${mmss(chTargets().plank)} plank, ${chTargets().vsit} V-sits`)}
         ${r("Each day in a row before it", `+${CH_XP.streakStep} XP`, `Up to +${CH_XP.streakMax} XP a day`)}
-        ${r("A missed day", `−${CH_XP.missed} XP`, "Never your first day, and the first miss each week is free", true)}
+        ${r("A missed day", `−${CH_XP.missed} XP`, "It also ends your streak. Never your first day", true)}
         <div class="xr-g">Boss fights <small>· every 5 levels</small></div>
         ${r("Beat the challenge within 24 hours", "≈ 2 levels", "A long run, a big stair climb, a high set count or a heavy volume day. Start it when you're ready; each boss is worth 5% more.")}
         <div class="xr-g">Missed days</div>
@@ -4687,18 +4686,18 @@ function chAdd(key, delta) {
 function chStatus() {
   const k = ymd(today()), d = chDay(k) || {}, t = chT(k), L = chLedger(), c = chCfg();
   const n = CH_ITEMS.filter(it => (Number(d[it.k]) || 0) >= t[it.k]).length, all = n === CH_ITEMS.length;
-  const sp = c && c.spans[c.spans.length - 1], first = !!(sp && sp.from === k), free = !L.freeUsed.has(ymd(weekStart(today())));
+  const sp = c && c.spans[c.spans.length - 1], first = !!(sp && sp.from === k);
   const streakBonus = s => Math.min(CH_XP.streakMax, CH_XP.streakStep * s);
   if (all) {
     const earned = CH_XP.done + streakBonus(L.streak - 1);
     return { n, all, streak: L.streak, line: `Done for today: +${earned} XP${L.streak > 1 ? ` with your ${L.streak}-day streak` : ""}.` };
   }
   const next = CH_XP.done + streakBonus(L.streak);
-  const risk = first ? "No penalty today: it's your first day." : free ? "Miss today and it's your free miss this week." : `Missing today costs ${CH_XP.missed} XP.`;
+  const risk = first ? "No penalty today: it's your first day." : `Missing today costs ${CH_XP.missed} XP.`;
   return { n, all, streak: L.streak, line: `Finish today for +${next} XP${L.streak ? ` (a ${L.streak + 1}-day streak)` : ""}. ${risk}` };
 }
 const chShow = (it, v) => it.sec ? mmss(Math.round(v)) : fmt(v);
-const chIntro = () => { const t = chTargets(); return `${t.pushup} push-ups, ${t.squat} squats, a ${mmss(t.plank)} plank and ${t.vsit} V-sits, any time today, in as many goes as you like. +${CH_XP.done} XP a day, more for a streak; a missed day costs ${CH_XP.missed} XP (one free miss a week).`; };
+const chIntro = () => { const t = chTargets(); return `${t.pushup} push-ups, ${t.squat} squats, a ${mmss(t.plank)} plank and ${t.vsit} V-sits, any time today, in as many goes as you like. +${CH_XP.done} XP a day, more for a streak; a missed day costs ${CH_XP.missed} XP.`; };
 const chRing = (pct, ok) => { const C = 2 * Math.PI * 16; return `<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="16" class="bg"/>${pct > 0 ? `<circle cx="20" cy="20" r="16" class="fg${ok ? " ok" : ""}" stroke-dasharray="${(Math.min(1, pct) * C).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 20 20)"/>` : ""}</svg>`; };
 function renderChallenge() {
   const el = $("chCard"); if (!el) return;
@@ -4752,7 +4751,7 @@ function challengeSheet() {
   const targets = `<details class="why" data-ex="chTargets"${S.explain.chTargets ? " open" : ""}><summary>${ic("target")}<span>Change targets</span></summary><div class="why-body ch-tg">${CH_ITEMS.map(it =>
     `<div class="ch-tgr"><span>${esc(it.name)}</span><div class="gym-cnt" role="group" aria-label="${esc(it.name)} target"><button type="button" data-cht="${it.k}" data-v="-${it.step}" aria-label="Lower">−</button><span><b class="num">${chShow(it, t[it.k])}</b></span><button type="button" data-cht="${it.k}" data-v="${it.step}" aria-label="Higher">+</button></div></div>`).join("")}
     <p class="note" style="margin:6px 0 0">New targets count from today.</p></div></details>`;
-  const rules = `Do them any time today, in as many goes as you like. All four done: +${CH_XP.done} XP, plus +${CH_XP.streakStep} XP for each day in a row before it (up to +${CH_XP.streakMax}). A missed day costs ${CH_XP.missed} XP, but never your first day, and the first miss each week (Monday to Sunday) is free and keeps your streak. The reps also count toward your muscle goals: about ${CH_ITEMS[0].per} reps, or a minute of plank, is a set. Turn it off in You → Daily challenge.`;
+  const rules = `Do them any time today, in as many goes as you like. All four done: +${CH_XP.done} XP, plus +${CH_XP.streakStep} XP for each day in a row before it (up to +${CH_XP.streakMax}). A missed day costs ${CH_XP.missed} XP and ends your streak, but never on your first day. The reps also count toward your muscle goals: about ${CH_ITEMS[0].per} reps, or a minute of plank, is a set. Turn it off in You → Daily challenge.`;
   return sheetFrame("Daily challenge", `<p class="ch-status${st.all ? " good" : ""}"><b>${st.n} of ${CH_ITEMS.length} done</b> · ${esc(st.line)}</p><ul class="ch-list">${rows}</ul>${targets}${explain("ch", rules)}`,
     `<div class="right"><button class="btn primary" type="button" data-act="close">Close</button></div>`);
 }
