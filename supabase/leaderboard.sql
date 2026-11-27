@@ -3,9 +3,9 @@
 -- It is safe to run again.
 --
 -- Boards: weekly XP, monthly XP, total XP and bosses defeated.
--- * All XP matches the History page: workout XP plus weekly bonuses and boss rewards (minus missed-day
---   penalties). The app works these out and reports them; this database checks every number against what
---   the logged workouts, weekly bonuses and boss fights could earn, caps anything above that, and
+-- * All XP matches the History page: workout XP plus weekly bonuses, daily challenge XP and boss rewards (minus
+--   missed-day penalties). The app works these out and reports them; this database checks every number against what
+--   the logged workouts, weekly bonuses, daily challenges and boss fights could earn, caps anything above that, and
 --   recomputes the level. If the app hasn't reported a period yet, its workout XP is used instead.
 -- * Joining is opt-in. Others only ever see your display name, title, level and scores: never your email
 --   or your workouts.
@@ -50,6 +50,17 @@ language sql immutable set search_path = '' as $$
   end
 $$;
 
+-- ---------- Daily challenge ----------
+-- Days with challenge reps on record. Each can earn at most 100 XP: +50 for finishing, plus a streak bonus of up to +50.
+create or replace function public.forged_challenge_days(uid uuid, d0 date, d1 date) returns integer
+language sql stable security definer set search_path = '' as $$
+  select count(*)::integer
+  from public.profiles p,
+       jsonb_object_keys(case when jsonb_typeof(p.goals->'challenge'->'days') = 'object' then p.goals->'challenge'->'days' else '{}'::jsonb end) k
+  where p.user_id = uid and k ~ '^\d{4}-\d{2}-\d{2}$'
+    and k >= to_char(d0, 'YYYY-MM-DD') and k <= to_char(d1, 'YYYY-MM-DD')
+$$;
+
 -- ---------- Who's on the board ----------
 create table if not exists public.leaderboard (
   user_id uuid primary key default auth.uid() references auth.users (id) on delete cascade,
@@ -90,16 +101,19 @@ create policy "Own leaderboard entry" on public.leaderboard for all to authentic
 -- Every save is checked:
 -- * bosses can't be more than the bosses you've actually fought (your saved boss fights), or one per 5 levels;
 -- * total XP can't be more than four times the workout XP the database can see, plus 1,000 a week for weekly
---   bonuses, plus the rewards for those bosses (the same formula as the app);
+--   bonuses, plus 100 for each daily challenge day on record, plus the rewards for those bosses (the same formula
+--   as the app);
 -- * the level is recomputed from the XP;
--- * weekly XP can't be more than that week's workout XP, plus 1,000 for weekly bonuses, plus the rewards for
---   bosses fought that week; monthly XP the same for the month, with 6,000 for the weeks' bonuses.
+-- * weekly XP can't be more than that week's workout XP, plus 1,000 for weekly bonuses, plus 100 for each daily
+--   challenge day that week, plus the rewards for bosses fought that week; monthly XP the same for the month, with
+--   6,000 for the weeks' bonuses.
 create or replace function public.forged_period_cap(uid uuid, d0 date, d1 date, bonus integer, max_tier integer) returns integer
 language sql stable security definer set search_path = '' as $$
   select (select coalesce(sum(public.forged_workout_xp(w.data)), 0)
             from public.workouts w
             where w.user_id = uid and w.data->>'date' >= to_char(d0, 'YYYY-MM-DD') and w.data->>'date' <= to_char(d1, 'YYYY-MM-DD'))
        + bonus
+       + 100 * public.forged_challenge_days(uid, d0, d1)
        + (select coalesce(sum(round(100 * (10 * t + 1) * (1 + 0.05 * (t - 1)) / 50.0) * 50), 0)
             from (select distinct (f->>'tier')::integer as t
                     from public.profiles p,
@@ -133,7 +147,8 @@ begin
   -- Boss reward for tier t (level 5t): the XP of the next two levels, plus 5% for each boss before it
   select coalesce(sum(round(100 * (10 * t + 1) * (1 + 0.05 * (t - 1)) / 50.0) * 50), 0)::integer into boss_xp
     from generate_series(1, b) t;
-  new.total_xp := least(greatest(coalesce(new.total_xp, 0), 0), 4 * wxp + 1000 * weeks + boss_xp);
+  new.total_xp := least(greatest(coalesce(new.total_xp, 0), 0),
+                        4 * wxp + 1000 * weeks + boss_xp + 100 * public.forged_challenge_days(new.user_id, date '2000-01-01', current_date + 1));
   new.level := floor((1 + sqrt(1 + 8 * new.total_xp / 100.0)) / 2)::integer;
   new.bosses := least(b, new.level / 5);
   new.streak := least(greatest(coalesce(new.streak, 0), 0), weeks);
@@ -217,3 +232,4 @@ revoke all on function public.forged_date(text) from public, anon, authenticated
 revoke all on function public.forged_workout_xp(jsonb) from public, anon, authenticated;
 revoke all on function public.forged_leaderboard_check() from public, anon, authenticated;
 revoke all on function public.forged_period_cap(uuid, date, date, integer, integer) from public, anon, authenticated;
+revoke all on function public.forged_challenge_days(uuid, date, date) from public, anon, authenticated;

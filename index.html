@@ -643,6 +643,43 @@ button.pl-row { cursor: pointer; }
 .gym-sug b { display: block; font-size: 16px; }
 .gym-sug small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
 .gym-sug .btn { flex: none; white-space: nowrap; }
+.ch-card { margin: 0 0 12px; padding: 0; overflow: hidden; }
+.ch-card > p, .ch-card > .btn-row, .ch-card > .ch-head { margin-left: 16px; margin-right: 16px; }
+.ch-card > .ch-head { margin-top: 14px; } .ch-card > .btn-row { margin-bottom: 14px; }
+.ch-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.ch-head h2 { margin: 0; display: inline-flex; align-items: center; gap: 8px; }
+.ch-head h2 .ic { color: var(--xp); width: 18px; height: 18px; }
+.ch-sum { font-size: 13px; color: var(--muted); font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+.ch-sum .chev { font-style: normal; font-size: 20px; line-height: 1; }
+.ch-intro { margin: 6px 0 12px; font-size: 14px; color: var(--muted); }
+.ch-open { width: 100%; display: grid; gap: 10px; padding: 14px 16px; border: 0; background: transparent; color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
+.ch-rings { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.ch-mini { display: grid; justify-items: center; gap: 2px; text-align: center; min-width: 0; }
+.ch-mini svg { width: 40px; height: 40px; }
+.ch-mini circle { fill: none; stroke-width: 5; }
+.ch-mini .bg { stroke: var(--bg); } .ch-mini .fg { stroke: var(--h4); stroke-linecap: round; } .ch-mini .fg.ok { stroke: var(--h5); }
+.ch-mini b { font-size: 13px; font-weight: 600; }
+.ch-mini small { font-size: 12px; color: var(--muted); }
+.ch-mini.ok small { color: var(--h5); }
+.ch-line { font-size: 13px; color: var(--muted); } .ch-line.good { color: var(--xp); }
+.ch-card.done { border-color: color-mix(in srgb, var(--xp) 45%, var(--line)); }
+.ch-status { margin: 0 0 12px; font-size: 14px; color: var(--muted); } .ch-status b { color: var(--fg); } .ch-status.good { color: var(--xp); }
+.ch-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.ch-row { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); }
+.ch-row.ok { border-color: color-mix(in srgb, var(--h5) 40%, var(--line)); }
+.ch-row .track.big { background: var(--line); height: 10px; }
+.ch-top { display: flex; align-items: center; gap: 10px; }
+.ch-top b { flex: 1; font-size: 16px; }
+.ch-n { font-family: var(--font-display); font-size: 22px; font-weight: 700; }
+.ch-n small { font-size: 14px; color: var(--muted); font-weight: 500; }
+.ch-ok { font-style: normal; color: var(--h5); }
+.ch-ctl { display: flex; flex-wrap: wrap; gap: 8px; }
+.ch-ctl .btn.small { min-width: 56px; }
+.ch-timer { flex: 1 1 150px; }
+.ch-timer b { margin-left: 6px; font-family: var(--font-display); }
+.ch-hint { margin: 0; font-size: 13px; color: var(--muted); }
+.ch-tg { display: grid; gap: 8px; }
+.ch-tgr { display: flex; justify-content: space-between; align-items: center; gap: 10px; color: var(--fg); }
 .gym-snd { grid-column: 1 / -1; margin: 8px 0 0; font-size: 13px; color: var(--xp); }
 .gym-empty { margin: 0; padding: 18px 12px; text-align: center; color: var(--muted); font-size: 14px; border: 1px dashed var(--line); border-radius: 14px; }
 .gym-plan { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
@@ -991,13 +1028,13 @@ button.tag { cursor: pointer; }
   .btn.small { padding: 9px 14px; font-size: 14px; }
 }
 .addgrid { display: grid; gap: 10px; }
-.addopt { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 14px; row-gap: 2px; align-items: center; text-align: left; border: 1px solid var(--line); background: var(--bg); border-radius: 14px; padding: 14px 16px; }
+.addopt { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 14px; row-gap: 2px; align-items: center; text-align: left; border: 1px solid var(--line); background: var(--bg); border-radius: 14px; padding: 12px 14px; }
 .addopt > .addopt-ic { grid-row: 1 / span 2; align-self: center; }
 .addopt > b, .addopt > span:not(.addopt-ic) { grid-column: 2; }
 .addopt.main .addopt-ic { background: var(--h5); border-color: var(--h5); color: #0b1a0f; }
 .addopt.main { border-color: var(--h4); }
 .addopt.main b { color: var(--h5); }
-.addopt b { font-family: var(--font-display); font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; color: var(--h5); }
+.addopt b { font-family: var(--font-display); font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; color: var(--h5); }
 .addopt span { font-size: 14px; color: var(--muted); }
 .err { color: var(--danger); font-size: 14px; margin-top: 10px; }
 .confirm { display: flex; align-items: center; gap: 8px; font-size: 14px; }
@@ -1035,6 +1072,7 @@ button.tag { cursor: pointer; }
 
   <div id="lbCard" data-tab="today"></div>
   <section class="panel glance" id="glance" aria-label="This week at a glance" data-tab="today"></section>
+  <div id="chCard" data-tab="today"></div>
   <div id="banner" data-tab="today"></div>
   <div id="bossCard" data-tab="today"></div>
   <div id="onboard" data-tab="today"></div>
@@ -1122,7 +1160,7 @@ button.tag { cursor: pointer; }
   <button type="button" class="side-only lb-side" data-open="leaderboard" hidden><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/></svg><span>Leaderboard</span></button>
 </nav>
 <div id="sheetRoot"></div>
-<svg class="ic-sprite" width="0" height="0" aria-hidden="true" focusable="false"><defs><symbol id="i-lift" viewBox="0 0 24 24"><path d="M2.5 10v4M21.5 10v4"/><rect x="5" y="7" width="3" height="10" rx="1"/><rect x="16" y="7" width="3" height="10" rx="1"/><path d="M8 12h8"/></symbol><symbol id="i-run" viewBox="0 0 24 24"><circle cx="15.5" cy="4.5" r="2"/><path d="M8 21l3-6 3 2.5V21"/><path d="M11 15l2-6.5-4.5 1.5L6 13"/><path d="M13 8.5l2.5 3.5H19"/></symbol><symbol id="i-walk" viewBox="0 0 24 24"><circle cx="13" cy="4.5" r="2"/><path d="M9.5 21l2.5-7 2.5 2.5V21"/><path d="M12 14l.8-5.5L9.5 11v3"/><path d="M12.8 8.5l1.7 3.5 2.5 1"/></symbol><symbol id="i-hike" viewBox="0 0 24 24"><path d="M2.5 20l6.5-11 4 6.5 2.5-3.5 6 8z"/><path d="M7.4 11.7l1.6 1.3 1.6-1.3"/></symbol><symbol id="i-cycle" viewBox="0 0 24 24"><circle cx="6" cy="16.5" r="3.5"/><circle cx="18" cy="16.5" r="3.5"/><path d="M6 16.5l3.5-7h6L18 16.5"/><path d="M9.5 9.5l3 7H6"/><path d="M13 6.5h3"/></symbol><symbol id="i-swim" viewBox="0 0 24 24"><circle cx="17" cy="6" r="2"/><path d="M4 12.5l5-3.5 3.5 2.5"/><path d="M2.5 16.5c1.5 0 2.2-1.2 3.6-1.2s2.2 1.2 3.6 1.2 2.2-1.2 3.6-1.2 2.2 1.2 3.6 1.2 2.2-1.2 3.6-1.2"/><path d="M2.5 20.5c1.5 0 2.2-1.2 3.6-1.2s2.2 1.2 3.6 1.2 2.2-1.2 3.6-1.2 2.2 1.2 3.6 1.2 2.2-1.2 3.6-1.2"/></symbol><symbol id="i-row" viewBox="0 0 24 24"><circle cx="9.5" cy="6" r="2"/><path d="M9.5 8.5l1 5.5"/><path d="M4 10.5l13 4.5"/><path d="M2.5 15h19l-2.5 4.5H5z"/></symbol><symbol id="i-elliptical" viewBox="0 0 24 24"><path d="M12 12c-2-3-4.2-4.5-6.3-4.5a4.5 4.5 0 0 0 0 9c2.1 0 4.3-1.5 6.3-4.5s4.2-4.5 6.3-4.5a4.5 4.5 0 0 1 0 9c-2.1 0-4.3-1.5-6.3-4.5z"/></symbol><symbol id="i-stairs" viewBox="0 0 24 24"><path d="M3 20h5v-4.5h4.5V11H17V6.5h4"/><path d="M3 20h18"/></symbol><symbol id="i-hiit" viewBox="0 0 24 24"><path d="M13.5 2.5L5 13.5h6.5L10.5 21.5 19 10.5h-6.5z"/></symbol><symbol id="i-jumprope" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><path d="M12 7.5v6.5M12 14l-2 4.5M12 14l2 4.5M12 9.5l-4.5-1.5M12 9.5l4.5-1.5"/><path d="M7.5 8C3 13 5 21.5 12 21.5S21 13 16.5 8"/></symbol><symbol id="i-bonus" viewBox="0 0 24 24"><path d="M12 3l2.6 5.5 6 .8-4.4 4.2 1.1 6L12 16.6l-5.3 2.9 1.1-6-4.4-4.2 6-.8z"/></symbol><symbol id="i-boss" viewBox="0 0 24 24"><path d="M4 18h16M5 15L3 7l5 4 4-6 4 6 5-4-2 8z"/></symbol><symbol id="i-penalty" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></symbol><symbol id="i-gym" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.5 2M9.5 2.5h5M12 2.5V6M18.5 6.5l1.5-1.5"/></symbol><symbol id="i-past" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M9 15l2 2 4-4"/></symbol><symbol id="i-cardio" viewBox="0 0 24 24"><path d="M2.5 12h4l2.5-5 4 10 2.5-5h6"/></symbol><symbol id="i-level" viewBox="0 0 24 24"><path d="M6 13l6-6 6 6M6 19l6-6 6 6"/></symbol><symbol id="i-theme" viewBox="0 0 24 24"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19"/><path d="M9 7.5h6"/></symbol><symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/></symbol><symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></symbol><symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3.5M8 7.5l4-4 4 4"/><path d="M5 12.5v6A2.5 2.5 0 0 0 7.5 21h9a2.5 2.5 0 0 0 2.5-2.5v-6"/></symbol><symbol id="i-scale" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M8 10a4 4 0 0 1 8 0z"/><path d="M12 10l1.5-2"/></symbol><symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol><symbol id="i-backup" viewBox="0 0 24 24"><path d="M7 18.5a4.5 4.5 0 0 1-.6-9A6 6 0 0 1 18 9.6a4.5 4.5 0 0 1-.5 8.9z"/><path d="M12 11.5v5M9.5 14l2.5-2.5 2.5 2.5"/></symbol><symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.6.3-1 .8-1 1.5v.5"/><path d="M12 17h.01"/></symbol><symbol id="i-kettlebell" viewBox="0 0 24 24"><path d="M9 8.5a3 3 0 1 1 6 0"/><path d="M7.5 9.5h9l1.4 9a2 2 0 0 1-2 2.3H8.1a2 2 0 0 1-2-2.3z"/></symbol><symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.5"/></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol><symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16.5v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/></symbol><symbol id="i-voice" viewBox="0 0 24 24"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></symbol><symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.5h.01"/></symbol></defs></svg>
+<svg class="ic-sprite" width="0" height="0" aria-hidden="true" focusable="false"><defs><symbol id="i-lift" viewBox="0 0 24 24"><path d="M2.5 10v4M21.5 10v4"/><rect x="5" y="7" width="3" height="10" rx="1"/><rect x="16" y="7" width="3" height="10" rx="1"/><path d="M8 12h8"/></symbol><symbol id="i-run" viewBox="0 0 24 24"><circle cx="15.5" cy="4.5" r="2"/><path d="M8 21l3-6 3 2.5V21"/><path d="M11 15l2-6.5-4.5 1.5L6 13"/><path d="M13 8.5l2.5 3.5H19"/></symbol><symbol id="i-walk" viewBox="0 0 24 24"><circle cx="13" cy="4.5" r="2"/><path d="M9.5 21l2.5-7 2.5 2.5V21"/><path d="M12 14l.8-5.5L9.5 11v3"/><path d="M12.8 8.5l1.7 3.5 2.5 1"/></symbol><symbol id="i-hike" viewBox="0 0 24 24"><path d="M2.5 20l6.5-11 4 6.5 2.5-3.5 6 8z"/><path d="M7.4 11.7l1.6 1.3 1.6-1.3"/></symbol><symbol id="i-cycle" viewBox="0 0 24 24"><circle cx="6" cy="16.5" r="3.5"/><circle cx="18" cy="16.5" r="3.5"/><path d="M6 16.5l3.5-7h6L18 16.5"/><path d="M9.5 9.5l3 7H6"/><path d="M13 6.5h3"/></symbol><symbol id="i-swim" viewBox="0 0 24 24"><circle cx="17" cy="6" r="2"/><path d="M4 12.5l5-3.5 3.5 2.5"/><path d="M2.5 16.5c1.5 0 2.2-1.2 3.6-1.2s2.2 1.2 3.6 1.2 2.2-1.2 3.6-1.2 2.2 1.2 3.6 1.2 2.2-1.2 3.6-1.2"/><path d="M2.5 20.5c1.5 0 2.2-1.2 3.6-1.2s2.2 1.2 3.6 1.2 2.2-1.2 3.6-1.2 2.2 1.2 3.6 1.2 2.2-1.2 3.6-1.2"/></symbol><symbol id="i-row" viewBox="0 0 24 24"><circle cx="9.5" cy="6" r="2"/><path d="M9.5 8.5l1 5.5"/><path d="M4 10.5l13 4.5"/><path d="M2.5 15h19l-2.5 4.5H5z"/></symbol><symbol id="i-elliptical" viewBox="0 0 24 24"><path d="M12 12c-2-3-4.2-4.5-6.3-4.5a4.5 4.5 0 0 0 0 9c2.1 0 4.3-1.5 6.3-4.5s4.2-4.5 6.3-4.5a4.5 4.5 0 0 1 0 9c-2.1 0-4.3-1.5-6.3-4.5z"/></symbol><symbol id="i-stairs" viewBox="0 0 24 24"><path d="M3 20h5v-4.5h4.5V11H17V6.5h4"/><path d="M3 20h18"/></symbol><symbol id="i-hiit" viewBox="0 0 24 24"><path d="M13.5 2.5L5 13.5h6.5L10.5 21.5 19 10.5h-6.5z"/></symbol><symbol id="i-jumprope" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><path d="M12 7.5v6.5M12 14l-2 4.5M12 14l2 4.5M12 9.5l-4.5-1.5M12 9.5l4.5-1.5"/><path d="M7.5 8C3 13 5 21.5 12 21.5S21 13 16.5 8"/></symbol><symbol id="i-bonus" viewBox="0 0 24 24"><path d="M12 3l2.6 5.5 6 .8-4.4 4.2 1.1 6L12 16.6l-5.3 2.9 1.1-6-4.4-4.2 6-.8z"/></symbol><symbol id="i-boss" viewBox="0 0 24 24"><path d="M4 18h16M5 15L3 7l5 4 4-6 4 6 5-4-2 8z"/></symbol><symbol id="i-penalty" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></symbol><symbol id="i-gym" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.5 2M9.5 2.5h5M12 2.5V6M18.5 6.5l1.5-1.5"/></symbol><symbol id="i-past" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M9 15l2 2 4-4"/></symbol><symbol id="i-cardio" viewBox="0 0 24 24"><path d="M2.5 12h4l2.5-5 4 10 2.5-5h6"/></symbol><symbol id="i-level" viewBox="0 0 24 24"><path d="M6 13l6-6 6 6M6 19l6-6 6 6"/></symbol><symbol id="i-theme" viewBox="0 0 24 24"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19"/><path d="M9 7.5h6"/></symbol><symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/></symbol><symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></symbol><symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3.5M8 7.5l4-4 4 4"/><path d="M5 12.5v6A2.5 2.5 0 0 0 7.5 21h9a2.5 2.5 0 0 0 2.5-2.5v-6"/></symbol><symbol id="i-scale" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M8 10a4 4 0 0 1 8 0z"/><path d="M12 10l1.5-2"/></symbol><symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol><symbol id="i-backup" viewBox="0 0 24 24"><path d="M7 18.5a4.5 4.5 0 0 1-.6-9A6 6 0 0 1 18 9.6a4.5 4.5 0 0 1-.5 8.9z"/><path d="M12 11.5v5M9.5 14l2.5-2.5 2.5 2.5"/></symbol><symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.6.3-1 .8-1 1.5v.5"/><path d="M12 17h.01"/></symbol><symbol id="i-kettlebell" viewBox="0 0 24 24"><path d="M9 8.5a3 3 0 1 1 6 0"/><path d="M7.5 9.5h9l1.4 9a2 2 0 0 1-2 2.3H8.1a2 2 0 0 1-2-2.3z"/></symbol><symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.5"/></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol><symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16.5v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/></symbol><symbol id="i-voice" viewBox="0 0 24 24"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></symbol><symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.5h.01"/></symbol><symbol id="i-challenge" viewBox="0 0 24 24"><circle cx="12" cy="15" r="6"/><path d="M8.5 3.5l2.5 6M15.5 3.5l-2.5 6M7.5 3.5h9"/><path d="M12 12.5v5M10.5 14l1.5-1.5"/></symbol><symbol id="i-pushup" viewBox="0 0 24 24"><circle cx="19" cy="9" r="1.8"/><path d="M17 11L5 14.5"/><path d="M16 11.5l1 6M3 15.5l2-1"/><path d="M2.5 19.5h19"/></symbol><symbol id="i-squat" viewBox="0 0 24 24"><circle cx="11" cy="4" r="1.8"/><path d="M11 6.5v6l-4 1.5 2 6"/><path d="M11 12.5l3 1.5v6"/><path d="M11 8l5 1.5"/></symbol><symbol id="i-plank" viewBox="0 0 24 24"><circle cx="19.5" cy="11" r="1.8"/><path d="M17.5 12.5L4 15"/><path d="M16 13l1.5 4.5h3M4 15l-1 2.5"/><path d="M2.5 20h19"/></symbol><symbol id="i-vsit" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1.8"/><path d="M9.5 7.5L12 16l7-8"/><path d="M10 9.5l5-1"/><path d="M3 19.5h18"/></symbol></defs></svg>
 <div id="celebrate"></div>
 <div id="bossPop"></div>
 <div id="tour"></div>
@@ -1180,6 +1218,8 @@ const LIB = {
   "Adductor Machine": [["adductors"], []],
   "Calf Raise": [["calves"], []],
   "Plank": [["abs"], ["obliques"]],
+  "Bodyweight Squat": [["quads", "glutes"], ["hamstrings"]],
+  "V-sit": [["abs"], ["obliques"]],
   "Crunch": [["abs"], []],
   "Hanging Leg Raise": [["abs"], ["obliques"]],
   "Russian Twist": [["obliques"], ["abs"]],
@@ -1292,6 +1332,27 @@ const DEFAULT_GOALS = {
   stairs: 50, // stories (floors) climbed per week
   days: 4 // workout days per week, for consistency bonuses and missed-day penalties
 };
+/* ---------- Daily challenge: bodyweight work you can do anywhere, logged in quick taps ----------
+   Stored with the goals as { spans: [{ from, to }], targets, days: { "2026-11-27": { pushup, squat, plank, vsit, t } } }.
+   spans are when it was on (to is null while it's on); t is the targets that applied that day; plank is in seconds. */
+const CH_ITEMS = [
+  { k: "pushup", name: "Push-ups", ex: "Push-up", sec: false, per: 20, adds: [10, 20, 25], step: 10 },
+  { k: "squat", name: "Squats", ex: "Bodyweight Squat", sec: false, per: 20, adds: [10, 20, 25], step: 10 },
+  { k: "plank", name: "Plank", ex: "Plank", sec: true, per: 60, adds: [30], step: 30 },
+  { k: "vsit", name: "V-sits", ex: "V-sit", sec: false, per: 20, adds: [10, 20, 25], step: 10 }];
+const CH_TARGETS = { pushup: 100, squat: 100, plank: 180, vsit: 100 };
+const CH_XP = { done: 50, streakStep: 10, streakMax: 50, missed: 15 };
+const isDay = k => typeof k === "string" && /^\d{4}-\d{2}-\d{2}$/.test(k);
+const chNums = (o, pos) => { const r = {}; for (const it of CH_ITEMS) { const v = Math.round(Number(o && o[it.k]) || 0); if (pos ? v > 0 : true) r[it.k] = Math.max(0, v); } return r; };
+const normCh = c => {
+  if (!c || typeof c !== "object") return null;
+  const spans = (Array.isArray(c.spans) ? c.spans : []).filter(x => x && isDay(x.from)).map(x => ({ from: x.from, to: isDay(x.to) ? x.to : null }));
+  const days = {};
+  if (c.days && typeof c.days === "object") for (const [k, d] of Object.entries(c.days)) if (isDay(k) && d && typeof d === "object") {
+    days[k] = chNums(d); if (d.t && typeof d.t === "object") days[k].t = chNums(d.t, true);
+  }
+  return { spans, targets: chNums(c.targets, true), days };
+};
 /* Goals saved before weekly goals existed were per day; scale those by 7. */
 const normGoals = g => {
   const f = g && g.per !== "week" ? 7 : 1;
@@ -1303,7 +1364,8 @@ const normGoals = g => {
     days: g && g.days != null ? Math.min(7, Math.max(0, Math.round(Number(g.days) || 0))) : DEFAULT_GOALS.days,
     history: g && Array.isArray(g.history) ? g.history : [],
     bodyweight: g && Array.isArray(g.bodyweight) ? g.bodyweight : [], // [{ date, lb }], oldest first
-    bossFights: g && Array.isArray(g.bossFights) ? g.bossFights : [] }; // [{ tier, start, endedAt? }] (ms timestamps)
+    bossFights: g && Array.isArray(g.bossFights) ? g.bossFights : [], // [{ tier, start, endedAt? }] (ms timestamps)
+    challenge: normCh(g && g.challenge) };
 };
 /* The goals that applied on a date, so changing goals later doesn't rewrite past weeks' bonuses. */
 function goalsAt(date) {
@@ -1711,11 +1773,42 @@ const xpFor = w => isCardio(w)
   : XP.workout + (w.exercises || []).flatMap(x => x.sets || []).slice(0, XP.maxSets).reduce((a, st) => a + setXP(st.weight, w.unit), 0);
 /* Weekly bonuses and penalties (Monday–Sunday weeks), judged with the goals in effect that week. */
 const BONUS = { muscle: 20, allMuscles: 100, cardio: 75, distance: 75, days: 50, streakStep: 20, streakMax: 200, missedDay: 40 };
+const chCfg = () => (S.goals && S.goals.challenge) || null;
+const chOn = () => { const c = chCfg(); return !!(c && c.spans.length && c.spans[c.spans.length - 1].to == null); };
+const chTargets = () => ({ ...CH_TARGETS, ...((chCfg() || {}).targets || {}) });
+const chDay = k => ((chCfg() || {}).days || {})[k] || null;
+const chT = k => { const d = chDay(k); return { ...chTargets(), ...(d && d.t ? d.t : {}) }; };
+const chDone = k => { const d = chDay(k), t = chT(k); return !!d && CH_ITEMS.every(it => (Number(d[it.k]) || 0) >= t[it.k]); };
+/* The challenge's XP: +50 for a day with all four done, a streak bonus of +10 for each day in a row before it (up to +50),
+   and −15 for a missed day. The day you turn it on is never penalised, and the first miss each Monday–Sunday week is
+   free: no XP lost, and your streak carries on. Today stays open until midnight. */
+function chLedger() {
+  const c = chCfg(), entries = [], freeUsed = new Set(), todayK = ymd(today());
+  let streak = 0;
+  if (!c) return { entries, streak, freeUsed };
+  for (const sp of c.spans) {
+    streak = 0;
+    const end = sp.to == null || sp.to > todayK ? todayK : sp.to;
+    for (let d = parse(sp.from); ymd(d) <= end; d = addDays(d, 1)) {
+      const k = ymd(d), wk = ymd(weekStart(d)), add = (xp, text) => entries.push({ date: k, label: "Daily challenge", xp, text, ch: true });
+      if (chDone(k)) {
+        streak++;
+        add(CH_XP.done, "Daily challenge done");
+        if (streak > 1) add(Math.min(CH_XP.streakMax, CH_XP.streakStep * (streak - 1)), `${streak}-day challenge streak`);
+      } else if (k < todayK) {
+        if (k === sp.from) streak = 0;
+        else if (!freeUsed.has(wk)) freeUsed.add(wk);
+        else { add(-CH_XP.missed, "Daily challenge missed"); streak = 0; }
+      }
+    }
+  }
+  return { entries, streak, freeUsed };
+}
 function xpLedger(list) {
   const real = list.filter(w => !w.sample);
   const workoutXP = real.reduce((a, w) => a + xpFor(w), 0);
   const entries = [];
-  if (!real.length) return { total: 0, workoutXP, entries, week: null, bosses: [] };
+  if (!real.length) { const ce = chLedger().entries; return { total: Math.max(0, ce.reduce((a, e) => a + e.xp, 0)), workoutXP, entries: ce, week: null, bosses: [] }; }
   const t = today(), curMon = weekStart(t), firstMon = weekStart(parse(real.map(w => w.date).sort()[0]));
   let streak = 0, week = null;
   for (let mon = firstMon; mon <= curMon; mon = addDays(mon, 7)) {
@@ -1744,6 +1837,7 @@ function xpLedger(list) {
     }
     if (isCur) week = { days, target: g.days, streak, left: 7 - ((t.getDay() + 6) % 7), atRisk: g.days > days ? BONUS.missedDay * (g.days - days) : 0, first: +mon === +firstMon };
   }
+  for (const e of chLedger().entries) entries.push(e);
   // Boss rewards are worked out from the same history, in date order, and join the ledger.
   const bosses = bossTimeline(real, entries);
   for (const b of bosses) if (b.defeatDate) entries.push({ date: b.defeatDate, label: `Level ${b.level} boss`, xp: b.reward, text: `Boss defeated: ${b.name}`, boss: b.tier });
@@ -2309,6 +2403,12 @@ function compute(list, r) {
       add(lift, x.p || [], n, 1, x.name); add(lift, x.s || [], n, 0.5, x.name);
     }
   }
+  const ch = S.goals && S.goals.challenge;
+  if (ch && ch.days) for (const [k, d] of Object.entries(ch.days)) if (k >= s && k <= e) for (const it of CH_ITEMS) {
+    const n = Math.round(((Number(d[it.k]) || 0) / it.per) * 2) / 2, L = LIB[it.ex];
+    if (!n || !L) continue;
+    add(lift, L[0], n, 1, `${it.name} · daily challenge`); add(lift, L[1], n, 0.5, `${it.name} · daily challenge`);
+  }
   return { ws, lift, card, liftCount, sets, volume, cardioCount, minutes, distance, stories, byActivity };
 }
 
@@ -2391,6 +2491,7 @@ function render() {
   renderSuggest();
   renderOnboard();
   renderGlance();
+  renderChallenge();
   renderYou();
   renderSummary({ r, c, days, elapsed, isCurrent, liftTarget, cardioTarget, liftSt, cardioSt, g });
 
@@ -2705,7 +2806,7 @@ function renderYou() {
   const bw = latestWeight(), signedIn = Store.mode === "cloud" && Store.user;
   const rest = Math.min(600, Math.max(15, Number(prefs.rest) || 90)), sound = prefs.restSound !== false, voice = prefs.levelVoice !== false;
   const YOU_IC = { "Level and titles": "level", "Title theme": "theme", "Bosses": "boss", "Leaderboard": "trophy", "Goals": "target", "Share progress": "share", "Body weight": "scale",
-    "Sign in": "user", "Backup and restore": "backup", "Quick tour": "help", "Weight unit": "kettlebell", "Distance unit": "route", "Rest timer": "clock", "Timer sound": "bell", "Level-up voice": "voice" };
+    "Sign in": "user", "Backup and restore": "backup", "Quick tour": "help", "Daily challenge": "challenge", "Weight unit": "kettlebell", "Distance unit": "route", "Rest timer": "clock", "Timer sound": "bell", "Level-up voice": "voice" };
   const youIc = t => YOU_IC[t] ? `<i class="you-ic${t === "Level and titles" || t === "Leaderboard" ? " xp" : t === "Bosses" ? " boss" : ""}">${ic(YOU_IC[t])}</i>` : "";
   const row = (attrs, title, sub, extra = "") => `<li><button type="button" class="you-row" ${attrs}>${youIc(title)}<span><b>${title}</b><small>${esc(sub)}</small></span>${extra}<span class="chev" aria-hidden="true">›</span></button></li>`;
   const seg = (act, cur, opts, label) => `<div class="seg" role="group" aria-label="${esc(label)}">${opts.map(([v, t]) => `<button type="button" data-act="${act}" data-v="${v}" aria-pressed="${cur === v}">${t}</button>`).join("")}</div>`;
@@ -2731,6 +2832,7 @@ function renderYou() {
       ${setting("Distance unit", "Cardio distance and goals", seg("you-dist", distUnit(), [["mi", "mi"], ["km", "km"]], "Distance unit"))}
       ${setting("Rest timer", "Gym mode starts it after each set", `<div class="gym-cnt" role="group" aria-label="Rest length"><button type="button" data-act="you-rest" data-v="-15" aria-label="15 seconds less"${rest <= 15 ? " disabled" : ""}>−</button><span><b class="num">${mmss(rest)}</b></span><button type="button" data-act="you-rest" data-v="15" aria-label="15 seconds more"${rest >= 600 ? " disabled" : ""}>+</button></div>`)}
       ${setting("Timer sound", "A soft chime when the rest is over. On iPhone, the ring/silent switch must be on ring", `<span class="you-ctl">${sound ? `<button type="button" class="btn small" data-act="you-test-sound">Test</button>` : ""}${seg("you-sound", sound ? "on" : "off", [["on", "On"], ["off", "Off"]], "Timer sound")}</span>`)}
+      ${setting("Daily challenge", esc(`${chTargets().pushup} push-ups, ${chTargets().squat} squats, ${mmss(chTargets().plank)} plank, ${chTargets().vsit} V-sits a day`), seg("you-ch", chOn() ? "on" : "off", [["on", "On"], ["off", "Off"]], "Daily challenge"))}
       ${setting("Level-up voice", "Says your new level when you reach one, and your new title when you earn one", `<span class="you-ctl">${voice ? `<button type="button" class="btn small" data-act="you-test-voice">Test</button>` : ""}${seg("you-voice", voice ? "on" : "off", [["on", "On"], ["off", "Off"]], "Level-up voice")}</span>`)}
       ${row('data-open="weight"', "Body weight", bw ? `${showWt(bw.lb)} · ${shortDate(bw.date)}` : "Not recorded yet")}
       ${web ? (signedIn
@@ -2851,6 +2953,10 @@ function levelSheet() {
         ${r("Distance goal met", `+${BONUS.distance} XP`)}
         ${r("Days goal met", `+${BONUS.days} XP`)}
         ${r("Streak: each week in a row you meet it", `+${BONUS.streakStep} XP`, `Up to +${BONUS.streakMax} XP a week`)}
+        <div class="xr-g">Daily challenge <small>· when it's on</small></div>
+        ${r("All four done in a day", `+${CH_XP.done} XP`, `${chTargets().pushup} push-ups, ${chTargets().squat} squats, a ${mmss(chTargets().plank)} plank, ${chTargets().vsit} V-sits`)}
+        ${r("Each day in a row before it", `+${CH_XP.streakStep} XP`, `Up to +${CH_XP.streakMax} XP a day`)}
+        ${r("A missed day", `−${CH_XP.missed} XP`, "Never your first day, and the first miss each week is free", true)}
         <div class="xr-g">Boss fights <small>· every 5 levels</small></div>
         ${r("Beat the challenge within 24 hours", "≈ 2 levels", "A long run, a big stair climb, a high set count or a heavy volume day. Start it when you're ready; each boss is worth 5% more.")}
         <div class="xr-g">Missed days</div>
@@ -3055,7 +3161,7 @@ function xpItemsHTML(b, by, label, keyOf, id = "xpItems") {
         <span class="wk-ic${a ? " cardio" : ""}">${a ? ic(actIc(w.activity), a[0]) : ic("lift", "Lift")}</span><span class="xi-t"><b>${esc(title)}</b><small>${esc(when(w))}</small></span><span class="xi-xp num">${sign(xpFor(w))}</span></button>
       <ul class="xi-sub">${xpParts(w).map(([t, x]) => `<li><span>${esc(t)}</span><span class="num">${sign(x)}</span></li>`).join("")}</ul></li>`;
   }).concat(es.map(e => {
-    const kind = e.boss ? ["boss", "Boss", "boss"] : e.xp < 0 ? ["pen", "Penalty", "penalty"] : ["bonus", "Bonus", "bonus"];
+    const kind = e.boss ? ["boss", "Boss", "boss"] : e.xp < 0 ? ["pen", "Penalty", e.ch ? "challenge" : "penalty"] : e.ch ? ["bonus", "Daily challenge", "challenge"] : ["bonus", "Bonus", "bonus"];
     const note = e.boss ? (by === "day" ? "" : shortDate(e.date)) : e.label + (e.date === ymd(today()) && !e.boss ? " · so far" : "");
     return `<li class="xi"><div class="xi-main"><span class="wk-ic ${kind[0]}">${ic(kind[2], kind[1])}</span><span class="xi-t"><b>${esc(e.text)}</b>${note ? `<small>${esc(note)}</small>` : ""}</span><span class="xi-xp num${e.xp < 0 ? " neg" : ""}">${sign(e.xp)}</span></div></li>`;
   }));
@@ -3893,7 +3999,7 @@ function openSheet(kind, w) {
     ? { id: w.id, kind: "cardio", date: w.date, items: [cItem(w)] } // one session, opened from History
     : { id: null, kind: "cardio", date: defaultDate(), items: [w ? { ...cItem(w), id: null, createdAt: null } : cItem()] };
   if (kind === "goals") S.draft = JSON.parse(JSON.stringify(S.goals));
-  if (kind === "level" || kind === "add" || kind === "share" || kind === "boss" || kind === "account" || kind === "leaderboard" || kind === "summary" || kind === "bodyweight" || kind === "backup") S.draft = {};
+  if (kind === "level" || kind === "add" || kind === "share" || kind === "boss" || kind === "account" || kind === "leaderboard" || kind === "summary" || kind === "bodyweight" || kind === "backup" || kind === "challenge") S.draft = {};
   if (kind === "goal1" || kind === "goalwiz") S.draft = w; // the quick goal editor and the goals setup bring their own
   if (kind === "leaderboard") { S.lb = { tab: (S.lb && S.lb.tab) || "week", data: {}, name: "", renaming: false, confirmLeave: false }; /* fresh scores each time it opens */ setTimeout(() => lbLoad(S.lb.tab), 0); }
   if (kind === "account") {
@@ -3910,6 +4016,7 @@ function openSheet(kind, w) {
 }
 /* `done` is true after saving or deleting. Otherwise closing a form with changes offers Undo to bring it back. */
 function closeSheet(done) {
+  if (S.plank) plankStop(); // a plank still running when the sheet closes is logged
   const kept = !done && draftDirty() ? { sheet: S.sheet, draft: S.draft, base: S.draftBase } : null;
   if (draftKind()) clearDraft();
   if (S.exPick) closeExPick(); if (S.prog) closeProg(); S.sheet = null; S.draft = null; S.draftBase = null; S.restoredAt = null; S.importPending = null; renderSheet();
@@ -3975,6 +4082,9 @@ function addSheet() {
       <button type="button" class="addopt" data-act="pick-cardio"><span class="addopt-ic">${ic("cardio")}</span><b>Cardio</b><span>${(() => { const cs = cardioOn(date); return cs.length
         ? `Continue ${date === ymd(today()) ? "today's cardio" : `your cardio from ${esc(dayWord(date))}`}: ${esc([...new Set(cs.map(c => (CARDIO[c.activity] || CARDIO.run)[0]))].join(", "))}`
         : "A run, ride, swim or other session: minutes and distance"; })()}</span></button>
+      <button type="button" class="addopt" data-act="pick-ch"><span class="addopt-ic">${ic("challenge")}</span><b>Daily challenge</b><span>${(() => {
+        if (!chOn()) return "Push-ups, squats, a plank and V-sits, at home or the office. +50 XP a day";
+        const st = chStatus(); return st.all ? `Done for today. ${st.streak > 1 ? `${st.streak}-day streak` : "Nice work"}` : `${st.n} of ${CH_ITEMS.length} done today. Log reps in a couple of taps`; })()}</span></button>
     </div>`, `<div class="right"><button class="btn ghost" type="button" data-act="close">Cancel</button></div>`, { compact: true });
 }
 function delActions(saveLabel) {
@@ -4532,12 +4642,133 @@ function renderSheet() {
   if (S.sheet === "backup") root.innerHTML = sheetFrame("Backup and restore", backupSection(true), `<div class="right"><button class="btn primary" type="button" data-act="close">Close</button></div>`);
   if (S.sheet === "goal1") root.innerHTML = goal1Sheet(d);
   if (S.sheet === "goalwiz") root.innerHTML = goalWizSheet(d);
+  if (S.sheet === "challenge") root.innerHTML = challengeSheet();
   // Re-rendering the same form (adding a set, picking an option) keeps your scroll position.
   if (same) { const b = root.querySelector(".sheet-body"), sh = root.querySelector(".sheet"); if (b) b.scrollTop = keep[0]; if (sh) sh.scrollTop = keep[1]; }
   root.dataset.kind = S.sheet;
   persistDraft();
   keepAwake(S.sheet === "gym");
   syncRestSound();
+}
+
+/* ---------- Daily challenge: Today card, the logging sheet, the plank timer ---------- */
+let chSaveT = null;
+function chSave() { clearTimeout(chSaveT); chSaveT = setTimeout(() => { Promise.resolve(Store.saveGoals(S.goals)).catch(() => toast("Couldn't save the daily challenge. Check your connection.")); }, 400); }
+function chEnsure() { if (!S.goals.challenge) S.goals.challenge = { spans: [], targets: { ...CH_TARGETS }, days: {} }; return S.goals.challenge; }
+function chStart() {
+  const c = chEnsure(), k = ymd(today()), last = c.spans[c.spans.length - 1];
+  if (last && last.to == null) return;
+  // Turned off since yesterday: carry on with the same run, so turning it off and on doesn't make a fresh first day
+  if (last && last.to >= ymd(addDays(today(), -1))) last.to = null; else c.spans.push({ from: k, to: null });
+  chSave();
+}
+function chStop() {
+  const c = chEnsure(), k = ymd(today()), last = c.spans[c.spans.length - 1];
+  if (!last || last.to != null) { chSave(); return; }
+  last.to = chDone(k) ? k : ymd(addDays(today(), -1));
+  if (last.to < last.from) c.spans.pop();
+  chSave();
+}
+function chAdd(key, delta) {
+  primeVoice();
+  if (!chOn()) chStart();
+  const c = S.goals.challenge, k = ymd(today()), before = xpLedger(S.workouts), wasDone = chDone(k), it = CH_ITEMS.find(x => x.k === key);
+  const d = c.days[k] = c.days[k] || chNums({});
+  d.t = d.t || chTargets();
+  const was = Number(d[key]) || 0;
+  d[key] = Math.max(0, was + delta);
+  chSave(); render(); renderSheet();
+  if (!wasDone && chDone(k)) { rewardXP(before, xpLedger(S.workouts)); try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch {} return; }
+  if (wasDone && !chDone(k)) return toast("The challenge isn't complete any more, so today's challenge XP is back off.");
+  const tg = chT(k)[key];
+  if (it && was < tg && d[key] >= tg) toast(`${it.name} done for today. ${CH_ITEMS.filter(x => (Number(d[x.k]) || 0) < chT(k)[x.k]).length} to go.`);
+}
+// What's at stake today, in one line
+function chStatus() {
+  const k = ymd(today()), d = chDay(k) || {}, t = chT(k), L = chLedger(), c = chCfg();
+  const n = CH_ITEMS.filter(it => (Number(d[it.k]) || 0) >= t[it.k]).length, all = n === CH_ITEMS.length;
+  const sp = c && c.spans[c.spans.length - 1], first = !!(sp && sp.from === k), free = !L.freeUsed.has(ymd(weekStart(today())));
+  const streakBonus = s => Math.min(CH_XP.streakMax, CH_XP.streakStep * s);
+  if (all) {
+    const earned = CH_XP.done + streakBonus(L.streak - 1);
+    return { n, all, streak: L.streak, line: `Done for today: +${earned} XP${L.streak > 1 ? ` with your ${L.streak}-day streak` : ""}.` };
+  }
+  const next = CH_XP.done + streakBonus(L.streak);
+  const risk = first ? "No penalty today: it's your first day." : free ? "Miss today and it's your free miss this week." : `Missing today costs ${CH_XP.missed} XP.`;
+  return { n, all, streak: L.streak, line: `Finish today for +${next} XP${L.streak ? ` (a ${L.streak + 1}-day streak)` : ""}. ${risk}` };
+}
+const chShow = (it, v) => it.sec ? mmss(Math.round(v)) : fmt(v);
+const chIntro = () => { const t = chTargets(); return `${t.pushup} push-ups, ${t.squat} squats, a ${mmss(t.plank)} plank and ${t.vsit} V-sits, any time today, in as many goes as you like. +${CH_XP.done} XP a day, more for a streak; a missed day costs ${CH_XP.missed} XP (one free miss a week).`; };
+const chRing = (pct, ok) => { const C = 2 * Math.PI * 16; return `<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="16" class="bg"/>${pct > 0 ? `<circle cx="20" cy="20" r="16" class="fg${ok ? " ok" : ""}" stroke-dasharray="${(Math.min(1, pct) * C).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 20 20)"/>` : ""}</svg>`; };
+function renderChallenge() {
+  const el = $("chCard"); if (!el) return;
+  if (!S.loaded || (chCfg() && !chOn())) { el.innerHTML = ""; return; }
+  if (!chOn()) {
+    el.innerHTML = `<section class="panel ch-card"><div class="ch-head"><h2>${ic("challenge")} Daily challenge</h2></div>
+      <p class="ch-intro">${esc(chIntro())}</p><div class="btn-row"><button class="btn primary small" type="button" data-act="ch-start">Start today</button><button class="btn ghost small" type="button" data-act="ch-off">Not for me</button></div></section>`;
+    return;
+  }
+  const k = ymd(today()), d = chDay(k) || {}, t = chT(k), st = chStatus();
+  const rings = CH_ITEMS.map(it => { const v = Number(d[it.k]) || 0, ok = v >= t[it.k];
+    return `<span class="ch-mini${ok ? " ok" : ""}">${chRing(v / t[it.k], ok)}<b>${esc(it.name)}</b><small class="num">${chShow(it, v)} / ${chShow(it, t[it.k])}</small></span>`; }).join("");
+  el.innerHTML = `<section class="panel ch-card${st.all ? " done" : ""}"><button type="button" class="ch-open" data-act="ch-open" aria-label="Daily challenge: ${st.n} of ${CH_ITEMS.length} done. Open to log">
+    <span class="ch-head"><h2>${ic("challenge")} Daily challenge</h2><span class="ch-sum">${st.n} of ${CH_ITEMS.length}${st.streak > 1 || (st.streak === 1 && st.all) ? ` · ${st.streak}-day streak` : ""}<i class="chev" aria-hidden="true">›</i></span></span>
+    <span class="ch-rings">${rings}</span><span class="ch-line${st.all ? " good" : ""}">${esc(st.line)}</span></button></section>`;
+}
+$("chCard").addEventListener("click", e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  if (b.dataset.act === "ch-start") { chStart(); render(); return toast("Daily challenge on. Tap the card to log your reps."); }
+  if (b.dataset.act === "ch-off") { chStop(); render(); return toast("Daily challenge off. Turn it on any time in You → Daily challenge."); }
+  if (b.dataset.act === "ch-open") openSheet("challenge", null);
+});
+// The plank timer: Start, hold, Stop adds the time. The chime plays when the day's plank target is reached.
+S.plank = null;
+function plankStart() { unlockAudio(); S.plank = { start: Date.now(), chimed: false }; renderSheet(); }
+function plankStop() { if (!S.plank) return; const secs = Math.round((Date.now() - S.plank.start) / 1000); S.plank = null; if (secs > 0) chAdd("plank", secs); else renderSheet(); }
+setInterval(() => {
+  if (!S.plank) return;
+  const secs = Math.floor((Date.now() - S.plank.start) / 1000), k = ymd(today()), done = Number((chDay(k) || {}).plank) || 0, tg = chT(k).plank;
+  const el = $("plankT"); if (el) el.textContent = mmss(secs);
+  if (!S.plank.chimed && done + secs >= tg) {
+    S.plank.chimed = true;
+    try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); if (prefs.restSound !== false && audioCtx) beeps(0); } catch {}
+    const h = $("plankHint"); if (h) h.textContent = "Plank target reached. Tap Stop when you're done.";
+  }
+}, 250);
+function challengeSheet() {
+  if (!chOn()) return sheetFrame("Daily challenge", `<p class="ch-intro">${esc(chIntro())}</p>`,
+    `<div class="right"><button class="btn ghost" type="button" data-act="close">Not now</button><button class="btn primary" type="button" data-act="ch-start">Start today</button></div>`);
+  const k = ymd(today()), d = chDay(k) || {}, t = chT(k), st = chStatus();
+  const rows = CH_ITEMS.map(it => {
+    const v = Number(d[it.k]) || 0, tg = t[it.k], frac = v / tg, ok = v >= tg;
+    const ctl = it.sec
+      ? `${S.plank ? `<button class="btn primary ch-timer" type="button" data-ch="plank-stop">Stop <b id="plankT" class="num">${mmss(Math.floor((Date.now() - S.plank.start) / 1000))}</b></button>`
+          : `<button class="btn primary ch-timer" type="button" data-ch="plank-start">Start plank</button>`}<button class="btn small" type="button" data-ch="add" data-k="plank" data-v="-30" aria-label="30 seconds less">−30s</button><button class="btn small" type="button" data-ch="add" data-k="plank" data-v="30" aria-label="30 seconds more">+30s</button>`
+      : `<button class="btn small" type="button" data-ch="add" data-k="${it.k}" data-v="-10" aria-label="10 fewer ${esc(it.name.toLowerCase())}">−10</button>${it.adds.map(a => `<button class="btn small" type="button" data-ch="add" data-k="${it.k}" data-v="${a}">+${a}</button>`).join("")}`;
+    return `<li class="ch-row${ok ? " ok" : ""}"><div class="ch-top"><span class="wk-ic">${ic(it.k)}</span><b>${esc(it.name)}</b><span class="ch-n num">${chShow(it, v)}<small> / ${chShow(it, tg)}</small>${ok ? ` <i class="ch-ok" aria-label="done">✓</i>` : ""}</span></div>
+      <div class="track big"><span class="fill" style="width:${Math.min(100, frac * 100)}%;background:var(--h${ok ? 5 : Math.min(4, Math.max(1, Math.ceil(frac * 4)))})"></span></div>
+      <div class="ch-ctl">${ctl}</div>${it.sec && S.plank ? `<p class="ch-hint" id="plankHint">${Number(d.plank) || 0 ? `Adds to the ${mmss(Number(d.plank))} you've logged. ` : ""}Tap Stop when you're done.</p>` : ""}</li>`;
+  }).join("");
+  const targets = `<details class="why" data-ex="chTargets"${S.explain.chTargets ? " open" : ""}><summary>${ic("target")}<span>Change targets</span></summary><div class="why-body ch-tg">${CH_ITEMS.map(it =>
+    `<div class="ch-tgr"><span>${esc(it.name)}</span><div class="gym-cnt" role="group" aria-label="${esc(it.name)} target"><button type="button" data-cht="${it.k}" data-v="-${it.step}" aria-label="Lower">−</button><span><b class="num">${chShow(it, t[it.k])}</b></span><button type="button" data-cht="${it.k}" data-v="${it.step}" aria-label="Higher">+</button></div></div>`).join("")}
+    <p class="note" style="margin:6px 0 0">New targets count from today.</p></div></details>`;
+  const rules = `Do them any time today, in as many goes as you like. All four done: +${CH_XP.done} XP, plus +${CH_XP.streakStep} XP for each day in a row before it (up to +${CH_XP.streakMax}). A missed day costs ${CH_XP.missed} XP, but never your first day, and the first miss each week (Monday to Sunday) is free and keeps your streak. The reps also count toward your muscle goals: about ${CH_ITEMS[0].per} reps, or a minute of plank, is a set. Turn it off in You → Daily challenge.`;
+  return sheetFrame("Daily challenge", `<p class="ch-status${st.all ? " good" : ""}"><b>${st.n} of ${CH_ITEMS.length} done</b> · ${esc(st.line)}</p><ul class="ch-list">${rows}</ul>${targets}${explain("ch", rules)}`,
+    `<div class="right"><button class="btn primary" type="button" data-act="close">Close</button></div>`);
+}
+function chAction(a) {
+  if (a.ch === "add") return chAdd(a.k, Number(a.v));
+  if (a.ch === "plank-start") return plankStart();
+  if (a.ch === "plank-stop") return plankStop();
+}
+function chTarget(k, delta) {
+  const c = chEnsure(), it = CH_ITEMS.find(x => x.k === k); if (!it) return;
+  const before = xpLedger(S.workouts), dayK = ymd(today()), wasDone = chDone(dayK);
+  const v = Math.min(it.sec ? 1200 : 500, Math.max(it.step, chTargets()[k] + delta));
+  c.targets = { ...chTargets(), [k]: v };
+  if (c.days[dayK]) c.days[dayK].t = { ...chT(dayK), [k]: v }; // today uses the new target; earlier days keep theirs
+  chSave(); render(); renderSheet();
+  if (!wasDone && chDone(dayK)) rewardXP(before, xpLedger(S.workouts));
 }
 
 /* ---------- Gym mode: one exercise at a time, tick each set as you finish it, with a rest timer ---------- */
@@ -5715,6 +5946,10 @@ $("sheetRoot").addEventListener("click", async e => {
   const a = b.dataset;
   if (a.act === "close") return closeSheet();
   if (a.gym) return gymAction(a);
+  if (a.ch) return chAction(a);
+  if (a.cht) return chTarget(a.cht, Number(a.v));
+  if (a.act === "ch-start") { chStart(); render(); return renderSheet(); }
+  if (a.act === "pick-ch") return openSheet("challenge", null);
   if (a.wiz) { d[a.wiz] = a.wiz === "days" ? Number(a.v) : a.v; d.step++; renderSheet(); const sb = document.querySelector("#sheetRoot .sheet-body"), sh = document.querySelector("#sheetRoot .sheet"); if (sb) sb.scrollTop = 0; if (sh) sh.scrollTop = 0; return; }
   if (a.act === "wiz-back") { d.step = Math.max(0, d.step - 1); return renderSheet(); }
   if (a.act === "wiz-full") return openSheet("goals", null);
@@ -5880,6 +6115,7 @@ document.addEventListener("click", e => {
   if (k === "you-unit" || k === "you-dist") { prefs[k === "you-unit" ? "unit" : "dist"] = b.dataset.v; savePrefs(); render(); }
   if (k === "you-rest") { prefs.rest = Math.min(600, Math.max(15, (Number(prefs.rest) || 90) + Number(b.dataset.v))); savePrefs(); renderYou(); }
   if (k === "you-sound") { prefs.restSound = b.dataset.v === "on"; savePrefs(); if (!prefs.restSound) cancelRestSound(); renderYou(); }
+  if (k === "you-ch") { if (b.dataset.v === "on") chStart(); else chStop(); render(); }
   if (k === "you-voice") { prefs.levelVoice = b.dataset.v === "on"; savePrefs(); if (!prefs.levelVoice) try { speechSynthesis.cancel(); } catch {} renderYou(); }
   if (k === "you-test-voice") { if (!voiceOn()) toast("This browser can't speak. The level-up screen still shows."); else { const lv = levelInfo(xpLedger(S.workouts).total).level; speakLevelUp(lv); voiceReady = true; toast("That's the level-up voice. Can't hear it? Check the volume."); } }
   if (k === "you-test-sound") { unlockAudio(); try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); beeps(0); } catch {} toast("That's the rest timer sound. Can't hear it? Check the volume, and on iPhone the ring/silent switch."); }

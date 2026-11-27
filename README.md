@@ -16,10 +16,11 @@ A mobile-friendly workout tracker. Log lifts and cardio, set daily goals, and se
   - **Cardio:** time, distance (or stories), pace or speed, and XP, compared with your last session of the same activity, such as "+2m time · +0.5 mi · 51 sec/mi faster". Then the muscles it works.
   - **Both** end with how the workout's XP was earned.
 - **Calendar:** the History tab opens with a month calendar, Monday to Sunday. Each day is shaded by the XP you earned, brighter for more, with a dot for lifting and a ring for cardio. Below it are the month's totals: workout days, lifting workouts, cardio sessions and XP. Tap a day to see its workouts and XP line items, tap a workout to open it, or log lifts or cardio for that day. Use the arrows (or swipe on a phone) to change month, and **Today** to jump back.
-- **Logging a workout: the + button offers three choices.**
+- **Logging a workout: the + button offers four choices.**
   - **Gym mode** (highlighted, "Lift now: plan your exercises and cardio, then log one set at a time") opens gym mode for today, starting at Plan. If you've already lifted today, it says "Lift now, carrying on with today's workout" with the sets so far, and that workout's sets show as done.
   - **Add or edit a past workout** opens the workout form on yesterday (or on the day you're looking at in the Day view), with that day's lifts and cardio: for example "Opens your workout from yesterday (Chest, Run)". If that day has a lifting workout, it opens so you can change it or add to it; change the date for another day. Tap **Start a separate workout** at the top of the form to log a new session instead.
   - **Cardio** opens the cardio form, the quickest way to log a run, ride or swim on its own.
+  - **Daily challenge** opens today's challenge (see [Daily challenge](#daily-challenge)), with how many of the four you've done.
 - **Lifts and cardio in one form:** the workout form ("Today's workout", "Yesterday's workout", "New workout" or "Edit workout") lists the day's cardio under the exercises, and **+ Add cardio** sits next to **+ Add exercise**. Each activity has the same fields as the cardio form (activity, minutes, distance or stories, name). Change one, remove it (with Undo; a saved one is deleted when you save) or add more, then save once. Each activity is still saved as its own cardio session, so goals, XP, bosses and the leaderboard count it exactly as before. You can save cardio alone from this form too. A new activity left empty is skipped; one with a distance but no minutes asks for the minutes. On a day with cardio but no lifts yet, the form says "Your cardio from yesterday is below. Add lifts or more cardio, then save."
 - **Changing the date in the list form:** if the new day already has a lifting workout, it opens, and anything you'd already entered is added to it. Editing a workout from History is different: changing its date moves it. Either way, the cardio shown switches to the new day's (new activities you'd entered come along), so the old day's cardio stays where it is.
 - A new user starts with a clean slate: no example workouts, and the maps stay empty until you log your first one.
@@ -57,7 +58,7 @@ The app is split into five sections: Today, Maps, Stats, History and You. On pho
 - **History:** your workout list. A day with more than one entry (say lifts and a run) shows them in one card under a single date. Each entry still opens, and swipes to delete, on its own.
 - **You:** your profile and every setting in one place (see below).
 
-The **+** button in the middle logs a workout: **Gym mode**, **Add or edit a past workout** (the list form, with lifts and cardio) or **Cardio**. On phones, forms open full screen and fit the space above the keyboard. The Save button stays pinned at the bottom, and the field you're typing in scrolls into view. Number fields have **− / +** buttons, so you rarely need the keyboard. Each tap changes reps by 1, weight by 5 lb (2.5 kg), cardio minutes by 5 and distance by 0.5. Weight snaps to whole steps: from 37.5 lb, + goes to 40 and − to 35. Tapping + on an empty set starts from the set above, or from what you did last time for that exercise. New sets copy the set above.
+The **+** button in the middle logs a workout: **Gym mode**, **Add or edit a past workout** (the list form, with lifts and cardio), **Cardio** or **Daily challenge**. On phones, forms open full screen and fit the space above the keyboard. The Save button stays pinned at the bottom, and the field you're typing in scrolls into view. Number fields have **− / +** buttons, so you rarely need the keyboard. Each tap changes reps by 1, weight by 5 lb (2.5 kg), cardio minutes by 5 and distance by 0.5. Weight snaps to whole steps: from 37.5 lb, + goes to 40 and − to 35. Tapping + on an empty set starts from the set above, or from what you did last time for that exercise. New sets copy the set above.
 
 Wider screens put all five in a left sidebar, with a **Log workout** button at the top. Each tab lays its panels out in two columns, and the Maps tab uses the full width.
 
@@ -233,11 +234,29 @@ A boss beaten later on the same day it appeared counts too.
 
 A new boss is announced with a popup. The **crown** at the top shows a badge and glows while one is waiting, and the You tab's **Bosses** row says which (also **Bosses** in the desktop sidebar). The Today tab shows the boss with a **Start fight** button, and during a fight, the time left and your progress.
 
+## Daily challenge
+
+A short bodyweight challenge you can do at home or in the office, any time of day and in as many goes as you like:
+
+- **The four:** 100 push-ups, 100 squats, a 3-minute plank and 100 V-sits.
+- **Starting it:** the first time, a card on Today offers **Start today** (or **Not for me**). It's also under **+ → Daily challenge** and **You → Daily challenge** (On / Off).
+- **Logging:** **+ → Daily challenge**, or tap the card on Today. Each exercise has its count and a bar, with **+10**, **+20** and **+25** buttons (and **−10** to fix a mistake). The plank has a timer: **Start plank**, hold, **Stop** adds the time, and the soft chime plays when the day's plank target is reached; **−30s** / **+30s** adjust it by hand. Closing the sheet with the timer running logs the time.
+- **Today:** the card shows four rings (for example "45 / 100") and what's at stake: "Finish today for +60 XP (a 2-day streak). Missing today costs 15 XP." It turns gold when you're done ("Done for today: +60 XP").
+- **XP:**
+  - **+50 XP** for a day with all four done.
+  - **+10 XP for each day in a row** before it, up to +50 (day 2 earns +60, day 6 and on +100).
+  - **−15 XP** for a missed day, but never the day you turn it on, and the **first miss each week** (Monday to Sunday) is free and keeps your streak.
+  - It shows in the XP list and chart like other bonuses, with a medal icon, and on the Level screen's **How to earn XP**.
+- **Muscles:** the reps count toward your muscle goals and heat map: about 20 reps, or a minute of plank, is one set (rounded to half sets). 100 push-ups is 5 sets for chest, and half that for triceps, shoulders and abs. They don't earn per-set XP; the challenge bonus is the XP.
+- **Targets:** **Change targets** in the challenge sheet raises or lowers each one (reps in 10s, plank in 30-second steps). New targets count from today; earlier days keep theirs.
+- **Turning it off** (You → Daily challenge) stops it from today, with no more penalties; turning it back on the next day carries on where you left off.
+- **Saved with your goals,** so it syncs to your account and is in backups.
+
 ## Leaderboard
 
 A global leaderboard for signed-in users, with four tabs:
 
-- **This week** and **This month:** all XP earned in the current week (Monday to Sunday) or month, the same total as the History page: workouts, weekly bonuses and boss rewards, minus any missed-day penalties. A countdown shows when the board resets.
+- **This week** and **This month:** all XP earned in the current week (Monday to Sunday) or month, the same total as the History page: workouts, weekly bonuses, daily challenge XP and boss rewards, minus any missed-day penalties. A countdown shows when the board resets.
 - **Total XP:** all-time XP, including weekly bonuses and boss rewards.
 - **Bosses:** bosses defeated.
 
@@ -254,7 +273,7 @@ Your own row is highlighted, even if you're outside the top 100, and the top of 
 
 **Finding it:** a card on the Today tab shows your weekly rank. There's also the **trophy** at the top, a **Leaderboard** row on the You tab and **Leaderboard** in the desktop sidebar. The Claude artifact version doesn't have a leaderboard, because it doesn't use Supabase.
 
-The app reports your XP, matching what you see in Forged, and the database checks every number against what your logged workouts, weekly bonuses and boss fights in that period could earn. Anything above that is capped, and the level is recalculated, so the numbers can't be inflated by editing the app. The setup is in [`supabase/leaderboard.sql`](supabase/leaderboard.sql), run once in the SQL Editor after `schema.sql`.
+The app reports your XP, matching what you see in Forged, and the database checks every number against what your logged workouts, weekly bonuses, daily challenge days (up to 100 XP each) and boss fights in that period could earn. **After this update, run [`supabase/leaderboard.sql`](supabase/leaderboard.sql) again** (SQL Editor, paste, Run) so the check counts challenge XP; it's safe to run again. Anything above that is capped, and the level is recalculated, so the numbers can't be inflated by editing the app. The setup is in [`supabase/leaderboard.sql`](supabase/leaderboard.sql), run once in the SQL Editor after `schema.sql`.
 
 ## Suggestion for today
 
