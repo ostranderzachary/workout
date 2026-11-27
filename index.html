@@ -1801,8 +1801,22 @@ function chLedger() {
       }
     }
   }
+  // Every set earns what a bodyweight set earns in the gym (10 XP), on top of the bonus: about 20 reps (or a minute of
+  // plank) is a set, rounded to half sets, up to 40 sets a day like a gym workout. It counts the day it's logged,
+  // whether or not all four get done, and shows as workout XP.
+  for (const [k, d] of Object.entries(c.days)) {
+    if (k > todayK) continue;
+    const xs = chSetsOf(d).filter(x => x.sets > 0), sets = xs.reduce((a, x) => a + x.sets, 0), xp = chSetXP(d);
+    if (!xp) continue;
+    const parts = xs.map(x => [`${x.it.name} · ${x.it.sec ? mmss(x.v) : `${fmt(x.v)} reps`} = ${plural(x.sets, "set")}`, Math.round(x.sets * setXP(0, "lb"))]);
+    if (sets > XP.maxSets) parts.push([`The first ${XP.maxSets} sets a day count`, xp - parts.reduce((a, x) => a + x[1], 0)]);
+    entries.push({ date: k, label: "Daily challenge", xp, text: "Daily challenge sets", ch: true, work: true, sets, parts });
+  }
   return { entries, streak };
 }
+// A day's challenge reps as sets, as for muscle goals: about 20 reps (or a minute of plank) each, rounded to half sets
+const chSetsOf = d => CH_ITEMS.map(it => { const v = Number(d && d[it.k]) || 0; return { it, v, sets: Math.round((v / it.per) * 2) / 2 }; });
+const chSetXP = d => Math.round(Math.min(XP.maxSets, chSetsOf(d).reduce((a, x) => a + x.sets, 0)) * setXP(0, "lb"));
 function xpLedger(list) {
   const real = list.filter(w => !w.sample);
   const workoutXP = real.reduce((a, w) => a + xpFor(w), 0);
@@ -2953,6 +2967,7 @@ function levelSheet() {
         ${r("Days goal met", `+${BONUS.days} XP`)}
         ${r("Streak: each week in a row you meet it", `+${BONUS.streakStep} XP`, `Up to +${BONUS.streakMax} XP a week`)}
         <div class="xr-g">Daily challenge <small>· when it's on</small></div>
+        ${r("Each set: 20 reps, or a minute of plank", `+${setXP(0, "lb")} XP`, `The same as a bodyweight set in the gym, up to ${XP.maxSets} sets a day`)}
         ${r("All four done in a day", `+${CH_XP.done} XP`, `${chTargets().pushup} push-ups, ${chTargets().squat} squats, a ${mmss(chTargets().plank)} plank, ${chTargets().vsit} V-sits`)}
         ${r("Each day in a row before it", `+${CH_XP.streakStep} XP`, `Up to +${CH_XP.streakMax} XP a day`)}
         ${r("A missed day", `−${CH_XP.missed} XP`, "It also ends your streak. Never your first day", true)}
@@ -3022,7 +3037,7 @@ function renderCalendar() {
   // Per day: lifting and cardio counts, and all XP (workouts, bonuses, boss rewards, penalties), as on the XP chart
   const by = {}, L = xpLedger(S.workouts), day = k => (by[k] = by[k] || { lift: 0, cardio: 0, xp: 0, work: 0, bonus: 0, pen: 0 });
   for (const w of S.workouts) { if (w.sample) continue; const d = day(w.date); if (isCardio(w)) d.cardio++; else d.lift++; d.xp += xpFor(w); d.work += xpFor(w); }
-  for (const e of L.entries) { const d = day(e.date); d.xp += e.xp; if (e.xp > 0) d.bonus += e.xp; else d.pen += e.xp; }
+  for (const e of L.entries) { const d = day(e.date); d.xp += e.xp; if (e.work) d.work += e.xp; else if (e.xp > 0) d.bonus += e.xp; else d.pen += e.xp; }
   const keys = Array.from({ length: n }, (_, i) => mk(i + 1)), max = Math.max(1, ...keys.map(k => (by[k] ? by[k].xp : 0)));
   if (S.calSel === undefined) S.calSel = isCur ? todayK : null;
   const sel = S.calSel && S.calSel.slice(0, 7) === keys[0].slice(0, 7) ? S.calSel : null;
@@ -3092,7 +3107,7 @@ function renderXpChart(r) {
   }
   const s0 = ymd(r.start), e0 = ymd(r.end), inRange = ds => ds >= s0 && ds <= e0;
   for (const w of S.workouts) if (!w.sample && inRange(w.date)) { const b = buckets[idx[keyOf(parse(w.date))]]; if (b) b.work += xpFor(w); }
-  for (const e of xpLedger(S.workouts).entries) if (inRange(e.date)) { const b = buckets[idx[keyOf(parse(e.date))]]; if (b) { if (e.xp > 0) b.bonus += e.xp; else b.pen += e.xp; } }
+  for (const e of xpLedger(S.workouts).entries) if (inRange(e.date)) { const b = buckets[idx[keyOf(parse(e.date))]]; if (b) { if (e.work) b.work += e.xp; else if (e.xp > 0) b.bonus += e.xp; else b.pen += e.xp; } }
   const total = buckets.reduce((a, b) => a + b.work + b.bonus + b.pen, 0);
   const unitWord = by === "day" ? "day" : by;
   const labelOf = b => by === "day" ? `${DOW[b.d.getDay()]} ${shortDate(ymd(b.d))}` : by === "week" ? `Week of ${shortDate(ymd(b.d))}` : `${MON[b.d.getMonth()]} ${b.d.getFullYear()}`;
@@ -3159,7 +3174,8 @@ function xpItemsHTML(b, by, label, keyOf, id = "xpItems") {
     return `<li class="xi"><button type="button" class="xi-main" data-w="${esc(w.id)}" aria-label="${esc(title)}: ${sign(xpFor(w))} XP. Open this workout">
         <span class="wk-ic${a ? " cardio" : ""}">${a ? ic(actIc(w.activity), a[0]) : ic("lift", "Lift")}</span><span class="xi-t"><b>${esc(title)}</b><small>${esc(when(w))}</small></span><span class="xi-xp num">${sign(xpFor(w))}</span></button>
       <ul class="xi-sub">${xpParts(w).map(([t, x]) => `<li><span>${esc(t)}</span><span class="num">${sign(x)}</span></li>`).join("")}</ul></li>`;
-  }).concat(es.map(e => {
+  }).concat(es.filter(e => e.work).map(e => `<li class="xi"><div class="xi-main"><span class="wk-ic">${ic("challenge", "Daily challenge")}</span><span class="xi-t"><b>Daily challenge · ${esc(plural(e.sets, "set"))}</b><small>${esc((by === "day" ? "" : shortDate(e.date) + " · ") + (e.date === ymd(today()) ? "so far today" : "sets at 10 XP each"))}</small></span><span class="xi-xp num">${sign(e.xp)}</span></div>
+      <ul class="xi-sub">${e.parts.map(([t, x]) => `<li><span>${esc(t)}</span><span class="num">${sign(x)}</span></li>`).join("")}</ul></li>`)).concat(es.filter(e => !e.work).map(e => {
     const kind = e.boss ? ["boss", "Boss", "boss"] : e.xp < 0 ? ["pen", "Penalty", e.ch ? "challenge" : "penalty"] : e.ch ? ["bonus", "Daily challenge", "challenge"] : ["bonus", "Bonus", "bonus"];
     const note = e.boss ? (by === "day" ? "" : shortDate(e.date)) : e.label + (e.date === ymd(today()) && !e.boss ? " · so far" : "");
     return `<li class="xi"><div class="xi-main"><span class="wk-ic ${kind[0]}">${ic(kind[2], kind[1])}</span><span class="xi-t"><b>${esc(e.text)}</b>${note ? `<small>${esc(note)}</small>` : ""}</span><span class="xi-xp num${e.xp < 0 ? " neg" : ""}">${sign(e.xp)}</span></div></li>`;
@@ -3168,7 +3184,7 @@ function xpItemsHTML(b, by, label, keyOf, id = "xpItems") {
   return `<div class="xp-items" id="${id}">
       <div class="xi-head"><b>${esc(by === "day" ? label : by === "week" ? label : label)}</b><span class="num">${sign(total)} XP</span></div>
       ${lines.length ? `<ul class="xi-list">${lines.join("")}</ul>` : `<p class="note" style="margin:6px 0 0">No XP ${by === "day" ? "on this day" : `in this ${by}`}.</p>`}
-      ${es.some(e => !e.boss && e.date === ymd(today())) ? explain("bonus", "This week's bonuses show on today until the week ends.") : ""}
+      ${es.some(e => !e.boss && !e.ch && e.date === ymd(today())) ? explain("bonus", "This week's bonuses show on today until the week ends.") : ""}
     </div>`;
 }
 function chartTap(containerId, selector, readoutId, remember) {
@@ -4082,7 +4098,7 @@ function addSheet() {
         ? `Continue ${date === ymd(today()) ? "today's cardio" : `your cardio from ${esc(dayWord(date))}`}: ${esc([...new Set(cs.map(c => (CARDIO[c.activity] || CARDIO.run)[0]))].join(", "))}`
         : "A run, ride, swim or other session: minutes and distance"; })()}</span></button>
       <button type="button" class="addopt" data-act="pick-ch"><span class="addopt-ic">${ic("challenge")}</span><b>Daily challenge</b><span>${(() => {
-        if (!chOn()) return "Push-ups, squats, a plank and V-sits, at home or the office. +50 XP a day";
+        if (!chOn()) return "Push-ups, squats, a plank and V-sits, at home or the office. XP for every set, +50 for all four";
         const st = chStatus(); return st.all ? `Done for today. ${st.streak > 1 ? `${st.streak}-day streak` : "Nice work"}` : `${st.n} of ${CH_ITEMS.length} done today. Log reps in a couple of taps`; })()}</span></button>
     </div>`, `<div class="right"><button class="btn ghost" type="button" data-act="close">Cancel</button></div>`, { compact: true });
 }
@@ -4679,27 +4695,34 @@ function chAdd(key, delta) {
   const was = Number(d[key]) || 0;
   d[key] = Math.max(0, was + delta);
   chSave(); render(); renderSheet();
-  if (!wasDone && chDone(k)) { rewardXP(before, xpLedger(S.workouts)); try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch {} return; }
-  if (wasDone && !chDone(k)) return toast("The challenge isn't complete any more, so today's challenge XP is back off.");
-  const tg = chT(k)[key];
-  if (it && was < tg && d[key] >= tg) toast(`${it.name} done for today. ${CH_ITEMS.filter(x => (Number(d[x.k]) || 0) < chT(k)[x.k]).length} to go.`);
+  const after = xpLedger(S.workouts), gained = after.total - before.total;
+  // Finishing all four, or a new level: the usual XP toast or celebration (and the level-up voice)
+  if ((!wasDone && chDone(k)) || levelInfo(after.total).level > levelInfo(before.total).level) {
+    rewardXP(before, after);
+    if (!wasDone && chDone(k)) try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch {}
+    return;
+  }
+  if (wasDone && !chDone(k)) return toast("The challenge isn't complete any more, so today's bonus is back off.");
+  const tg = chT(k)[key], left = CH_ITEMS.filter(x => (Number(d[x.k]) || 0) < chT(k)[x.k]).length;
+  const msg = [gained > 0 ? `+${gained} XP` : "", it && was < tg && d[key] >= tg ? `${it.name} done for today, ${left} to go` : ""].filter(Boolean).join(" · ");
+  if (msg) toast(`${msg}.`);
 }
 // What's at stake today, in one line
 function chStatus() {
   const k = ymd(today()), d = chDay(k) || {}, t = chT(k), L = chLedger(), c = chCfg();
   const n = CH_ITEMS.filter(it => (Number(d[it.k]) || 0) >= t[it.k]).length, all = n === CH_ITEMS.length;
   const sp = c && c.spans[c.spans.length - 1], first = !!(sp && sp.from === k);
-  const streakBonus = s => Math.min(CH_XP.streakMax, CH_XP.streakStep * s);
+  const streakBonus = s => Math.min(CH_XP.streakMax, CH_XP.streakStep * s), sx = chSetXP(d);
   if (all) {
     const earned = CH_XP.done + streakBonus(L.streak - 1);
-    return { n, all, streak: L.streak, line: `Done for today: +${earned} XP${L.streak > 1 ? ` with your ${L.streak}-day streak` : ""}.` };
+    return { n, all, streak: L.streak, sx, line: `Done for today: +${earned + sx} XP (+${sx} from sets, +${earned} bonus${L.streak > 1 ? ` with your ${L.streak}-day streak` : ""}).` };
   }
   const next = CH_XP.done + streakBonus(L.streak);
   const risk = first ? "No penalty today: it's your first day." : `Missing today costs ${CH_XP.missed} XP.`;
-  return { n, all, streak: L.streak, line: `Finish today for +${next} XP${L.streak ? ` (a ${L.streak + 1}-day streak)` : ""}. ${risk}` };
+  return { n, all, streak: L.streak, sx, line: `${sx ? `+${sx} XP from sets so far. ` : ""}Finish today for +${next} XP${L.streak ? ` (a ${L.streak + 1}-day streak)` : ""}. ${risk}` };
 }
 const chShow = (it, v) => it.sec ? mmss(Math.round(v)) : fmt(v);
-const chIntro = () => { const t = chTargets(); return `${t.pushup} push-ups, ${t.squat} squats, a ${mmss(t.plank)} plank and ${t.vsit} V-sits, any time today, in as many goes as you like. +${CH_XP.done} XP a day, more for a streak; a missed day costs ${CH_XP.missed} XP.`; };
+const chIntro = () => { const t = chTargets(); return `${t.pushup} push-ups, ${t.squat} squats, a ${mmss(t.plank)} plank and ${t.vsit} V-sits, any time today, in as many goes as you like. Every set earns XP like it would in the gym, finishing all four earns +${CH_XP.done} XP more (extra for a streak), and a missed day costs ${CH_XP.missed} XP.`; };
 const chRing = (pct, ok) => { const C = 2 * Math.PI * 16; return `<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="16" class="bg"/>${pct > 0 ? `<circle cx="20" cy="20" r="16" class="fg${ok ? " ok" : ""}" stroke-dasharray="${(Math.min(1, pct) * C).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 20 20)"/>` : ""}</svg>`; };
 function renderChallenge() {
   const el = $("chCard"); if (!el) return;
@@ -4753,7 +4776,7 @@ function challengeSheet() {
   const targets = `<details class="why" data-ex="chTargets"${S.explain.chTargets ? " open" : ""}><summary>${ic("target")}<span>Change targets</span></summary><div class="why-body ch-tg">${CH_ITEMS.map(it =>
     `<div class="ch-tgr"><span>${esc(it.name)}</span><div class="gym-cnt" role="group" aria-label="${esc(it.name)} target"><button type="button" data-cht="${it.k}" data-v="-${it.step}" aria-label="Lower">−</button><span><b class="num">${chShow(it, t[it.k])}</b></span><button type="button" data-cht="${it.k}" data-v="${it.step}" aria-label="Higher">+</button></div></div>`).join("")}
     <p class="note" style="margin:6px 0 0">New targets count from today.</p></div></details>`;
-  const rules = `Do them any time today, in as many goes as you like. All four done: +${CH_XP.done} XP, plus +${CH_XP.streakStep} XP for each day in a row before it (up to +${CH_XP.streakMax}). A missed day costs ${CH_XP.missed} XP and ends your streak, but never on your first day. The reps also count toward your muscle goals: about ${CH_ITEMS[0].per} reps, or a minute of plank, is a set. Turn it off in You → Daily challenge.`;
+  const rules = `Do them any time today, in as many goes as you like. Every ${CH_ITEMS[0].per} reps, or minute of plank, is a set and earns ${setXP(0, "lb")} XP, the same as a bodyweight set in the gym (up to ${XP.maxSets} sets a day). All four done: +${CH_XP.done} XP more, plus +${CH_XP.streakStep} XP for each day in a row before it (up to +${CH_XP.streakMax}). A missed day costs ${CH_XP.missed} XP and ends your streak, but never on your first day. The sets also count toward your muscle goals. Turn it off in You → Daily challenge.`;
   return sheetFrame("Daily challenge", `<p class="ch-status${st.all ? " good" : ""}"><b>${st.n} of ${CH_ITEMS.length} done</b> · ${esc(st.line)}</p><ul class="ch-list">${rows}</ul>${targets}${explain("ch", rules)}`,
     `<div class="right"><button class="btn primary" type="button" data-act="close">Close</button></div>`);
 }

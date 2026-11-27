@@ -241,13 +241,15 @@ A short bodyweight challenge you can do at home or in the office, any time of da
 - **The four:** 100 push-ups, 100 squats, a 3-minute plank and 100 V-sits.
 - **Starting it:** the first time, a card on Today offers **Start today** (or **Not for me**). It's also under **+ → Daily challenge** and **You → Daily challenge** (On / Off).
 - **Logging:** **+ → Daily challenge**, or tap the card on Today. Each exercise has its count and a bar, with **+10**, **+20** and **+25** buttons (and **−10** to fix a mistake). The plank has a timer: **Start plank**, hold, **Stop** adds the time, and the soft chime plays when the day's plank target is reached; **−30s** / **+30s** adjust it by hand. Closing the sheet with the timer running logs the time.
-- **Today:** the card shows four rings (for example "45 / 100") and what's at stake: "Finish today for +60 XP (a 2-day streak). Missing today costs 15 XP." It turns gold when you're done ("Done for today: +60 XP").
+- **Today:** the card shows four rings (for example "45 / 100") and what's at stake: "+90 XP from sets so far. Finish today for +60 XP (a 2-day streak). Missing today costs 15 XP." It turns gold when you're done ("Done for today: +240 XP (+180 from sets, +60 bonus with your 2-day streak)").
+- **Each tap says what it earned,** for example "+10 XP · Push-ups done for today, 2 to go." Reaching a new level mid-challenge brings up the level-up celebration (and voice), as in the gym.
 - **XP:**
-  - **+50 XP** for a day with all four done.
+  - **Every set earns XP, the same as a bodyweight set in the gym: +10 XP.** About 20 reps, or a minute of plank, is a set, rounded to half sets (so +10 reps is +5 XP), up to 40 sets a day like a gym workout. A full day at the default targets is 18 sets, +180 XP. Sets earn XP whether or not you finish all four.
+  - **+50 XP** more for a day with all four done.
   - **+10 XP for each day in a row** before it, up to +50 (day 2 earns +60, day 6 and on +100).
   - **−15 XP** for a missed day, which also ends your streak. Never the day you turn it on.
-  - It shows in the XP list and chart like other bonuses, with a medal icon, and on the Level screen's **How to earn XP**.
-- **Muscles:** the reps count toward your muscle goals and heat map: about 20 reps, or a minute of plank, is one set (rounded to half sets). 100 push-ups is 5 sets for chest, and half that for triceps, shoulders and abs. They don't earn per-set XP; the challenge bonus is the XP.
+  - In History, the day's sets count as workout XP (green in the XP chart) and show in the XP list as "Daily challenge · 18 sets", broken down by exercise ("Push-ups · 100 reps = 5 sets +50"). The bonus, streak and penalty show like other bonuses, with a medal icon. The Level screen's **How to earn XP** lists all of it.
+- **Muscles:** the reps count toward your muscle goals and heat map: about 20 reps, or a minute of plank, is one set (rounded to half sets). 100 push-ups is 5 sets for chest, and half that for triceps, shoulders and abs. These are the same sets that earn the set XP.
 - **Targets:** **Change targets** in the challenge sheet raises or lowers each one (reps in 10s, plank in 30-second steps). New targets count from today; earlier days keep theirs.
 - **Turning it off** (You → Daily challenge) stops it from today, with no more penalties; turning it back on the next day carries on where you left off.
 - **Saved with your goals,** so it syncs to your account and is in backups.
@@ -273,7 +275,7 @@ Your own row is highlighted, even if you're outside the top 100, and the top of 
 
 **Finding it:** a card on the Today tab shows your weekly rank. There's also the **trophy** at the top, a **Leaderboard** row on the You tab and **Leaderboard** in the desktop sidebar. The Claude artifact version doesn't have a leaderboard, because it doesn't use Supabase.
 
-The app reports your XP, matching what you see in Forged, and the database checks every number against what your logged workouts, weekly bonuses, daily challenge days (up to 100 XP each) and boss fights in that period could earn. **After this update, run [`supabase/leaderboard.sql`](supabase/leaderboard.sql) again** (SQL Editor, paste, Run) so the check counts challenge XP; it's safe to run again. Anything above that is capped, and the level is recalculated, so the numbers can't be inflated by editing the app. The setup is in [`supabase/leaderboard.sql`](supabase/leaderboard.sql), run once in the SQL Editor after `schema.sql`.
+The app reports your XP, matching what you see in Forged, and the database checks every number against what your logged workouts, weekly bonuses, daily challenge days (up to 100 XP of bonus each, plus 10 XP a set up to 40 sets) and boss fights in that period could earn. **After this update, run [`supabase/leaderboard.sql`](supabase/leaderboard.sql) again** (SQL Editor, paste, Run) so the check counts challenge XP; it's safe to run again. Anything above that is capped, and the level is recalculated, so the numbers can't be inflated by editing the app. The setup is in [`supabase/leaderboard.sql`](supabase/leaderboard.sql), run once in the SQL Editor after `schema.sql`.
 
 ## Suggestion for today
 
