@@ -4651,8 +4651,10 @@ function renderSheet() {
 }
 
 /* ---------- Daily challenge: Today card, the logging sheet, the plank timer ---------- */
-let chSaveT = null;
-function chSave() { clearTimeout(chSaveT); chSaveT = setTimeout(() => { Promise.resolve(Store.saveGoals(S.goals)).catch(() => toast("Couldn't save the daily challenge. Check your connection.")); }, 400); }
+/* Each tap is saved straight away. (It used to wait 0.4s to group quick taps, but a sync finishing in that gap
+   replaced the challenge with the account's older copy, so the reps were lost.) Saving queues the change for the
+   account at once, and a sync that's already running lays queued changes over what it downloads. */
+function chSave() { Promise.resolve(Store.saveGoals(S.goals)).catch(() => toast("Couldn't save the daily challenge. Check your connection.")); }
 function chEnsure() { if (!S.goals.challenge) S.goals.challenge = { spans: [], targets: { ...CH_TARGETS }, days: {} }; return S.goals.challenge; }
 function chStart() {
   const c = chEnsure(), k = ymd(today()), last = c.spans[c.spans.length - 1];
@@ -6208,7 +6210,7 @@ $("sheetRoot").addEventListener("input", () => setTimeout(persistDraft, 0));
 render();
 Store.init(
   list => { S.workouts = list; S.loaded = true; render(); restoreDraft(); maybeTour(); },
-  g => { S.goals = normGoals(g); S.goalsSaved = !!g; render(); },
+  g => { S.goals = normGoals(g); S.goalsSaved = !!g; render(); if (S.sheet === "challenge") renderSheet(); },
   msg => { $("sync").textContent = msg; renderYou(); }
 );
 })();
